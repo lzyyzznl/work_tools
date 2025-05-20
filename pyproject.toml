@@ -1,0 +1,21 @@
+[build-system]
+requires = ["uv>=1.0.0", "pyinstaller>=6.0.0"]
+build-backend = "uv"
+
+[project]
+name = "file_prefix_adder"
+version = "0.1.0"
+description = "批量添加文件名前缀工具"
+authors = [{ name = "lizeyu", email = "632795136@qq.com" }]
+dependencies = ["PyQt5>=5.15.0", "pyinstaller>=6.0.0"]
+readme = "README.md"
+requires-python = ">=3.8"
+
+[project.scripts]
+prefix-adder = "file_prefix_adder.main:main"
+prefix-adder-gui = "file_prefix_adder.gui_qt:FilePrefixAdder"
+
+[tool.pyinstaller]
+console-scripts = "prefix-adder"
+onefile = true
+windowed = true
