@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QButtonGroup,
     QCheckBox,
     QGroupBox,
+    QStatusBar,
 )
 from PyQt5.QtCore import Qt
 
@@ -25,6 +26,14 @@ class FilePrefixAdder(QMainWindow):
         super().__init__()
         self.setWindowTitle("文件名处理工具")
         self.setFixedSize(700, 600)
+        self.version = "1.0.0"
+
+        # 创建状态栏
+        status_bar = QStatusBar()
+        self.setStatusBar(status_bar)
+        status_bar.addPermanentWidget(
+            QLabel(f"author:lizeyu  v{self.version} @版权所有，禁止商用")
+        )
 
         # 主控件
         central_widget = QWidget()
