@@ -1,12 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_all
+
+datas = [('src/resource', 'resource'), ('src/file_matcher', 'file_matcher')]
+binaries = []
+hiddenimports = []
+tmp_ret = collect_all('PyQt5')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('pandas')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['src\\file_prefix_adder\\gui_qt.py'],
+    ['src\\file_matcher\\gui.py'],
     pathex=['D:\\workspace\\work_tools\\.venv\\Lib\\site-packages'],
-    binaries=[],
-    datas=[('src/file_prefix_adder', 'file_prefix_adder')],
-    hiddenimports=['PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets'],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -22,7 +31,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='FilePrefixAdderGUI',
+    name='文件名匹配工具',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -35,4 +44,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['src\\resource\\icon.ico'],
 )

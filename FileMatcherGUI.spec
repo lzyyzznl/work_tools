@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['src\\file_prefix_adder\\gui_qt.py'],
+    ['src\\file_matcher\\gui.py'],
     pathex=['D:\\workspace\\work_tools\\.venv\\Lib\\site-packages'],
     binaries=[],
-    datas=[('src/file_prefix_adder', 'file_prefix_adder')],
-    hiddenimports=['PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets'],
+    datas=[('src/resource', 'resource'), ('src/file_matcher', 'file_matcher')],
+    hiddenimports=['PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets', 'pandas'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='FilePrefixAdderGUI',
+    name='FileMatcherGUI',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -35,4 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['src\\resource\\icon.png'],
 )

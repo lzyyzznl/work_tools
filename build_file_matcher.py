@@ -6,11 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-try:
-    from PIL import Image
-except ImportError:
-    pass
-
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -20,14 +15,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class FilePrefixAdderBuilder:
-    """文件前缀添加工具打包类"""
+class FileMatcherBuilder:
+    """文件名匹配工具打包类"""
 
     def __init__(self):
-        self.app_name = "FilePrefixAdderGUI"
-        self.entry_point = "src/file_prefix_adder/gui_qt.py"
+        self.app_name = "文件名匹配工具"
+        self.entry_point = "src/file_matcher/gui.py"
         self.data_files = [
-            ("src/file_prefix_adder", "file_prefix_adder"),
+            ("src/resource", "resource"),
+            ("src/file_matcher", "file_matcher"),
         ]
 
     def check_python_version(self):
@@ -39,7 +35,7 @@ class FilePrefixAdderBuilder:
 
     def check_dependencies(self):
         """检查必要依赖"""
-        required = ["PyQt5", "PyInstaller"]
+        required = ["PyQt5", "PyInstaller", "pandas"]
         missing = []
 
         for pkg in required:
@@ -106,14 +102,25 @@ class FilePrefixAdderBuilder:
             "--onefile",
             "--windowed",
             "--noconfirm",
-            "--add-data=src/file_prefix_adder;file_prefix_adder",
+            "--icon=src/resource/icon.ico",
             "--collect-all",
             "PyQt5",
-            "--icon=src/resource/icon.ico",
-            "--paths",
-            pyqt_path,
-            self.entry_point,
+            "--collect-all",
+            "pandas",
         ]
+
+        # 添加数据文件
+        for src, dest in self.data_files:
+            args.extend(["--add-data", f"{src};{dest}"])
+
+        # 添加其他参数
+        args.extend(
+            [
+                "--paths",
+                pyqt_path,
+                self.entry_point,
+            ]
+        )
 
         logger.info("开始构建可执行文件...")
         try:
@@ -125,7 +132,7 @@ class FilePrefixAdderBuilder:
 
     def run(self):
         """执行打包流程"""
-        logger.info("=== 开始构建文件前缀添加工具 ===")
+        logger.info("=== 开始构建文件名匹配工具 ===")
         self.check_python_version()
         self.check_dependencies()
         self.clean_build()
@@ -133,5 +140,5 @@ class FilePrefixAdderBuilder:
 
 
 if __name__ == "__main__":
-    builder = FilePrefixAdderBuilder()
+    builder = FileMatcherBuilder()
     builder.run()
