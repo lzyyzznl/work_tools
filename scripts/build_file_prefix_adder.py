@@ -24,8 +24,8 @@ class FilePrefixAdderBuilder:
     """文件前缀添加工具打包类"""
 
     def __init__(self):
-        self.app_name = "FilePrefixAdderGUI"
-        self.entry_point = "src/file_prefix_adder/gui_qt.py"
+        self.app_name = "文件名修改神器"
+        self.entry_point = "src/file_prefix_adder/gui.py"
         self.data_files = [
             ("src/file_prefix_adder", "file_prefix_adder"),
         ]

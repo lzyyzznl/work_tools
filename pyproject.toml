@@ -3,9 +3,9 @@ requires = ["uv>=1.0.0", "pyinstaller>=6.0.0"]
 build-backend = "uv"
 
 [project]
-name = "file_prefix_adder"
-version = "0.1.0"
-description = "批量添加文件名前缀工具"
+name = "windows_small_tools"
+version = "1.0.0"
+description = "Windows小工具集合：文件前缀处理工具和文件名匹配工具"
 authors = [{ name = "lizeyu", email = "632795136@qq.com" }]
 dependencies = [
   "PyQt5>=5.15.0",
@@ -18,11 +18,10 @@ readme = "README.md"
 requires-python = ">=3.8"
 
 [project.scripts]
-prefix-adder = "file_prefix_adder.main:main"
-prefix-adder-gui = "file_prefix_adder.gui_qt:FilePrefixAdder"
-file-matcher = "file_matcher.gui:FileMatcherGUI"
+file-prefix-tool = "scripts.run_file_prefix_tool:main"
+file-matcher-tool = "scripts.run_file_matcher_tool:main"
 
 [tool.pyinstaller]
-console-scripts = "prefix-adder"
+console-scripts = "file-prefix-tool"
 onefile = true
 windowed = true
