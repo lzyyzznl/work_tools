@@ -29,9 +29,10 @@ from PyQt5.QtWidgets import (
     QTabWidget,
     QToolBar,
     QStyle,
+    QInputDialog,
 )
-from PyQt5.QtCore import Qt, QUrl, QSize, QTimer
-from PyQt5.QtGui import QDesktopServices, QKeySequence, QIcon, QColor
+from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QDateTime
+from PyQt5.QtGui import QDesktopServices, QKeySequence, QIcon, QColor, QCursor
 from PyQt5.QtWidgets import QShortcut
 import shutil
 
@@ -91,9 +92,34 @@ class FileRenamer(QMainWindow):
         table_container = QWidget()
         table_layout = QVBoxLayout(table_container)
         table_layout.setContentsMargins(0, 0, 0, 0)
-        self.file_table, select_all_layout = self.create_file_table()
-        table_layout.addLayout(select_all_layout)
-        table_layout.addWidget(self.file_table)
+        
+        # Create select all layout first (always at top)
+        self.file_table, self.select_all_layout = self.create_file_table()
+        
+        # Create a widget to hold the select all layout so we can hide/show it easily
+        self.select_all_widget = QWidget()
+        select_all_container_layout = QVBoxLayout(self.select_all_widget)
+        select_all_container_layout.setContentsMargins(0, 0, 0, 0)
+        select_all_container_layout.addLayout(self.select_all_layout)
+        
+        table_layout.addWidget(self.select_all_widget)
+        
+        # Create content area that will switch between empty state and table
+        content_area = QWidget()
+        content_layout = QVBoxLayout(content_area)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Create empty state widget
+        self.empty_state_widget = self.create_empty_state_widget()
+        content_layout.addWidget(self.empty_state_widget)
+        content_layout.addWidget(self.file_table)
+        
+        table_layout.addWidget(content_area)
+        
+        # Initially hide the table and select all widget, show empty state
+        self.file_table.hide()
+        self.select_all_widget.hide()
+        self.empty_state_widget.show()
 
         splitter.addWidget(self.tabs)
         splitter.addWidget(table_container)
@@ -102,7 +128,9 @@ class FileRenamer(QMainWindow):
         self.main_layout.addWidget(splitter)
         self.create_status_bar()
 
+        # Setup keyboard shortcuts
         QShortcut(QKeySequence.Delete, self.file_table, self.remove_selected_files)
+        QShortcut(QKeySequence.SelectAll, self.file_table, self.select_all_files)
 
     def create_toolbar(self):
         """Creates the main application toolbar."""
@@ -117,21 +145,27 @@ class FileRenamer(QMainWindow):
         self.addToolBar(toolbar)
         style = self.style()
 
-        def add_action(icon, text, callback):
+        def add_action(icon, text, callback, shortcut=None):
             action = QAction(icon, text, self)
             action.triggered.connect(callback)
+            if shortcut:
+                action.setShortcut(shortcut)
+                action.setToolTip(f"{text} ({shortcut})")
             toolbar.addAction(action)
             return action
 
-        add_action(style.standardIcon(QStyle.SP_FileIcon), "添加文件", self.add_files)
-        add_action(style.standardIcon(QStyle.SP_DirIcon), "添加文件夹", self.add_folder)
+        # Add actions with shortcuts
+        add_action(style.standardIcon(QStyle.SP_FileIcon), "添加文件", self.add_files, "Ctrl+O")
+        add_action(style.standardIcon(QStyle.SP_DirIcon), "添加文件夹", self.add_folder, "Ctrl+Shift+O")
         toolbar.addSeparator()
-        add_action(style.standardIcon(QStyle.SP_BrowserReload), "预览", self.preview_changes)
-        add_action(style.standardIcon(QStyle.SP_DialogResetButton), "重置参数", self.reset_parameters)
+        add_action(style.standardIcon(QStyle.SP_BrowserReload), "预览", self.preview_changes, "F5")
+        add_action(style.standardIcon(QStyle.SP_DialogResetButton), "重置参数", self.reset_parameters, "Ctrl+R")
         toolbar.addSeparator()
         
         execute_action = QAction(style.standardIcon(QStyle.SP_DialogApplyButton), "执行", self)
         execute_action.triggered.connect(self.execute_rename)
+        execute_action.setShortcut("Ctrl+Enter")
+        execute_action.setToolTip("执行 (Ctrl+Enter)")
         toolbar.addAction(execute_action)
         if (button := toolbar.widgetForAction(execute_action)):
             button.setStyleSheet("font-weight: bold; color: green;")
@@ -141,12 +175,15 @@ class FileRenamer(QMainWindow):
         self.undo_action = QAction(style.standardIcon(QStyle.SP_ArrowBack), "撤回", self)
         self.undo_action.triggered.connect(self.undo_last_operation)
         self.undo_action.setEnabled(False)
+        self.undo_action.setShortcut("Ctrl+Z")
+        self.undo_action.setToolTip("撤回 (Ctrl+Z)")
         toolbar.addAction(self.undo_action)
         if (button := toolbar.widgetForAction(self.undo_action)):
             button.setStyleSheet("font-weight: bold; color: red;")
         
         toolbar.addSeparator()
-        add_action(style.standardIcon(QStyle.SP_TrashIcon), "清空列表", self.clear_file_list)
+        add_action(style.standardIcon(QStyle.SP_TrashIcon), "清空列表", self.clear_file_list, "Ctrl+Delete")
+        add_action(style.standardIcon(QStyle.SP_FileDialogDetailedView), "使用说明", self.show_help, "F1")
 
     def create_operation_tabs(self):
         """Creates and configures the QTabWidget for renaming operations."""
@@ -240,21 +277,85 @@ class FileRenamer(QMainWindow):
         tabs.addTab(delete_widget, "删除字符")
         return tabs
 
+    def create_empty_state_widget(self):
+        """Creates the empty state widget displayed when no files are loaded."""
+        empty_widget = QWidget()
+        empty_widget.setStyleSheet("""
+            QWidget {
+                background-color: #f8f9fa;
+                border: 2px dashed #dee2e6;
+                border-radius: 10px;
+            }
+        """)
+        
+        empty_layout = QVBoxLayout(empty_widget)
+        empty_layout.setAlignment(Qt.AlignCenter)
+        
+        # Large icon
+        icon_label = QLabel("📁")
+        icon_label.setAlignment(Qt.AlignCenter)
+        icon_label.setStyleSheet("font-size: 80px; margin-bottom: 30px; border: none;")
+        
+        # Main message
+        title_label = QLabel("拖拽文件或文件夹到此处")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("font-size: 32px; font-weight: bold; color: #495057; margin-bottom: 15px; border: none;")
+        
+        # Subtitle
+        subtitle_label = QLabel("或使用上方工具栏的\"添加文件\"、\"添加文件夹\"按钮")
+        subtitle_label.setAlignment(Qt.AlignCenter)
+        subtitle_label.setStyleSheet("font-size: 20px; color: #6c757d; margin-bottom: 25px; border: none;")
+        
+        # Tips
+        tips_label = QLabel("💡 支持的快捷键：Ctrl+O (添加文件)、Ctrl+Shift+O (添加文件夹)")
+        tips_label.setAlignment(Qt.AlignCenter)
+        tips_label.setStyleSheet("font-size: 16px; color: #868e96; border: none;")
+        
+        empty_layout.addWidget(icon_label)
+        empty_layout.addWidget(title_label)
+        empty_layout.addWidget(subtitle_label)
+        empty_layout.addWidget(tips_label)
+        
+        return empty_widget
+
     def create_file_table(self):
         """Creates the file table widget and its 'select all' checkbox layout."""
         select_all_layout = QHBoxLayout()
         self.header_checkbox = QCheckBox("全选/全不选"); self.header_checkbox.setChecked(False)
         self.header_checkbox.stateChanged.connect(lambda s: self.toggle_all_checkboxes(Qt.CheckState(s)))
-        select_all_layout.addWidget(self.header_checkbox); select_all_layout.addStretch()
+        select_all_layout.addWidget(self.header_checkbox)
         
-        table = QTableWidget(columnCount=6)
-        table.setHorizontalHeaderLabels(["", "当前文件名", "预览", "文件大小", "执行结果", "路径"])
-        table.setSelectionBehavior(QAbstractItemView.SelectRows); table.setContextMenuPolicy(Qt.CustomContextMenu)
+        # Add help tooltip icon
+        help_label = QLabel("❓")
+        help_label.setToolTip("只会操作选中的文件，如果一个都不选就处理全部文件")
+        help_label.setStyleSheet("color: #666; font-size: 16px; margin-left: 5px;")
+        select_all_layout.addWidget(help_label)
+        select_all_layout.addStretch()
+        
+        # Updated table structure: "", "当前文件名", "预览", "执行结果", "最后更新时间", "文件大小", "路径"
+        table = QTableWidget(columnCount=7)
+        table.setHorizontalHeaderLabels(["", "当前文件名", "预览", "执行结果", "最后更新时间", "文件大小", "路径"])
+        table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        table.setContextMenuPolicy(Qt.CustomContextMenu)
         table.customContextMenuRequested.connect(self.show_table_context_menu)
         
+        # Enable sorting
+        table.setSortingEnabled(True)
+        
+        # Connect table item click handler
+        table.itemClicked.connect(self.table_item_clicked)
+        
         header = table.horizontalHeader()
-        for i, size_mode in enumerate([QHeaderView.ResizeToContents, QHeaderView.Stretch, QHeaderView.Stretch, 
-                                     QHeaderView.ResizeToContents, QHeaderView.ResizeToContents, QHeaderView.Stretch]):
+        resize_modes = [
+            QHeaderView.ResizeToContents,  # 选择框
+            QHeaderView.Stretch,           # 当前文件名
+            QHeaderView.Stretch,           # 预览
+            QHeaderView.ResizeToContents,  # 执行结果
+            QHeaderView.ResizeToContents,  # 最后更新时间
+            QHeaderView.ResizeToContents,  # 文件大小
+            QHeaderView.Stretch            # 路径
+        ]
+        for i, size_mode in enumerate(resize_modes):
             header.setSectionResizeMode(i, size_mode)
         
         return table, select_all_layout
@@ -287,9 +388,31 @@ class FileRenamer(QMainWindow):
     def show_table_context_menu(self, position):
         """Shows a context menu for the file table."""
         menu = QMenu()
-        remove_action = menu.addAction("从列表中移除")
-        if menu.exec_(self.file_table.mapToGlobal(position)) == remove_action:
-            self.remove_selected_files()
+        
+        # Get the clicked row
+        clicked_item = self.file_table.itemAt(position)
+        if clicked_item:
+            row = clicked_item.row()
+            
+            # Add context menu actions
+            rename_action = menu.addAction("重命名文件")
+            open_folder_action = menu.addAction("打开文件所在文件夹")
+            menu.addSeparator()
+            remove_action = menu.addAction("从列表中移除")
+            
+            action = menu.exec_(self.file_table.mapToGlobal(position))
+            
+            if action == rename_action:
+                self.rename_single_file(row)
+            elif action == open_folder_action:
+                self.open_file_folder(row)
+            elif action == remove_action:
+                self.remove_selected_files()
+        else:
+            # No item clicked, show general menu
+            remove_action = menu.addAction("从列表中移除选中项")
+            if menu.exec_(self.file_table.mapToGlobal(position)) == remove_action:
+                self.remove_selected_files()
 
     # ----------------------------------------------------------------------
     # Core Slots (Actions Triggered by UI)
@@ -314,6 +437,12 @@ class FileRenamer(QMainWindow):
         self.files_data.clear()
         self.history.clear()
         self.undo_action.setEnabled(False)
+        
+        # Show empty state and hide table and select all widget
+        self.file_table.hide()
+        self.select_all_widget.hide()
+        self.empty_state_widget.show()
+        
         self.update_status("文件列表已清空。")
 
     def remove_selected_files(self):
@@ -324,6 +453,13 @@ class FileRenamer(QMainWindow):
         for row in selected_rows:
             del self.files_data[row]
             self.file_table.removeRow(row)
+        
+        # Show empty state and hide table and select all widget if no files left
+        if len(self.files_data) == 0:
+            self.file_table.hide()
+            self.select_all_widget.hide()
+            self.empty_state_widget.show()
+            
         self.update_status(f"移除了 {len(selected_rows)} 个文件。")
 
     def start_preview_timer(self):
@@ -369,8 +505,8 @@ class FileRenamer(QMainWindow):
             self.file_table.setItem(row, 2, preview_item)
             self.files_data[row]['preview_name'] = ""
             
-            # Clear result column
-            result_item = self.file_table.item(row, 4)
+            # Clear result column (now at column 3)
+            result_item = self.file_table.item(row, 3)
             if result_item:
                 result_item.setText("")
         
@@ -386,12 +522,12 @@ class FileRenamer(QMainWindow):
         # First, clear all previous previews from the UI and data model
         for row in range(self.file_table.rowCount()):
             self.file_table.setItem(row, 2, QTableWidgetItem(""))
-            # Safely clear the result column
-            result_item = self.file_table.item(row, 4)
+            # Safely clear the result column (now at column 3)
+            result_item = self.file_table.item(row, 3)
             if result_item:
                 result_item.setText("")
             else:
-                self.file_table.setItem(row, 4, QTableWidgetItem(""))
+                self.file_table.setItem(row, 3, QTableWidgetItem(""))
             self.files_data[row]['preview_name'] = ""
 
         # Generate previews for ALL rows that need processing
@@ -459,10 +595,10 @@ class FileRenamer(QMainWindow):
                 
                 self.file_table.item(row, 1).setText(new_path.name)
                 self.file_table.item(row, 2).setText("")
-                self.file_table.setItem(row, 4, QTableWidgetItem("✅ 成功"))
+                self.file_table.setItem(row, 3, QTableWidgetItem("✅ 成功"))
                 success += 1
             except OSError as e:
-                self.file_table.setItem(row, 4, QTableWidgetItem(f"失败: {e}"))
+                self.file_table.setItem(row, 3, QTableWidgetItem(f"❌ 失败: {e}"))
                 fail += 1
         
         if current_batch_history:
@@ -598,22 +734,50 @@ class FileRenamer(QMainWindow):
         path_obj = Path(file_path)
         if path_obj.resolve() in (item['path_obj'].resolve() for item in self.files_data): return
 
+        # Show table and select all widget, hide empty state if this is the first file
+        if len(self.files_data) == 0:
+            self.empty_state_widget.hide()
+            self.file_table.show()
+            self.select_all_widget.show()
+
         row = self.file_table.rowCount()
         self.file_table.insertRow(row)
         self.files_data.append({"path_obj": path_obj, "preview_name": "", "original_name": path_obj.name})
 
-        chk_box = QTableWidgetItem(); chk_box.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled); chk_box.setCheckState(Qt.Unchecked)
-        size_item = QTableWidgetItem(self.format_file_size(path_obj.stat().st_size)); size_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        # Get file stats
+        file_stat = path_obj.stat()
         
-        self.file_table.setItem(row, 0, chk_box)
-        self.file_table.setItem(row, 1, QTableWidgetItem(path_obj.name))
+        # Create table items
+        chk_box = QTableWidgetItem()
+        chk_box.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+        chk_box.setCheckState(Qt.Unchecked)
+        
         # Set default preview to show original filename in normal color
         preview_item = QTableWidgetItem(path_obj.name)
         preview_item.setForeground(QColor("black"))
-        self.file_table.setItem(row, 2, preview_item)
-        self.file_table.setItem(row, 3, size_item)
-        self.file_table.setItem(row, 4, QTableWidgetItem(""))
-        self.file_table.setItem(row, 5, QTableWidgetItem(str(path_obj.parent)))
+        
+        # Format last modified time
+        last_modified = QDateTime.fromSecsSinceEpoch(int(file_stat.st_mtime)).toString("yyyy-MM-dd hh:mm:ss")
+        time_item = QTableWidgetItem(last_modified)
+        time_item.setTextAlignment(Qt.AlignCenter)
+        
+        # Format file size
+        size_item = QTableWidgetItem(self.format_file_size(file_stat.st_size))
+        size_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        
+        # Create clickable path item
+        path_item = QTableWidgetItem(str(path_obj.parent))
+        path_item.setForeground(QColor("blue"))
+        path_item.setToolTip("点击打开文件夹")
+        
+        # Set items to table: "", "当前文件名", "预览", "执行结果", "最后更新时间", "文件大小", "路径"
+        self.file_table.setItem(row, 0, chk_box)                                    # 选择框
+        self.file_table.setItem(row, 1, QTableWidgetItem(path_obj.name))          # 当前文件名
+        self.file_table.setItem(row, 2, preview_item)                             # 预览
+        self.file_table.setItem(row, 3, QTableWidgetItem(""))                     # 执行结果
+        self.file_table.setItem(row, 4, time_item)                                # 最后更新时间
+        self.file_table.setItem(row, 5, size_item)                                # 文件大小
+        self.file_table.setItem(row, 6, path_item)                                # 路径
 
     def get_rows_to_process(self):
         """Returns a list of row indices to be processed (checked, or all if none checked)."""
@@ -637,6 +801,165 @@ class FileRenamer(QMainWindow):
     def update_status(self, message):
         """Shows a temporary message in the status bar."""
         self.statusBar().showMessage(message, 5000)
+
+    def show_help(self):
+        """Shows the help documentation."""
+        help_file_path = Path("使用说明.txt")
+        
+        # Create help file if it doesn't exist
+        if not help_file_path.exists():
+            help_content = """批量文件重命名工具 - 使用说明
+
+=== 主要功能 ===
+
+1. 【字符串替换】
+   - 将文件名中的指定文本替换为新文本
+   - 支持空字符替换（删除文本）
+   - 只替换匹配的字符串
+
+2. 【添加前缀/后缀】
+   - 在文件名前或后添加指定文本
+   - 可选择前缀或后缀位置
+
+3. 【批量添加序号】
+   - 为文件添加递增序号
+   - 可设置起始数字、位数、步长
+   - 可选择前缀或后缀位置
+   - 可自定义分隔符
+
+4. 【删除字符】
+   - 从指定位置删除指定数量的字符
+   - 支持从左或从右开始删除
+   - 可设置开始位置和删除字符数
+
+=== 快捷键 ===
+
+Ctrl+O        - 添加文件
+Ctrl+Shift+O  - 添加文件夹
+F5            - 预览更改
+Ctrl+R        - 重置参数
+Ctrl+Enter    - 执行重命名
+Ctrl+Z        - 撤回操作
+Ctrl+Delete   - 清空列表
+F1            - 显示此帮助
+Ctrl+A        - 选中所有文件
+Delete        - 移除选中的文件
+
+=== 操作说明 ===
+
+1. 添加文件：使用"添加文件"或"添加文件夹"按钮，或直接拖拽文件到窗口
+2. 选择操作：在上方标签页中选择重命名方式
+3. 设置参数：根据选择的操作设置相关参数
+4. 预览更改：红色文件名表示将被更改，黑色表示不变
+5. 选择文件：勾选要处理的文件，不选择任何文件将处理全部
+6. 执行操作：点击"执行"按钮进行重命名
+7. 撤回操作：如需撤回，点击"撤回"按钮
+
+=== 右键菜单 ===
+
+在文件列表中右键点击可以：
+- 重命名文件：直接编辑单个文件名
+- 打开文件所在文件夹：在资源管理器中打开
+- 从列表中移除：移除不需要的文件
+
+=== 表格功能 ===
+
+- 点击列标题可以排序
+- 点击蓝色路径可以打开文件夹
+- 执行结果显示操作成功/失败状态
+- 显示文件最后更新时间和大小
+
+=== 安全提示 ===
+
+- 重命名前会显示预览
+- 支持撤回最近的操作
+- 同名文件会显示错误提示
+- 只处理选中的文件，提高安全性
+
+版本：v2.0.0
+作者：lizeyu
+"""
+            try:
+                with open(help_file_path, 'w', encoding='utf-8') as f:
+                    f.write(help_content)
+            except Exception as e:
+                QMessageBox.warning(self, "错误", f"无法创建帮助文件：{e}")
+                return
+        
+        # Open help file
+        try:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(help_file_path.absolute())))
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"无法打开帮助文件：{e}")
+
+    def select_all_files(self):
+        """Selects all files in the table."""
+        for row in range(self.file_table.rowCount()):
+            checkbox_item = self.file_table.item(row, 0)
+            if checkbox_item:
+                checkbox_item.setCheckState(Qt.Checked)
+        self.update_status("已选中所有文件。")
+
+    def rename_single_file(self, row):
+        """Renames a single file through a dialog."""
+        if row >= len(self.files_data):
+            return
+            
+        file_data = self.files_data[row]
+        old_path = file_data["path_obj"]
+        old_name = old_path.name
+        
+        new_name, ok = QInputDialog.getText(self, "重命名文件", f"新文件名:", text=old_name)
+        if not ok or not new_name.strip() or new_name == old_name:
+            return
+            
+        new_path = old_path.with_name(new_name.strip())
+        
+        try:
+            if new_path.exists():
+                QMessageBox.warning(self, "错误", "目标文件名已存在！")
+                return
+                
+            os.rename(old_path, new_path)
+            
+            # Update data
+            file_data.update(path_obj=new_path, original_name=new_path.name, preview_name="")
+            
+            # Update table display
+            self.file_table.item(row, 1).setText(new_path.name)
+            self.file_table.item(row, 2).setText("")
+            self.file_table.setItem(row, 3, QTableWidgetItem("✅ 重命名成功"))
+            
+            # Add to history for undo
+            self.history.append([(str(old_path), str(new_path))])
+            self.undo_action.setEnabled(True)
+            
+            self.update_status(f"文件 '{old_name}' 已重命名为 '{new_name}'。")
+            
+        except OSError as e:
+            QMessageBox.warning(self, "错误", f"重命名失败：{e}")
+
+    def open_file_folder(self, row):
+        """Opens the folder containing the file."""
+        if row >= len(self.files_data):
+            return
+            
+        file_path = self.files_data[row]["path_obj"]
+        folder_path = file_path.parent
+        
+        try:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder_path)))
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"无法打开文件夹：{e}")
+
+    def table_item_clicked(self, item):
+        """Handles table item click events."""
+        row = item.row()
+        column = item.column()
+        
+        # If clicked on path column (column 6), open the folder
+        if column == 6:
+            self.open_file_folder(row)
 
     @staticmethod
     def format_file_size(size_bytes):

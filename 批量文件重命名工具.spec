@@ -10,7 +10,7 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 a = Analysis(
     ['src\\file_renamer\\gui.py'],
-    pathex=['D:\\workspace\\work_tools\\.venv\\Lib\\site-packages'],
+    pathex=['d:\\workspace\\work_tools\\.venv\\Lib\\site-packages'],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
