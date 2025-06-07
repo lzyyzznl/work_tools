@@ -258,7 +258,7 @@ class FileMatcherGUI(QMainWindow):
         # 添加版权信息
         copyright_layout = QHBoxLayout()
         copyright_layout.addStretch()
-        copyright_label = QLabel("作者:lizeyu  @版权所有,请勿随意传播与商用")
+        copyright_label = QLabel("作者:荔枝鱼  @版权所有,请勿随意传播与商用")
         copyright_label.setStyleSheet(
             """
             QLabel {

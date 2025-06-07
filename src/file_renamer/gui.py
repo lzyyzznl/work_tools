@@ -364,7 +364,7 @@ class FileRenamer(QMainWindow):
         """Creates the application's status bar."""
         status_bar = QStatusBar()
         self.setStatusBar(status_bar)
-        status_bar.addPermanentWidget(QLabel(f"作者:lizeyu  v{self.version} @版权所有"))
+        status_bar.addPermanentWidget(QLabel(f"作者:荔枝鱼  v{self.version} @版权所有"))
     
     # ----------------------------------------------------------------------
     # Event Handling Methods
@@ -877,7 +877,7 @@ Delete        - 移除选中的文件
 - 只处理选中的文件，提高安全性
 
 版本：v2.0.0
-作者：lizeyu
+作者：荔枝鱼
 """
             try:
                 with open(help_file_path, 'w', encoding='utf-8') as f:

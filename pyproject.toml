@@ -6,7 +6,7 @@ build-backend = "uv"
 name = "windows_small_tools"
 version = "1.0.0"
 description = "Windows小工具集合：文件前缀处理工具和文件名匹配工具"
-authors = [{ name = "lizeyu", email = "632795136@qq.com" }]
+authors = [{ name = "荔枝鱼", email = "632795136@qq.com" }]
 dependencies = [
   "PyQt5>=5.15.0",
   "pyinstaller>=6.0.0",
