@@ -61,15 +61,26 @@ class FileRenamer(QMainWindow):
 
         # --- Setup Paths and Icons ---
         try:
-            base_path = sys._MEIPASS
+            base_path = sys._MEIPASS  # PyInstaller临时目录
         except AttributeError:
             base_path = os.path.dirname(os.path.abspath(__file__)).rsplit(f"{os.sep}src{os.sep}", 1)[0]
 
-        self.resource_path = os.path.join(base_path, "src", "resource")
+        # 修复打包后的资源路径问题
+        if hasattr(sys, '_MEIPASS'):
+            # 在打包的exe中，资源文件被复制到resource文件夹
+            self.resource_path = os.path.join(base_path, "resource")
+        else:
+            # 在开发环境中，保持原有路径
+            self.resource_path = os.path.join(base_path, "src", "resource")
         
         icon_path = os.path.join(self.resource_path, "icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
+        else:
+            # 如果PNG图标不存在，尝试加载ICO图标
+            ico_path = os.path.join(self.resource_path, "icon.ico")
+            if os.path.exists(ico_path):
+                self.setWindowIcon(QIcon(ico_path))
         
         # --- Enable Drag and Drop ---
         self.setAcceptDrops(True)
@@ -415,15 +426,15 @@ class FileRenamer(QMainWindow):
             QLabel { 
                 color: #1d1d1f; 
                 font-weight: 600; 
-                font-size: 15px;
+                font-size: 17px;
                 font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
             }
             QLineEdit {
                 border: 1px solid rgba(0, 0, 0, 0.1);
                 border-radius: 8px;
-                padding: 10px 14px;
+                padding: 12px 16px;
                 background: rgba(255, 255, 255, 0.8);
-                font-size: 14px;
+                font-size: 16px;
                 font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
                 font-weight: 400;
                 selection-background-color: #007AFF;
@@ -459,15 +470,15 @@ class FileRenamer(QMainWindow):
             QLabel { 
                 color: #1d1d1f; 
                 font-weight: 600; 
-                font-size: 15px;
+                font-size: 17px;
                 font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
             }
             QLineEdit {
                 border: 1px solid rgba(0, 0, 0, 0.1);
                 border-radius: 8px;
-                padding: 10px 14px;
+                padding: 12px 16px;
                 background: rgba(255, 255, 255, 0.8);
-                font-size: 14px;
+                font-size: 16px;
                 font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
                 font-weight: 400;
                 selection-background-color: #007AFF;
@@ -484,10 +495,10 @@ class FileRenamer(QMainWindow):
             QRadioButton {
                 color: #1d1d1f;
                 font-weight: 500;
-                font-size: 14px;
+                font-size: 16px;
                 font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
                 spacing: 8px;
-                padding: 6px;
+                padding: 8px;
             }
             QRadioButton::indicator {
                 width: 18px;
@@ -527,15 +538,15 @@ class FileRenamer(QMainWindow):
             QLabel { 
                 color: #1d1d1f; 
                 font-weight: 600; 
-                font-size: 15px;
+                font-size: 17px;
                 font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
             }
             QLineEdit {
                 border: 1px solid rgba(0, 0, 0, 0.1);
                 border-radius: 8px;
-                padding: 10px 14px;
+                padding: 12px 16px;
                 background: rgba(255, 255, 255, 0.8);
-                font-size: 14px;
+                font-size: 16px;
                 font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
                 font-weight: 400;
                 selection-background-color: #007AFF;
@@ -552,10 +563,10 @@ class FileRenamer(QMainWindow):
             QRadioButton {
                 color: #1d1d1f;
                 font-weight: 500;
-                font-size: 14px;
+                font-size: 16px;
                 font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
                 spacing: 8px;
-                padding: 6px;
+                padding: 8px;
             }
             QRadioButton::indicator {
                 width: 18px;
