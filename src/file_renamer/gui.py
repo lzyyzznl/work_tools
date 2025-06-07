@@ -51,6 +51,9 @@ class FileRenamer(QMainWindow):
         self.files_data = []
         self.history = []
         
+        # 设置苹果风格字体系统
+        self.setup_apple_fonts()
+        
         # Auto-preview timer - delays preview update by 0.3 seconds after user input
         self.preview_timer = QTimer()
         self.preview_timer.setSingleShot(True)
@@ -72,6 +75,117 @@ class FileRenamer(QMainWindow):
         self.setAcceptDrops(True)
 
         self.init_ui()
+
+    def setup_apple_fonts(self):
+        """设置苹果官网风格的字体系统"""
+        from PyQt5.QtGui import QFont, QFontDatabase
+        
+        # 苹果字体优先级：PingFang SC > SF Pro > System UI > 备选字体
+        apple_font_families = [
+            "PingFang SC",           # 苹方字体 (macOS/iOS中文)
+            "SF Pro Display",        # 苹果无衬线字体
+            "SF Pro Text",           # 苹果文本字体
+            "system-ui",             # 系统UI字体
+            "-apple-system",         # 苹果系统字体
+            "BlinkMacSystemFont",    # Webkit苹果字体
+            "Helvetica Neue",        # 苹果经典字体
+            "Microsoft YaHei UI",    # 微软雅黑UI (Windows中文)
+            "Segoe UI",              # Windows系统字体
+            "Arial",                 # 备选字体
+            "sans-serif"             # 最终备选
+        ]
+        
+        # 检查可用字体
+        font_db = QFontDatabase()
+        available_fonts = font_db.families()
+        
+        selected_font_family = "Arial"  # 默认备选
+        for font_family in apple_font_families:
+            if font_family in available_fonts:
+                selected_font_family = font_family
+                break
+        
+        # 设置全局字体
+        app_font = QFont(selected_font_family, 14)
+        app_font.setWeight(QFont.Normal)
+        app_font.setStyleHint(QFont.SansSerif)
+        app_font.setHintingPreference(QFont.PreferFullHinting)
+        
+        # 应用到整个应用程序
+        QApplication.instance().setFont(app_font)
+        
+        # 设置窗口级别的样式
+        self.setStyleSheet(f"""
+            QMainWindow {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 14px;
+                font-weight: 400;
+                color: #1d1d1f;
+            }}
+            
+            /* 标题级别字体 */
+            QLabel {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 14px;
+                font-weight: 500;
+                color: #1d1d1f;
+            }}
+            
+            /* 按钮字体 */
+            QPushButton, QToolButton {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 14px;
+                font-weight: 600;
+                color: #1d1d1f;
+            }}
+            
+            /* 输入框字体 */
+            QLineEdit, QTextEdit, QPlainTextEdit {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 14px;
+                font-weight: 400;
+                color: #1d1d1f;
+            }}
+            
+            /* 表格字体 */
+            QTableWidget, QTableView, QHeaderView {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 13px;
+                font-weight: 400;
+                color: #1d1d1f;
+            }}
+            
+            QHeaderView::section {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 13px;
+                font-weight: 600;
+                color: #1d1d1f;
+            }}
+            
+            /* 菜单字体 */
+            QMenu, QMenuBar {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 14px;
+                font-weight: 400;
+                color: #1d1d1f;
+            }}
+            
+            /* 状态栏字体 */
+            QStatusBar {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 12px;
+                font-weight: 400;
+                color: #6e6e73;
+            }}
+            
+            /* 复选框和单选按钮字体 */
+            QCheckBox, QRadioButton {{
+                font-family: {selected_font_family}, "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 14px;
+                font-weight: 500;
+                color: #1d1d1f;
+            }}
+        """)
 
     # ----------------------------------------------------------------------
     # UI Creation Methods
@@ -138,9 +252,23 @@ class FileRenamer(QMainWindow):
         toolbar.setIconSize(QSize(28, 28))
         toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         toolbar.setStyleSheet("""
-            QToolBar { padding: 8px; border: none; }
-            QToolButton { padding: 10px; font-size: 14px; font-weight: bold; border-radius: 5px; }
-            QToolButton:hover { background-color: #e8e8e8; }
+            QToolBar { 
+                padding: 8px; 
+                border: none;
+                font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+            }
+            QToolButton { 
+                padding: 10px; 
+                font-size: 14px; 
+                font-weight: 600; 
+                border-radius: 8px;
+                font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                color: #1d1d1f;
+            }
+            QToolButton:hover { 
+                background-color: rgba(0, 0, 0, 0.05);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
         """)
         self.addToolBar(toolbar)
         style = self.style()
@@ -154,15 +282,34 @@ class FileRenamer(QMainWindow):
             toolbar.addAction(action)
             return action
 
-        # Add actions with shortcuts
-        add_action(style.standardIcon(QStyle.SP_FileIcon), "添加文件", self.add_files, "Ctrl+O")
-        add_action(style.standardIcon(QStyle.SP_DirIcon), "添加文件夹", self.add_folder, "Ctrl+Shift+O")
+        def get_icon(icon_name):
+            """Load custom icon from resource folder, fallback to system icon if not found."""
+            icon_path = os.path.join(self.resource_path, f"{icon_name}.png")
+            if os.path.exists(icon_path):
+                return QIcon(icon_path)
+            else:
+                # Fallback to system icons
+                icon_mapping = {
+                    "添加文件": QStyle.SP_FileIcon,
+                    "添加文件夹": QStyle.SP_DirIcon,
+                    "预览": QStyle.SP_BrowserReload,
+                    "重置参数": QStyle.SP_DialogResetButton,
+                    "执行": QStyle.SP_DialogApplyButton,
+                    "撤回": QStyle.SP_ArrowBack,
+                    "清空参数": QStyle.SP_TrashIcon,
+                    "使用说明": QStyle.SP_FileDialogDetailedView
+                }
+                return style.standardIcon(icon_mapping.get(icon_name, QStyle.SP_ComputerIcon))
+
+        # Add actions with custom icons and shortcuts
+        add_action(get_icon("添加文件"), "添加文件", self.add_files, "Ctrl+O")
+        add_action(get_icon("添加文件夹"), "添加文件夹", self.add_folder, "Ctrl+Shift+O")
         toolbar.addSeparator()
-        add_action(style.standardIcon(QStyle.SP_BrowserReload), "预览", self.preview_changes, "F5")
-        add_action(style.standardIcon(QStyle.SP_DialogResetButton), "重置参数", self.reset_parameters, "Ctrl+R")
+        add_action(get_icon("预览"), "预览", self.preview_changes, "F5")
+        add_action(get_icon("重置参数"), "重置参数", self.reset_parameters, "Ctrl+R")
         toolbar.addSeparator()
         
-        execute_action = QAction(style.standardIcon(QStyle.SP_DialogApplyButton), "执行", self)
+        execute_action = QAction(get_icon("执行"), "执行", self)
         execute_action.triggered.connect(self.execute_rename)
         execute_action.setShortcut("Ctrl+Enter")
         execute_action.setToolTip("执行 (Ctrl+Enter)")
@@ -172,7 +319,7 @@ class FileRenamer(QMainWindow):
         
         toolbar.addSeparator()
         
-        self.undo_action = QAction(style.standardIcon(QStyle.SP_ArrowBack), "撤回", self)
+        self.undo_action = QAction(get_icon("撤回"), "撤回", self)
         self.undo_action.triggered.connect(self.undo_last_operation)
         self.undo_action.setEnabled(False)
         self.undo_action.setShortcut("Ctrl+Z")
@@ -182,20 +329,119 @@ class FileRenamer(QMainWindow):
             button.setStyleSheet("font-weight: bold; color: red;")
         
         toolbar.addSeparator()
-        add_action(style.standardIcon(QStyle.SP_TrashIcon), "清空列表", self.clear_file_list, "Ctrl+Delete")
-        add_action(style.standardIcon(QStyle.SP_FileDialogDetailedView), "使用说明", self.show_help, "F1")
+        add_action(get_icon("清空参数"), "清空列表", self.clear_file_list, "Ctrl+Delete")
+        add_action(get_icon("使用说明"), "使用说明", self.show_help, "F1")
 
     def create_operation_tabs(self):
         """Creates and configures the QTabWidget for renaming operations."""
         tabs = QTabWidget()
         tabs.setStyleSheet("""
-            QTabBar::tab { font-size: 14px; font-weight: bold; padding: 10px 18px; }
-            QTabWidget::pane { border: 1px solid #CCC; border-top: none; }
-            QTabBar::tab:selected { background-color: #f0f0f0; border: 1px solid #999; border-bottom: none; }
+            /* 主容器样式 */
+            QTabWidget {
+                border: none;
+                background: transparent;
+            }
+            
+            /* 标签栏样式 */
+            QTabBar {
+                border: none;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                margin: 2px;
+            }
+            
+            /* 标签页基础样式 */
+            QTabBar::tab {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 0.9),
+                    stop:1 rgba(245, 245, 247, 0.9));
+                color: #1d1d1f;
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 10px;
+                padding: 12px 20px;
+                margin: 3px 2px;
+                font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-size: 15px;
+                font-weight: 600;
+                min-width: 100px;
+                text-align: center;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            
+            /* 标签页悬停效果 */
+            QTabBar::tab:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 1.0),
+                    stop:1 rgba(250, 250, 252, 1.0));
+                border: 1px solid rgba(0, 0, 0, 0.15);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                transform: translateY(-1px);
+            }
+            
+            /* 选中标签页样式 - 苹果蓝色 */
+            QTabBar::tab:selected {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #007AFF,
+                    stop:1 #0051D5);
+                color: white;
+                border: 1px solid #0051D5;
+                box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+                font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-weight: 700;
+            }
+            
+            /* 内容面板样式 */
+            QTabWidget::pane {
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 12px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 0.98),
+                    stop:1 rgba(250, 250, 252, 0.98));
+                margin-top: 2px;
+                box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+                backdrop-filter: blur(10px);
+            }
+            
+            /* 内容面板顶部圆角调整 */
+            QTabWidget::tab-bar {
+                alignment: left;
+            }
         """)
         
         # --- Tab 1: Replace String ---
-        replace_widget = QWidget(); replace_layout = QHBoxLayout(replace_widget)
+        replace_widget = QWidget()
+        replace_widget.setStyleSheet("""
+            QWidget { background: transparent; }
+            QLabel { 
+                color: #1d1d1f; 
+                font-weight: 600; 
+                font-size: 15px;
+                font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+            }
+            QLineEdit {
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                padding: 10px 14px;
+                background: rgba(255, 255, 255, 0.8);
+                font-size: 14px;
+                font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-weight: 400;
+                selection-background-color: #007AFF;
+                color: #1d1d1f;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007AFF;
+                background: rgba(255, 255, 255, 1.0);
+            }
+            QLineEdit::placeholder {
+                color: #8e8e93;
+                font-weight: 400;
+            }
+        """)
+        replace_layout = QHBoxLayout(replace_widget)
+        replace_layout.setSpacing(15)
+        replace_layout.setContentsMargins(20, 15, 20, 15)
+        
         self.replace_from = QLineEdit(placeholderText="查找的字符串")
         self.replace_to = QLineEdit(placeholderText="替换为的字符串")
         # Add auto-preview listeners
@@ -207,7 +453,61 @@ class FileRenamer(QMainWindow):
         tabs.addTab(replace_widget, "替换字符串")
 
         # --- Tab 2: Add Prefix/Suffix ---
-        add_widget = QWidget(); add_layout = QHBoxLayout(add_widget)
+        add_widget = QWidget()
+        add_widget.setStyleSheet("""
+            QWidget { background: transparent; }
+            QLabel { 
+                color: #1d1d1f; 
+                font-weight: 600; 
+                font-size: 15px;
+                font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+            }
+            QLineEdit {
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                padding: 10px 14px;
+                background: rgba(255, 255, 255, 0.8);
+                font-size: 14px;
+                font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-weight: 400;
+                selection-background-color: #007AFF;
+                color: #1d1d1f;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007AFF;
+                background: rgba(255, 255, 255, 1.0);
+            }
+            QLineEdit::placeholder {
+                color: #8e8e93;
+                font-weight: 400;
+            }
+            QRadioButton {
+                color: #1d1d1f;
+                font-weight: 500;
+                font-size: 14px;
+                font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                spacing: 8px;
+                padding: 6px;
+            }
+            QRadioButton::indicator {
+                width: 18px;
+                height: 18px;
+                border-radius: 9px;
+                border: 2px solid rgba(0, 0, 0, 0.15);
+                background: rgba(255, 255, 255, 0.9);
+            }
+            QRadioButton::indicator:checked {
+                background: #007AFF;
+                border: 2px solid #007AFF;
+            }
+            QRadioButton::indicator:hover {
+                border: 2px solid rgba(0, 122, 255, 0.5);
+            }
+        """)
+        add_layout = QHBoxLayout(add_widget)
+        add_layout.setSpacing(15)
+        add_layout.setContentsMargins(20, 15, 20, 15)
+        
         self.add_text = QLineEdit(placeholderText="要添加的文本")
         self.add_text.textChanged.connect(self.start_preview_timer)
         self.position_group = QButtonGroup()
@@ -220,7 +520,62 @@ class FileRenamer(QMainWindow):
         tabs.addTab(add_widget, "添加前缀/后缀")
 
         # --- Tab 3: Add Sequential Numbers ---
-        number_widget = QWidget(); number_layout = QVBoxLayout(number_widget)
+        number_widget = QWidget()
+        # 定义苹果风格的通用样式
+        apple_tab_style = """
+            QWidget { background: transparent; }
+            QLabel { 
+                color: #1d1d1f; 
+                font-weight: 600; 
+                font-size: 15px;
+                font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+            }
+            QLineEdit {
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                padding: 10px 14px;
+                background: rgba(255, 255, 255, 0.8);
+                font-size: 14px;
+                font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-weight: 400;
+                selection-background-color: #007AFF;
+                color: #1d1d1f;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007AFF;
+                background: rgba(255, 255, 255, 1.0);
+            }
+            QLineEdit::placeholder {
+                color: #8e8e93;
+                font-weight: 400;
+            }
+            QRadioButton {
+                color: #1d1d1f;
+                font-weight: 500;
+                font-size: 14px;
+                font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                spacing: 8px;
+                padding: 6px;
+            }
+            QRadioButton::indicator {
+                width: 18px;
+                height: 18px;
+                border-radius: 9px;
+                border: 2px solid rgba(0, 0, 0, 0.15);
+                background: rgba(255, 255, 255, 0.9);
+            }
+            QRadioButton::indicator:checked {
+                background: #007AFF;
+                border: 2px solid #007AFF;
+            }
+            QRadioButton::indicator:hover {
+                border: 2px solid rgba(0, 122, 255, 0.5);
+            }
+        """
+        number_widget.setStyleSheet(apple_tab_style)
+        number_layout = QVBoxLayout(number_widget)
+        number_layout.setSpacing(15)
+        number_layout.setContentsMargins(20, 15, 20, 15)
         row1_layout = QHBoxLayout()
         self.number_position_group = QButtonGroup()
         num_prefix_radio = QRadioButton("前缀"); num_prefix_radio.setChecked(True)
@@ -253,7 +608,11 @@ class FileRenamer(QMainWindow):
         tabs.addTab(number_widget, "批量添加序号")
         
         # --- Tab 4: Delete Characters ---
-        delete_widget = QWidget(); delete_layout = QVBoxLayout(delete_widget)
+        delete_widget = QWidget()
+        delete_widget.setStyleSheet(apple_tab_style)
+        delete_layout = QVBoxLayout(delete_widget)
+        delete_layout.setSpacing(15)
+        delete_layout.setContentsMargins(20, 15, 20, 15)
         row1_layout = QHBoxLayout()
         self.delete_direction_group = QButtonGroup()
         left_radio = QRadioButton("从左开始"); left_radio.setChecked(True)
@@ -299,17 +658,37 @@ class FileRenamer(QMainWindow):
         # Main message
         title_label = QLabel("拖拽文件或文件夹到此处")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("font-size: 32px; font-weight: bold; color: #495057; margin-bottom: 15px; border: none;")
+        title_label.setStyleSheet("""
+            font-size: 32px; 
+            font-weight: 700; 
+            color: #1d1d1f; 
+            margin-bottom: 15px; 
+            border: none;
+            font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+        """)
         
         # Subtitle
         subtitle_label = QLabel("或使用上方工具栏的\"添加文件\"、\"添加文件夹\"按钮")
         subtitle_label.setAlignment(Qt.AlignCenter)
-        subtitle_label.setStyleSheet("font-size: 20px; color: #6c757d; margin-bottom: 25px; border: none;")
+        subtitle_label.setStyleSheet("""
+            font-size: 18px; 
+            color: #6e6e73; 
+            margin-bottom: 25px; 
+            border: none;
+            font-weight: 500;
+            font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+        """)
         
         # Tips
         tips_label = QLabel("💡 支持的快捷键：Ctrl+O (添加文件)、Ctrl+Shift+O (添加文件夹)")
         tips_label.setAlignment(Qt.AlignCenter)
-        tips_label.setStyleSheet("font-size: 16px; color: #868e96; border: none;")
+        tips_label.setStyleSheet("""
+            font-size: 14px; 
+            color: #8e8e93; 
+            border: none;
+            font-weight: 400;
+            font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+        """)
         
         empty_layout.addWidget(icon_label)
         empty_layout.addWidget(title_label)
