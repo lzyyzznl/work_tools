@@ -20,14 +20,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class FilePrefixAdderBuilder:
-    """文件前缀添加工具打包类"""
+class FileRenamerBuilder:
+    """批量文件重命名工具打包类"""
 
     def __init__(self):
-        self.app_name = "文件名修改神器"
-        self.entry_point = "src/file_prefix_adder/gui.py"
+        self.app_name = "批量文件重命名工具"
+        self.entry_point = "src/file_renamer/gui.py"
         self.data_files = [
-            ("src/file_prefix_adder", "file_prefix_adder"),
+            ("src/file_renamer", "file_renamer"),
+            ("src/resource", "resource"),
         ]
 
     def check_python_version(self):
@@ -106,7 +107,8 @@ class FilePrefixAdderBuilder:
             "--onefile",
             "--windowed",
             "--noconfirm",
-            "--add-data=src/file_prefix_adder;file_prefix_adder",
+            "--add-data=src/file_renamer;file_renamer",
+            "--add-data=src/resource;resource",
             "--collect-all",
             "PyQt5",
             "--icon=src/resource/icon.ico",
@@ -125,7 +127,7 @@ class FilePrefixAdderBuilder:
 
     def run(self):
         """执行打包流程"""
-        logger.info("=== 开始构建文件前缀添加工具 ===")
+        logger.info("=== 开始构建批量文件重命名工具 ===")
         self.check_python_version()
         self.check_dependencies()
         self.clean_build()
@@ -133,5 +135,5 @@ class FilePrefixAdderBuilder:
 
 
 if __name__ == "__main__":
-    builder = FilePrefixAdderBuilder()
+    builder = FileRenamerBuilder()
     builder.run()
