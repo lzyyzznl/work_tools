@@ -471,12 +471,12 @@ class FileRenamer(QMainWindow):
             # 在开发环境中，保持原有路径
             self.resource_path = os.path.join(base_path, "src", "resource")
         
-        icon_path = os.path.join(self.resource_path, "icon.png")
+        icon_path = os.path.join(self.resource_path, "打印机.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         else:
             # 如果PNG图标不存在，尝试加载ICO图标
-            ico_path = os.path.join(self.resource_path, "icon.ico")
+            ico_path = os.path.join(self.resource_path, "打印机.ico")
             if os.path.exists(ico_path):
                 self.setWindowIcon(QIcon(ico_path))
         
