@@ -31,10 +31,404 @@ from PyQt5.QtWidgets import (
     QStyle,
     QInputDialog,
 )
-from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QDateTime
-from PyQt5.QtGui import QDesktopServices, QKeySequence, QIcon, QColor, QCursor
-from PyQt5.QtWidgets import QShortcut
+from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QDateTime, QSettings
+from PyQt5.QtGui import QDesktopServices, QKeySequence, QIcon, QColor, QCursor, QPixmap
+from PyQt5.QtWidgets import QShortcut, QDialog, QFormLayout, QDialogButtonBox, QKeySequenceEdit, QScrollArea
 import shutil
+import json
+
+
+class CustomKeySequenceEdit(QKeySequenceEdit):
+    """自定义快捷键输入控件，带有特效和提示"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.placeholder_text = "请输入快捷键"
+        self.is_focused = False
+        self.setup_style()
+    
+    def setup_style(self):
+        """设置样式"""
+        self.setStyleSheet("""
+            QKeySequenceEdit {
+                border: 2px solid rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                padding: 12px 16px;
+                background: rgba(255, 255, 255, 0.9);
+                font-size: 14px;
+                font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-weight: 400;
+                color: #1d1d1f;
+                min-height: 20px;
+            }
+            QKeySequenceEdit:focus {
+                border: 3px solid #007AFF;
+                background: rgba(255, 255, 255, 1.0);
+                box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+            }
+            QKeySequenceEdit:hover {
+                background: rgba(255, 255, 255, 1.0);
+                border: 2px solid rgba(0, 0, 0, 0.2);
+            }
+        """)
+    
+    def focusInEvent(self, event):
+        """获得焦点时的特效"""
+        super().focusInEvent(event)
+        self.is_focused = True
+        self.update()  # 触发重绘来隐藏占位符
+        # 添加选中特效动画
+        self.setStyleSheet("""
+            QKeySequenceEdit {
+                border: 3px solid #007AFF;
+                border-radius: 8px;
+                padding: 12px 16px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(0, 122, 255, 0.1),
+                    stop:1 rgba(255, 255, 255, 1.0));
+                font-size: 14px;
+                font-family: "PingFang SC", "SF Pro Text", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+                font-weight: 400;
+                color: #1d1d1f;
+                min-height: 20px;
+                box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+            }
+        """)
+    
+    def focusOutEvent(self, event):
+        """失去焦点时恢复样式"""
+        super().focusOutEvent(event)
+        self.is_focused = False
+        self.setup_style()
+        self.update()  # 触发重绘来显示占位符
+    
+    def paintEvent(self, event):
+        """自定义绘制，显示占位符文本"""
+        super().paintEvent(event)
+        
+        # 如果没有设置快捷键且没有焦点，显示占位符
+        if self.keySequence().isEmpty() and not self.is_focused:
+            from PyQt5.QtGui import QPainter, QColor, QFont as QtFont
+            from PyQt5.QtCore import Qt
+            
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.Antialiasing)
+            
+            # 设置占位符文本样式
+            painter.setPen(QColor(142, 142, 147))  # 灰色文本
+            font = QtFont("PingFang SC", 12)
+            font.setItalic(True)
+            painter.setFont(font)
+            
+            # 绘制占位符文本
+            rect = self.rect()
+            rect.setLeft(rect.left() + 16)  # 左边距
+            painter.drawText(rect, Qt.AlignLeft | Qt.AlignVCenter, self.placeholder_text)
+            
+            painter.end()
+
+
+class ShortcutSettingsDialog(QDialog):
+    """快捷键设置对话框"""
+    
+    def __init__(self, parent=None, current_shortcuts=None):
+        super().__init__(parent)
+        self.setWindowTitle("快捷键设置")
+        self.setModal(True)
+        self.setFixedSize(600, 500)
+        
+        # 移除标题栏的问号帮助按钮
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        
+        # 设置苹果风格的样式
+        self.setStyleSheet("""
+            QDialog {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(248, 249, 250, 1.0),
+                    stop:1 rgba(255, 255, 255, 1.0));
+                border-radius: 12px;
+                font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+            }
+            QLabel {
+                color: #1d1d1f;
+                font-weight: 600;
+                font-size: 14px;
+                border: none;
+                background: transparent;
+            }
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 0.9),
+                    stop:1 rgba(245, 245, 247, 0.9));
+                color: #1d1d1f;
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-size: 14px;
+                font-weight: 600;
+                min-height: 20px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 1.0),
+                    stop:1 rgba(250, 250, 252, 1.0));
+                border: 1px solid rgba(0, 0, 0, 0.15);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(240, 240, 242, 1.0),
+                    stop:1 rgba(235, 235, 237, 1.0));
+            }
+            QScrollArea {
+                border: none;
+                background: transparent;
+                border-radius: 8px;
+            }
+            QScrollArea QWidget {
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                background: rgba(0, 0, 0, 0.05);
+                width: 8px;
+                border-radius: 4px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: rgba(0, 0, 0, 0.5);
+            }
+        """)
+        
+        # 默认快捷键配置
+        self.default_shortcuts = {
+            "添加文件": "Ctrl+O",
+            "添加文件夹": "Ctrl+Shift+O", 
+            "预览更改": "F6",
+            "重置参数": "Ctrl+R",
+            "执行重命名": "Ctrl+Return",
+            "撤回操作": "Ctrl+Z",
+            "清空列表": "Ctrl+Delete",
+            "显示帮助": "F1",
+            "刷新文件列表": "F5",
+            "聚焦所有文件": "Ctrl+A",
+            "移除选中文件": "Delete"
+        }
+        
+        # 使用传入的快捷键或默认快捷键
+        self.shortcuts = current_shortcuts or self.default_shortcuts.copy()
+        
+        self.init_ui()
+    
+    def init_ui(self):
+        """初始化用户界面"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(20)
+        
+        # 添加标题区域
+        title_widget = QWidget()
+        title_layout = QVBoxLayout(title_widget)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        
+        title_label = QLabel("快捷键设置")
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1d1d1f;
+                margin-bottom: 8px;
+            }
+        """)
+        title_layout.addWidget(title_label)
+        
+        subtitle_label = QLabel("自定义您的快捷键，提升工作效率")
+        subtitle_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                font-weight: 400;
+                color: #6e6e73;
+                margin-bottom: 0px;
+            }
+        """)
+        title_layout.addWidget(subtitle_label)
+        
+        layout.addWidget(title_widget)
+        
+        # 创建滚动区域
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
+        # 创建滚动内容widget
+        scroll_content = QWidget()
+        form_layout = QFormLayout(scroll_content)
+        form_layout.setSpacing(15)
+        form_layout.setContentsMargins(10, 10, 10, 10)
+        
+        self.shortcut_editors = {}
+        
+        for action_name, shortcut in self.shortcuts.items():
+            # 创建标签
+            label = QLabel(f"{action_name}:")
+            label.setStyleSheet("""
+                QLabel {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #1d1d1f;
+                    min-width: 120px;
+                }
+            """)
+            
+            # 创建自定义快捷键编辑器
+            editor = CustomKeySequenceEdit()
+            editor.setKeySequence(QKeySequence(shortcut))
+            
+            form_layout.addRow(label, editor)
+            self.shortcut_editors[action_name] = editor
+        
+        scroll_area.setWidget(scroll_content)
+        layout.addWidget(scroll_area)
+        
+        # 添加按钮区域
+        button_widget = QWidget()
+        button_layout = QHBoxLayout(button_widget)
+        button_layout.setContentsMargins(0, 10, 0, 0)
+        
+        # 恢复默认按钮
+        reset_button = QPushButton("🔄 恢复默认")
+        reset_button.clicked.connect(self.reset_to_defaults)
+        reset_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 149, 0, 0.9),
+                    stop:1 rgba(255, 124, 0, 0.9));
+                color: white;
+                font-weight: 700;
+                padding: 10px 20px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 149, 0, 1.0),
+                    stop:1 rgba(255, 124, 0, 1.0));
+            }
+        """)
+        button_layout.addWidget(reset_button)
+        
+        button_layout.addStretch()
+        
+        # 标准对话框按钮
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.button(QDialogButtonBox.Ok).setText("确定")
+        button_box.button(QDialogButtonBox.Cancel).setText("取消")
+        
+        # 设置确定按钮为蓝色主题
+        ok_button = button_box.button(QDialogButtonBox.Ok)
+        ok_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #007AFF,
+                    stop:1 #0051D5);
+                color: white;
+                font-weight: 700;
+                padding: 10px 24px;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #0056CC,
+                    stop:1 #003D9F);
+            }
+        """)
+        
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        button_layout.addWidget(button_box)
+        
+        layout.addWidget(button_widget)
+    
+    def reset_to_defaults(self):
+        """恢复默认快捷键"""
+        reply = QMessageBox.question(self, "确认恢复", 
+                                   "确定要恢复所有快捷键到默认设置吗？\n这将覆盖您当前的自定义配置。",
+                                   QMessageBox.Yes | QMessageBox.No, 
+                                   QMessageBox.No)
+        
+        if reply == QMessageBox.Yes:
+            for action_name, default_shortcut in self.default_shortcuts.items():
+                if action_name in self.shortcut_editors:
+                    self.shortcut_editors[action_name].setKeySequence(QKeySequence(default_shortcut))
+    
+    def get_shortcuts(self):
+        """获取当前设置的快捷键"""
+        result = {}
+        for action_name, editor in self.shortcut_editors.items():
+            sequence = editor.keySequence()
+            result[action_name] = sequence.toString() if not sequence.isEmpty() else ""
+        return result
+    
+    def validate_shortcuts(self):
+        """验证快捷键是否有冲突"""
+        shortcuts = self.get_shortcuts()
+        used_shortcuts = {}
+        conflicts = []
+        
+        for action_name, shortcut in shortcuts.items():
+            if shortcut and shortcut != "":
+                if shortcut in used_shortcuts:
+                    conflicts.append(f"'{shortcut}' 在 '{action_name}' 和 '{used_shortcuts[shortcut]}' 中重复")
+                else:
+                    used_shortcuts[shortcut] = action_name
+        
+        if conflicts:
+            QMessageBox.warning(self, "快捷键冲突", "发现以下快捷键冲突：\n\n" + "\n".join(conflicts))
+            return False
+        return True
+    
+    def accept(self):
+        """确认设置"""
+        if self.validate_shortcuts():
+            super().accept()
+
+
+class QuickTooltipLabel(QLabel):
+    """Custom QLabel with faster tooltip display (300ms delay)."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.tooltip_timer = QTimer()
+        self.tooltip_timer.setSingleShot(True)
+        self.tooltip_timer.timeout.connect(self._show_tooltip)
+        self._tooltip_text = ""
+    
+    def setToolTip(self, text):
+        """Set the tooltip text."""
+        self._tooltip_text = text
+    
+    def enterEvent(self, event):
+        """Show tooltip with 300ms delay when mouse enters."""
+        if self._tooltip_text:
+            self.tooltip_timer.start(300)
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event):
+        """Hide tooltip when mouse leaves."""
+        self.tooltip_timer.stop()
+        from PyQt5.QtWidgets import QToolTip
+        QToolTip.hideText()
+        super().leaveEvent(event)
+    
+    def _show_tooltip(self):
+        """Show the tooltip at cursor position."""
+        if self._tooltip_text:
+            from PyQt5.QtWidgets import QToolTip
+            from PyQt5.QtGui import QCursor
+            QToolTip.showText(QCursor.pos(), self._tooltip_text, self)
 
 
 class FileRenamer(QMainWindow):
@@ -50,6 +444,10 @@ class FileRenamer(QMainWindow):
         self.version = "2.0.0"
         self.files_data = []
         self.history = []
+        
+        # 快捷键配置 - 使用用户配置目录
+        self.shortcuts_config_file = self.get_config_file_path()
+        self.shortcuts = self.load_shortcuts_config()
         
         # 设置苹果风格字体系统
         self.setup_apple_fonts()
@@ -86,6 +484,70 @@ class FileRenamer(QMainWindow):
         self.setAcceptDrops(True)
 
         self.init_ui()
+
+    def load_shortcuts_config(self):
+        """加载快捷键配置"""
+        default_shortcuts = {
+            "添加文件": "Ctrl+O",
+            "添加文件夹": "Ctrl+Shift+O", 
+            "预览更改": "F6",
+            "重置参数": "Ctrl+R",
+            "执行重命名": "Ctrl+Return",
+            "撤回操作": "Ctrl+Z",
+            "清空列表": "Ctrl+Delete",
+            "显示帮助": "F1",
+            "刷新文件列表": "F5",
+            "聚焦所有文件": "Ctrl+A",
+            "移除选中文件": "Delete"
+        }
+        
+        try:
+            if os.path.exists(self.shortcuts_config_file):
+                with open(self.shortcuts_config_file, 'r', encoding='utf-8') as f:
+                    saved_shortcuts = json.load(f)
+                    # 确保所有默认快捷键都存在
+                    for key, value in default_shortcuts.items():
+                        if key not in saved_shortcuts:
+                            saved_shortcuts[key] = value
+                    return saved_shortcuts
+        except Exception as e:
+            print(f"Failed to load shortcuts config: {e}")
+        
+        return default_shortcuts
+
+    def save_shortcuts_config(self):
+        """保存快捷键配置"""
+        try:
+            with open(self.shortcuts_config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.shortcuts, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"保存快捷键配置失败：{e}")
+
+    def setup_shortcuts(self):
+        """设置快捷键"""
+        # 清除现有的快捷键
+        if hasattr(self, 'shortcut_objects'):
+            for shortcut in self.shortcut_objects:
+                shortcut.setParent(None)
+        
+        self.shortcut_objects = []
+        
+        # 快捷键与功能的映射
+        shortcut_mapping = {
+            "聚焦所有文件": (self.file_table, self.select_all_files),
+            "移除选中文件": (self.file_table, self.remove_selected_files),
+            "刷新文件列表": (self, self.refresh_file_list)
+        }
+        
+        # 为每个快捷键创建QShortcut对象
+        for action_name, shortcut_key in self.shortcuts.items():
+            if action_name in shortcut_mapping and shortcut_key:
+                parent, callback = shortcut_mapping[action_name]
+                try:
+                    shortcut = QShortcut(QKeySequence(shortcut_key), parent, callback)
+                    self.shortcut_objects.append(shortcut)
+                except Exception as e:
+                    print(f"Failed to create shortcut for {action_name}: {e}")
 
     def setup_apple_fonts(self):
         """设置苹果官网风格的字体系统"""
@@ -198,6 +660,35 @@ class FileRenamer(QMainWindow):
             }}
         """)
 
+    def get_config_file_path(self):
+        """获取配置文件路径，保存到用户配置目录"""
+        import os
+        import platform
+        
+        system = platform.system()
+        
+        if system == "Windows":
+            # Windows: 使用 %APPDATA% 目录
+            config_dir = os.path.join(os.environ.get('APPDATA', ''), 'FileRenamerTool')
+        elif system == "Darwin":  # macOS
+            # macOS: 使用 ~/Library/Application Support/
+            home_dir = os.path.expanduser('~')
+            config_dir = os.path.join(home_dir, 'Library', 'Application Support', 'FileRenamerTool')
+        else:  # Linux and others
+            # Linux: 使用 ~/.config/
+            home_dir = os.path.expanduser('~')
+            config_dir = os.path.join(home_dir, '.config', 'FileRenamerTool')
+        
+        # 确保配置目录存在
+        try:
+            os.makedirs(config_dir, exist_ok=True)
+        except Exception as e:
+            print(f"Failed to create config directory: {e}")
+            # 如果创建失败，回退到当前目录
+            return "shortcuts_config.json"
+        
+        return os.path.join(config_dir, 'shortcuts_config.json')
+
     # ----------------------------------------------------------------------
     # UI Creation Methods
     # ----------------------------------------------------------------------
@@ -254,8 +745,7 @@ class FileRenamer(QMainWindow):
         self.create_status_bar()
 
         # Setup keyboard shortcuts
-        QShortcut(QKeySequence.Delete, self.file_table, self.remove_selected_files)
-        QShortcut(QKeySequence.SelectAll, self.file_table, self.select_all_files)
+        self.setup_shortcuts()
 
     def create_toolbar(self):
         """Creates the main application toolbar."""
@@ -313,35 +803,41 @@ class FileRenamer(QMainWindow):
                 return style.standardIcon(icon_mapping.get(icon_name, QStyle.SP_ComputerIcon))
 
         # Add actions with custom icons and shortcuts
-        add_action(get_icon("添加文件"), "添加文件", self.add_files, "Ctrl+O")
-        add_action(get_icon("添加文件夹"), "添加文件夹", self.add_folder, "Ctrl+Shift+O")
+        add_action(get_icon("添加文件"), "添加文件", self.add_files, self.shortcuts.get("添加文件", "Ctrl+O"))
+        add_action(get_icon("添加文件夹"), "添加文件夹", self.add_folder, self.shortcuts.get("添加文件夹", "Ctrl+Shift+O"))
         toolbar.addSeparator()
-        add_action(get_icon("预览"), "预览", self.preview_changes, "F5")
-        add_action(get_icon("重置参数"), "重置参数", self.reset_parameters, "Ctrl+R")
+        add_action(get_icon("预览"), "预览", self.preview_changes, self.shortcuts.get("预览更改", "F6"))
+        add_action(get_icon("重置参数"), "重置参数", self.reset_parameters, self.shortcuts.get("重置参数", "Ctrl+R"))
         toolbar.addSeparator()
         
+        execute_shortcut = self.shortcuts.get("执行重命名", "Ctrl+Return")
         execute_action = QAction(get_icon("执行"), "执行", self)
         execute_action.triggered.connect(self.execute_rename)
-        execute_action.setShortcut("Ctrl+Enter")
-        execute_action.setToolTip("执行 (Ctrl+Enter)")
+        execute_action.setShortcut(execute_shortcut)
+        execute_action.setToolTip(f"执行 ({execute_shortcut})")
         toolbar.addAction(execute_action)
         if (button := toolbar.widgetForAction(execute_action)):
             button.setStyleSheet("font-weight: bold; color: green;")
         
         toolbar.addSeparator()
         
+        undo_shortcut = self.shortcuts.get("撤回操作", "Ctrl+Z")
         self.undo_action = QAction(get_icon("撤回"), "撤回", self)
         self.undo_action.triggered.connect(self.undo_last_operation)
         self.undo_action.setEnabled(False)
-        self.undo_action.setShortcut("Ctrl+Z")
-        self.undo_action.setToolTip("撤回 (Ctrl+Z)")
+        self.undo_action.setShortcut(undo_shortcut)
+        self.undo_action.setToolTip(f"撤回 ({undo_shortcut})")
         toolbar.addAction(self.undo_action)
         if (button := toolbar.widgetForAction(self.undo_action)):
             button.setStyleSheet("font-weight: bold; color: red;")
         
         toolbar.addSeparator()
-        add_action(get_icon("清空参数"), "清空列表", self.clear_file_list, "Ctrl+Delete")
-        add_action(get_icon("使用说明"), "使用说明", self.show_help, "F1")
+        add_action(get_icon("清空参数"), "清空列表", self.clear_file_list, self.shortcuts.get("清空列表", "Ctrl+Delete"))
+        add_action(get_icon("使用说明"), "使用说明", self.show_help, self.shortcuts.get("显示帮助", "F1"))
+        
+        # 添加设置菜单项
+        toolbar.addSeparator()
+        add_action(get_icon("设置快捷键"), "快捷键设置", self.show_shortcut_settings, "")
 
     def create_operation_tabs(self):
         """Creates and configures the QTabWidget for renaming operations."""
@@ -715,16 +1211,45 @@ class FileRenamer(QMainWindow):
         self.header_checkbox.stateChanged.connect(lambda s: self.toggle_all_checkboxes(Qt.CheckState(s)))
         select_all_layout.addWidget(self.header_checkbox)
         
-        # Add help tooltip icon
-        help_label = QLabel("❓")
+        # Add help tooltip icon using resource/提示.png with fast tooltip
+        help_label = QuickTooltipLabel()
+        help_pixmap = QPixmap(os.path.join(self.resource_path, "提示.png"))
+        # Scale the icon to larger size (32x32 instead of 16x16)
+        scaled_pixmap = help_pixmap.scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        help_label.setPixmap(scaled_pixmap)
         help_label.setToolTip("只会操作选中的文件，如果一个都不选就处理全部文件")
-        help_label.setStyleSheet("color: #666; font-size: 16px; margin-left: 5px;")
+        help_label.setStyleSheet("margin-left: 2px; padding: 1px;")
+        help_label.setCursor(QCursor(Qt.PointingHandCursor))
         select_all_layout.addWidget(help_label)
         select_all_layout.addStretch()
         
+        # Add refresh button on the right side
+        refresh_button = QPushButton("🔄")
+        refresh_shortcut = self.shortcuts.get("刷新文件列表", "F5")
+        refresh_button.setToolTip(f"刷新文件列表，更新文件信息并移除已删除的文件 ({refresh_shortcut})")
+        refresh_button.clicked.connect(self.refresh_file_list)
+        refresh_button.setFixedSize(32, 32)
+        refresh_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+                border-color: #999;
+            }
+            QPushButton:pressed {
+                background-color: #d0d0d0;
+            }
+        """)
+        select_all_layout.addWidget(refresh_button)
+        
         # Updated table structure: "", "当前文件名", "预览", "执行结果", "最后更新时间", "文件大小", "路径"
         table = QTableWidget(columnCount=7)
-        table.setHorizontalHeaderLabels(["", "当前文件名", "预览", "执行结果", "最后更新时间", "文件大小", "路径"])
+        table.setHorizontalHeaderLabels(["", "当前文件名", "预览", "执行结果", "最后更新时间", "文件大小", "路径(单击可打开)"])
         table.setSelectionBehavior(QAbstractItemView.SelectRows)
         table.setContextMenuPolicy(Qt.CustomContextMenu)
         table.customContextMenuRequested.connect(self.show_table_context_menu)
@@ -734,6 +1259,9 @@ class FileRenamer(QMainWindow):
         
         # Connect table item click handler
         table.itemClicked.connect(self.table_item_clicked)
+        
+        # Connect table item double click handler
+        table.itemDoubleClicked.connect(self.table_item_double_clicked)
         
         header = table.horizontalHeader()
         resize_modes = [
@@ -785,23 +1313,37 @@ class FileRenamer(QMainWindow):
             row = clicked_item.row()
             
             # Add context menu actions
-            rename_action = menu.addAction("重命名文件")
+            open_file_action = menu.addAction("打开文件")
             open_folder_action = menu.addAction("打开文件所在文件夹")
+            menu.addSeparator()
+            rename_action = menu.addAction("重命名文件")
+            menu.addSeparator()
+            refresh_action = menu.addAction("刷新文件列表")
             menu.addSeparator()
             remove_action = menu.addAction("从列表中移除")
             
             action = menu.exec_(self.file_table.mapToGlobal(position))
             
-            if action == rename_action:
+            if action == open_file_action:
+                self.open_file(row)
+            elif action == rename_action:
                 self.rename_single_file(row)
             elif action == open_folder_action:
                 self.open_file_folder(row)
+            elif action == refresh_action:
+                self.refresh_file_list()
             elif action == remove_action:
                 self.remove_selected_files()
         else:
             # No item clicked, show general menu
+            refresh_action = menu.addAction("刷新文件列表")
+            menu.addSeparator()
             remove_action = menu.addAction("从列表中移除选中项")
-            if menu.exec_(self.file_table.mapToGlobal(position)) == remove_action:
+            
+            action = menu.exec_(self.file_table.mapToGlobal(position))
+            if action == refresh_action:
+                self.refresh_file_list()
+            elif action == remove_action:
                 self.remove_selected_files()
 
     # ----------------------------------------------------------------------
@@ -1192,12 +1734,70 @@ class FileRenamer(QMainWindow):
         """Shows a temporary message in the status bar."""
         self.statusBar().showMessage(message, 5000)
 
+    def show_shortcut_settings(self):
+        """显示快捷键设置对话框"""
+        dialog = ShortcutSettingsDialog(self, self.shortcuts)
+        if dialog.exec_() == QDialog.Accepted:
+            # 保存新的快捷键配置
+            self.shortcuts = dialog.get_shortcuts()
+            self.save_shortcuts_config()
+            
+            # 重新设置快捷键
+            self.setup_shortcuts()
+            
+            # 重新创建工具栏以更新提示文本
+            self.recreate_toolbar()
+            
+            # 更新刷新按钮的提示文本
+            self.update_refresh_button_tooltip()
+            
+            self.update_status("快捷键设置已保存并生效。")
+
+    def recreate_toolbar(self):
+        """重新创建工具栏"""
+        # 移除现有工具栏
+        for toolbar in self.findChildren(QToolBar):
+            self.removeToolBar(toolbar)
+        
+        # 重新创建工具栏
+        self.create_toolbar()
+
+    def update_refresh_button_tooltip(self):
+        """更新刷新按钮的工具提示"""
+        # 这里需要找到刷新按钮并更新其工具提示
+        # 由于刷新按钮在 select_all_layout 中，我们需要重新创建文件表格
+        # 或者可以保存刷新按钮的引用
+        pass  # 这个方法在重新创建工具栏时会自动更新
+
     def show_help(self):
         """Shows the help documentation."""
         help_file_path = Path("使用说明.txt")
         
         # Create help file if it doesn't exist
-        if not help_file_path.exists():
+        if not help_file_path.exists() or True:  # Always recreate to show current shortcuts
+            # 生成快捷键帮助文本
+            shortcuts_help_lines = []
+            shortcut_descriptions = {
+                "添加文件": "添加文件",
+                "添加文件夹": "添加文件夹",
+                "预览更改": "预览更改", 
+                "重置参数": "重置参数",
+                "执行重命名": "执行重命名",
+                "撤回操作": "撤回操作",
+                "清空列表": "清空列表",
+                "显示帮助": "显示此帮助",
+                "刷新文件列表": "刷新文件列表",
+                "聚焦所有文件": "聚焦所有文件行",
+                "移除选中文件": "移除选中的文件"
+            }
+            
+            for action_name, description in shortcut_descriptions.items():
+                shortcut = self.shortcuts.get(action_name, "")
+                if shortcut:
+                    shortcuts_help_lines.append(f"{shortcut:<15} - {description}")
+            
+            shortcuts_help = "\n".join(shortcuts_help_lines)
+            
             help_content = """批量文件重命名工具 - 使用说明
 
 === 主要功能 ===
@@ -1224,16 +1824,7 @@ class FileRenamer(QMainWindow):
 
 === 快捷键 ===
 
-Ctrl+O        - 添加文件
-Ctrl+Shift+O  - 添加文件夹
-F5            - 预览更改
-Ctrl+R        - 重置参数
-Ctrl+Enter    - 执行重命名
-Ctrl+Z        - 撤回操作
-Ctrl+Delete   - 清空列表
-F1            - 显示此帮助
-Ctrl+A        - 选中所有文件
-Delete        - 移除选中的文件
+{shortcuts_help}
 
 === 操作说明 ===
 
@@ -1248,16 +1839,21 @@ Delete        - 移除选中的文件
 === 右键菜单 ===
 
 在文件列表中右键点击可以：
+- 打开文件：直接打开选中的文件
+- 打开文件所在文件夹：在资源管理器中打开文件夹
 - 重命名文件：直接编辑单个文件名
-- 打开文件所在文件夹：在资源管理器中打开
+- 刷新文件列表：更新文件信息，移除已删除的文件
 - 从列表中移除：移除不需要的文件
 
 === 表格功能 ===
 
 - 点击列标题可以排序
+- 双击文件名或预览列可以直接打开文件
 - 点击蓝色路径可以打开文件夹
 - 执行结果显示操作成功/失败状态
 - 显示文件最后更新时间和大小
+- 只会操作选中的文件，如果一个都不选就处理全部文件
+- 表头右侧的刷新按钮可以更新文件信息
 
 === 安全提示 ===
 
@@ -1268,7 +1864,9 @@ Delete        - 移除选中的文件
 
 版本：v2.0.0
 作者：荔枝鱼
-"""
+
+注意：快捷键可以在工具栏的"快捷键设置"中自定义
+""".format(shortcuts_help=shortcuts_help)
             try:
                 with open(help_file_path, 'w', encoding='utf-8') as f:
                     f.write(help_content)
@@ -1283,12 +1881,9 @@ Delete        - 移除选中的文件
             QMessageBox.warning(self, "错误", f"无法打开帮助文件：{e}")
 
     def select_all_files(self):
-        """Selects all files in the table."""
-        for row in range(self.file_table.rowCount()):
-            checkbox_item = self.file_table.item(row, 0)
-            if checkbox_item:
-                checkbox_item.setCheckState(Qt.Checked)
-        self.update_status("已选中所有文件。")
+        """Selects all rows in the table (focus, not checkbox)."""
+        self.file_table.selectAll()
+        self.update_status("已聚焦所有文件行。")
 
     def rename_single_file(self, row):
         """Renames a single file through a dialog."""
@@ -1342,6 +1937,64 @@ Delete        - 移除选中的文件
         except Exception as e:
             QMessageBox.warning(self, "错误", f"无法打开文件夹：{e}")
 
+    def open_file(self, row):
+        """Opens the file directly."""
+        if row >= len(self.files_data):
+            return
+            
+        file_path = self.files_data[row]["path_obj"]
+        
+        try:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(file_path)))
+            self.update_status(f"已打开文件：{file_path.name}")
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"无法打开文件：{e}")
+
+    def refresh_file_list(self):
+        """Refreshes the file list by checking if files still exist and updating their information."""
+        if not self.files_data:
+            self.update_status("没有文件需要刷新。")
+            return
+        
+        refreshed_count = 0
+        missing_files = []
+        
+        for row in range(len(self.files_data) - 1, -1, -1):  # Iterate backwards to safely remove items
+            file_data = self.files_data[row]
+            file_path = file_data["path_obj"]
+            
+            # Check if file still exists
+            if not file_path.exists():
+                missing_files.append(file_path.name)
+                # Remove from data and table
+                del self.files_data[row]
+                self.file_table.removeRow(row)
+            else:
+                # Update file information
+                try:
+                    stat_result = file_path.stat()
+                    modification_time = QDateTime.fromSecsSinceEpoch(int(stat_result.st_mtime))
+                    size_bytes = stat_result.st_size
+                    
+                    # Update table display
+                    self.file_table.item(row, 4).setText(modification_time.toString("yyyy-MM-dd hh:mm:ss"))
+                    self.file_table.item(row, 5).setText(self.format_file_size(size_bytes))
+                    refreshed_count += 1
+                except Exception as e:
+                    print(f"Error refreshing {file_path}: {e}")
+        
+        # Show empty state if no files left
+        if len(self.files_data) == 0:
+            self.file_table.hide()
+            self.select_all_widget.hide()
+            self.empty_state_widget.show()
+        
+        # Update status message
+        if missing_files:
+            self.update_status(f"刷新完成。更新了 {refreshed_count} 个文件，移除了 {len(missing_files)} 个不存在的文件。")
+        else:
+            self.update_status(f"刷新完成。更新了 {refreshed_count} 个文件信息。")
+
     def table_item_clicked(self, item):
         """Handles table item click events."""
         row = item.row()
@@ -1350,6 +2003,15 @@ Delete        - 移除选中的文件
         # If clicked on path column (column 6), open the folder
         if column == 6:
             self.open_file_folder(row)
+
+    def table_item_double_clicked(self, item):
+        """Handles table item double click events."""
+        row = item.row()
+        column = item.column()
+        
+        # If double clicked on filename column (column 1) or preview column (column 2), open the file
+        if column == 1 or column == 2:
+            self.open_file(row)
 
     @staticmethod
     def format_file_size(size_bytes):
