@@ -151,6 +151,8 @@ class BatchPrinterBuilder:
             "--hidden-import=win32api",
             "--hidden-import=win32con",
             "--hidden-import=pywintypes",
+            "--hidden-import=win32com.client",
+            "--hidden-import=pythoncom",
             # PyQt5最小化导入
             "--hidden-import=PyQt5.sip",
             # 排除不需要的大型模块

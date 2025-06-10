@@ -148,7 +148,7 @@ class FileMatcherGUI(QMainWindow):
         self.table = QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(
-            ["文件名", "匹配结果", "Code", "30d", "命名规则"]
+            ["文件名", "匹配结果", "Code", "30d", "匹配的规则"]
         )
         self.table.setSelectionBehavior(QTableWidget.SelectItems)
         self.table.setSelectionMode(QTableWidget.ContiguousSelection)
@@ -293,26 +293,39 @@ class FileMatcherGUI(QMainWindow):
 
         for row, filename in enumerate(files):
             matched = False
+            matched_rule = ""
             filename_item = QTableWidgetItem(filename)
             filename_item.setToolTip(filename)
             self.table.setItem(row, 0, filename_item)
 
             for _, rule in self.df_rules.iterrows():
-                if rule["match_rule"] in filename:
+                # 检查所有匹配规则列，只要有一个匹配就成功
+                match_rules = ['match_rule1', 'match_rule2', 'match_rule3', 'match_rule4']
+                rule_matched = False
+                
+                for rule_col in match_rules:
+                    if rule_col in rule and pd.notna(rule[rule_col]) and str(rule[rule_col]).strip():
+                        if str(rule[rule_col]).strip() in filename:
+                            rule_matched = True
+                            matched_rule = str(rule[rule_col]).strip()
+                            break
+                
+                if rule_matched:
                     matched_item = QTableWidgetItem("是")
                     matched_item.setToolTip("是")
                     self.table.setItem(row, 1, matched_item)
 
-                    code_item = QTableWidgetItem(rule["code"])
-                    code_item.setToolTip(rule["code"])
+                    code_item = QTableWidgetItem(str(rule["code"]))
+                    code_item.setToolTip(str(rule["code"]))
                     self.table.setItem(row, 2, code_item)
 
-                    thirty_d_item = QTableWidgetItem(rule["30d"])
-                    thirty_d_item.setToolTip(rule["30d"])
+                    thirty_d_item = QTableWidgetItem(str(rule["30d"]))
+                    thirty_d_item.setToolTip(str(rule["30d"]))
                     self.table.setItem(row, 3, thirty_d_item)
 
-                    detail_item = QTableWidgetItem(rule["match_rule_detail"])
-                    detail_item.setToolTip(rule["match_rule_detail"])
+                    # 显示匹配到的具体规则
+                    detail_item = QTableWidgetItem(matched_rule)
+                    detail_item.setToolTip(f"匹配规则: {matched_rule}")
                     self.table.setItem(row, 4, detail_item)
 
                     # 设置匹配成功行背景色(浅绿色)
@@ -340,6 +353,16 @@ class FileMatcherGUI(QMainWindow):
                 # 设置未匹配行背景色(淡红色)
                 for col in range(self.table.columnCount()):
                     self.table.item(row, col).setBackground(QColor(255, 182, 193))
+
+        # 更新状态信息显示匹配统计
+        total_files = len(files)
+        matched_files = sum(1 for row in range(self.table.rowCount()) 
+                           if self.table.item(row, 1).text() == "是")
+        unmatched_files = total_files - matched_files
+        
+        self.lbl_status.setText(
+            f"扫描完成: 共{total_files}个文件，匹配成功{matched_files}个，未匹配{unmatched_files}个"
+        )
 
     def open_file(self):
         if not self.current_folder:
@@ -432,7 +455,7 @@ class FileMatcherGUI(QMainWindow):
 
             df = pd.DataFrame(
                 data,
-                columns=["文件名", "是否匹配成功", "Code", "30d", "命名规则"],
+                columns=["文件名", "是否匹配成功", "Code", "30d", "匹配的规则"],
             )
 
             try:

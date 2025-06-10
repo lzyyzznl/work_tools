@@ -1,57 +1,52 @@
-code,match_rule_detail,match_rule,30d
-01.33.06.01,"Confidential Disclosure Agreements-Contract No.XXXXXX-Role-Last name, First name (eClinical Unique Personnel ID Number, if available, or N/A if not available)，eg:  Bloggs, Fred (123456)-Effective date of agreement",Confidential_Disclosure_Agreements,N
-01.33.06.02,"Role-Last name, First name-Confidential Disclosure Agreements-one way letter-Related parent contract number-Date of letter",one_way_letter,N
-01.33.10.02,"Privacy notice to Role-Last name, First name-Date Opt-out form sent to site staff_date",Opt-out_form,N
-02.02.03,Study code - Site No- FDC-签字人Role-签字人姓名-签字日期,FDC,N
-02.03.03,Study code - Site No- FORM-493847-Local Destruction of Investigational Product-Amgen staff 签字日期,FORM-493847,Y
-02.03.04,Study code - Site No- Extension Expiry Date Memo-protocol number-最新签字日期,Extension_Expiry_Date_Memo,Y
-02.03.06,Study code - Site No-Final Investigational Product Reconciliation Statement Form-最新签字日期,Final_Reconciliation_Statement,Y
-02.03.08,Study code - Site No-product name-lot number-FORM-000541 Master Investigational Product Accountability Record-表上的最早签字日期,FORM-000541,N
-02.03.08,Study code - Site No-subject number-FORM-081612 Subject Level Investigational Product Accountability Record-表上的最早签字日期,FORM-081612,N
-02.03.14,Study code - Site No-FORM-001512 Temperature Excursion Submission Form-protocol number-Date of Temperature Excursion,FORM-001512,N
-02.03.15,Study code - Site No-Temperature Log-设备类型-设备编号-表上登记的最早及最晚的日期-最早的日期,Temperature_Log,N
-02.03.18,"Study code- Site No- Approval For DV Pharmacy or Non-Pharmacy/DPW exemption, Golden ID, Request ID-Date of Approval",DV_Pharmacy_Approval,N
-02.05.02,Study code - Site No-EC approval letter of-批准的文件-审批结果（如：study approved)-批准日期,EC_approval_letter,N
-02.05.02,Study code - Site No-EC notification of-递交的文件-签字日期,EC_notification,N
-02.05.03,Study code - Site No-EC Member list -EC名字-EC类别（如local、leading）-成员名单生效日期,EC_Member_list,N
-02.05.03,Study code - Site No-statement of compliance- EC名字-EC类别（如local、leading）-声明日期,statement_of_compliance,N
-02.05.04,Study code - Site No-EC submission letter of -递交的文件内容- 递交日期,EC_submission_letter,N
-02.05.04,Study code - Site No-EC applications form of-递交的文件-签字日期,EC_applications_form,N
-02.05.04,Study code - Site No-EC submission letter of annual report -年度报告日期-签字日期,annual_report,N
-02.06.01,Study code - Site No-Lab certificate 证书类型（如NCCL EQA Certificate）-Expiry date（如适用）-生效日期,Lab_certificate,N
-02.06.03,Study code - Site No- Initial/updated FORM-494683-更新的检测项（如适用）-Lab名字-表格完成日期,FORM-494683,N
-02.07.03,Study code - Site No-SEV follow up letter-Start date of visit-邮件链中的最新日期,SEV_follow_up,Y
-02.07.05,Study code - Site No-SIV/SMV/FMV/SEV confirmation letter-Start date of visit-邮件链中的最新日期,SIV_confirmation,Y
-02.07.05,Study code - Site No-CRA transition letter letter from**​ to ​**​-邮件标题-邮件链中的最新日期,CRA_transition,Y
-02.07.06,Study code - Site No-Site Recruitment Plan-签字日期,Site_Recruitment_Plan,N
-02.07.08,Study code - Site No-Final or ongoing-Training Record for Title of training and version-Latest training date-最新接受培训的人员的签字日期,Training_Record,N
-02.07.09,Study code - Site No-RMV/SMV/FMV follow up letter-Start date of visit-邮件链中的最新日期,RMV_follow_up,N
-02.07.10,Study code - Site No-FORM-000551 Sponsor Visit Log-最新访视日期,FORM-000551,Y
-02.07.12,Study code - Site No-FORM-492536 Investigator Initiation Report-表格完成日期（签字日期）,FORM-492536,Y
-02.07.12,Study code - Site No-FORM-493981 Electronic Data Capture (EDC) Site Survey & Site IT Capability Verification Form-表格完成日期（签字日期）,FORM-493981,Y
-02.07.12,Study code - Site No-FORM-493981/501678 Electronic Data Capture (EDC) Site Survey & Site IT Capability Verification Form-表格完成日期（签字日期）,FORM-501678,Y
-02.07.13,Study code - Site No-SIV follow up letter-Start date of visit-邮件链中的最新日期,SIV_follow_up,N
-02.07.22,Study code - Site No-Site Closure Memorandum-Date of correspondence,Site_Closure_Memorandum,Y
-02.07.24,Study code - Site No-FORM-494231 Source Document Identity Form-Hospital Name- (Verified by CRA that information captured in form has not changed)_表格签字日期或已存在的且CRA确认内容无更新的日期,FORM-494231,Y
-02.07.25,Study code- Site No- Form 503344 EMR checklist_医院名称_assess type_ (Verified by CRA?that information captured in form has not changed)_表格签字日期或已存在的且CRA确认内容无更新的日期,Form_503344,Y
-02.07.26,"Study code - Site No-FORM-504077 Clinical Site Digital Signature Application Checklist, Type of Electronic system assessed-?Date of last signature on the form",FORM-504077,Y
-02.08.01,Study code - Site No-FORM-492316 Note to File form-内容主题-NTF日期,FORM-492316,Y
-02.08.02,Study code - Site No-FORM-495099 Investigator File Note Form-内容主题-最新签字日期,FORM-495099,N
-02.11.01,Study code - Site No-PI name-PI-receive of IB version no. version date -左上角Letter日期,IB_receive,Y
-02.11.02,Study code - Site No-PI name-PI receive of CRF vension no. version date -签字日期,CRF_receive,N
-02.11.03,Study code - Site No-PI submission letter of 递交文件或物资-signed by who-签字日期,PI_submission_letter,N
-02.11.03,Study code - Site No-Role receive of 递交文件或物资-signed by who-签字日期,Role_receive,N
-02.11.05,Study code - Site No-Protocol Signature Page -protocol version no. version date-签字日期,Protocol_Signature_Page,Y
-02.12.01,Study code - Site No-文件类型-文件主题- from who to who（包含Role及姓名全拼） -邮件链中的最新日期,mail_chain,Y
-02.13.01,Study code - Site No-Main/Substudy site ICF-版本号-版本日期-伦理批准日期 或 版本日期,Main_Substudy_ICF,N
-02.13.02,Study code - Site No-FORM-494429 Final Site-Specific ICF-Main/Substudy ICF-版本号- Indicate Addendum（如适用）- Date sent for approval,FORM-494429,Y
-02.15.03.03,Study code - Site No-SSR-Signed on DDMMMYYYY(签字日期）,SSR,N
-02.15.03.04,"Study code - Site No-Subject line, title of correspondence or brief summary of content -To and From-邮件链中的最新日期",Subject_line,Y
-02.15.04.03,Study code - Site No-设备类型（如离心机/冰箱）-编号/型号-calibration expiry date DDMMMYYYY-文件日期,calibration_expiry,N
-02.16.02/ 03/ 04,"Study code - Site No-CV of name-role-签字日期
-特殊提醒：
-1.如CV中的电话不为固话，而是手机号，待确认此手机号为工作电话后，需在命名加上“this is work phone number”，否则会有Not Approved风险（TMF团队认为手机号为私人号码）。
-2.（需注意CV中不得包含excessive personal information，如家庭住址、家庭电话、照片/性别/国籍/民族等）
-",CV_of_name,N
-02.16.05,Study code - Site No-Ongoing or final DoA-最新PI签字日期,DoA,N
-02.16.08,Study code - Site No-GCP certificate/ Medical License of name-role-Date of document or certification date or signature date,GCP_certificate,N
+code,30d,match_rule1,match_rule2,match_rule3,match_rule4
+01.33.06.01,N,Confidential Disclosure Agreements,CDA,,
+01.33.06.02,N,one way letter,,,
+01.33.10.02,N,Privacy notice,PN,,
+02.02.03,N,FDC,,,
+02.03.03,Y,Local Destruction,493847,,
+02.03.04,Y, Extension Expiry Date Memo,药品有效期延长说明,,
+02.03.06,Y,Final Investigational Product Reconciliation Statement Form,000539 ,,
+02.03.08,N,000541,,,
+02.03.08,N,081612,,,
+02.03.14,N,001512,,,
+02.03.15,N,Temperature Log,,,
+02.03.18,N,DV,DPW,,
+02.05.02,N,EC approval,伦理批件,,
+02.05.02,N,EC notification,伦理意见,,
+02.05.03,N,EC Member,伦理委员会成员,,
+02.05.03,,statement of compliance,伦理委员会声明,,
+02.05.04,N,EC submission letter,伦理签收,伦理接收,递交信-PI to EC
+02.05.04,N,EC applications form,伦理申请表,,
+02.05.04,N,annual report,年度报告,,
+02.06.01,N,Lab certificate,室间质评,,
+02.06.03,N,Local lab normal range,正常值范围,,
+02.07.03,Y,SEV  follow up letter,,,
+02.07.05,Y,SIV/RMV/FMV/SEV confirmation letter,,,
+02.07.05,Y,CRA transition letter,,,
+02.07.06,N,Site Recruitment Plan,招募计划,,
+02.07.08,N,Training Record,培训记录,,
+02.07.09,N,MV follow up letter,,,
+02.07.10,Y,000551,Sponsor Visit Log,访视登记表,
+02.07.12,Y,492536,IIR,Investigator Initiation Report,
+02.07.12,Y,493981,EDC Survey,Electronic Data Capture (EDC) Site Survey & Site IT Capability Verification Form,501678
+02.07.13,N,SIV follow up letter,,,
+02.07.22,Y,Site Closure Memorandum,,,
+02.07.24,Y,494231,Source Document Identity Form,SDIF,
+02.07.25,Y,EMR Checklist,,,
+02.07.26,Y,504077,Clinical Site Digital Signature Application Checklist,,
+02.08.01,Y,492316,NTF,,
+02.08.02,N,495099,Investigator File Note Form,Investigator NTF,
+02.11.01,Y,IB 签收,IB接收,receive of IB,
+02.11.02,N,CRF 签收,CRF接收,receive of CRF,
+02.11.03,N,PI submission letter of,PI 签收条,PI接收,
+02.11.03,N,CRC receive,,,
+02.11.05,Y,Protocol Signature Page,方案签字页,,
+02.12.01,Y,site selection letter,,,
+02.13.01,N,Main ICF,,,
+02.13.02,Y,494429,,,
+02.15.03.03,N,SSR,,,
+02.15.03.04,Y,internal commination email,,,
+02.15.04.03,N,Equipment Calibration,校准证书,,
+02.16.02/ 03/ 04,N,CV,,,
+02.16.05,N,DoA,DOA,授权表,
+02.16.08,N,GCP,资质,,

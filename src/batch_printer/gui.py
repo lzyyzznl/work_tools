@@ -89,15 +89,11 @@ class PrintWorker(QThread):
         file_path = file_info['path']
         duplex = file_info['duplex']
         copies = file_info['copies']
+        page_range = file_info.get('page_range', '')
+        orientation = file_info.get('orientation', 'portrait')
         
-        # 为了简化，这里我们先忽略duplex和copies设置
-        # 实际中可以通过Windows API设置这些参数
-        
-        # 如果需要多份，重复打印
-        for copy_num in range(copies):
-            self.print_file(file_path)
-            if copies > 1:
-                time.sleep(1)  # 多份之间稍微延迟
+        # 使用新的打印方法，传递所有参数
+        self.print_file_with_devmode(file_path, duplex, copies, page_range, orientation)
     
     def print_file(self, file_path):
         """实际打印文件的方法"""
@@ -193,6 +189,267 @@ class PrintWorker(QThread):
                 
         except Exception as e:
             raise Exception(f"打印失败: {str(e)}")
+    
+    def print_file_with_devmode(self, file_path, duplex, copies, page_range, orientation):
+        """使用DEVMODE结构设置打印参数进行打印"""
+        try:
+            import win32con
+            import pywintypes
+            
+            # 检查文件是否存在
+            if not os.path.exists(file_path):
+                raise Exception(f"文件不存在: {file_path}")
+            
+            # 获取打印机句柄
+            hprinter = win32print.OpenPrinter(self.printer_name)
+            
+            try:
+                # 获取打印机的默认DEVMODE
+                devmode = win32print.GetPrinter(hprinter, 2)['pDevMode']
+                if devmode is None:
+                    # 如果无法获取DEVMODE，创建一个新的
+                    devmode = pywintypes.DEVMODEType()
+                    devmode.DeviceName = self.printer_name
+                
+                # 设置打印参数
+                devmode.Fields = 0
+                
+                # 设置份数
+                if copies > 1:
+                    devmode.Copies = copies
+                    devmode.Fields |= win32con.DM_COPIES
+                
+                # 设置双面打印
+                if duplex:
+                    devmode.Duplex = win32con.DMDUP_VERTICAL  # 长边翻转
+                    devmode.Fields |= win32con.DM_DUPLEX
+                else:
+                    devmode.Duplex = win32con.DMDUP_SIMPLEX  # 单面
+                    devmode.Fields |= win32con.DM_DUPLEX
+                
+                # 设置页面方向
+                if orientation == 'landscape':
+                    devmode.Orientation = win32con.DMORIENT_LANDSCAPE
+                else:
+                    devmode.Orientation = win32con.DMORIENT_PORTRAIT
+                devmode.Fields |= win32con.DM_ORIENTATION
+                
+                # 使用修改后的DEVMODE设置打印机
+                win32print.DocumentProperties(0, hprinter, self.printer_name, devmode, devmode, win32con.DM_IN_BUFFER | win32con.DM_OUT_BUFFER)
+                
+                # 执行打印
+                success = self.execute_print_with_settings(file_path, devmode)
+                
+                if not success:
+                    raise Exception("打印失败")
+                
+            finally:
+                win32print.ClosePrinter(hprinter)
+                
+        except Exception as e:
+            # 如果使用DEVMODE失败，回退到简单方法
+            print(f"DEVMODE打印失败，回退到简单方法: {e}")
+            self.print_file_simple_with_settings(file_path, duplex, copies, page_range, orientation)
+    
+    def execute_print_with_settings(self, file_path, devmode):
+        """执行带设置的打印"""
+        try:
+            # 方法1: 尝试使用Word COM对象进行打印（如果是Word文档）
+            if file_path.lower().endswith(('.doc', '.docx')):
+                return self.print_with_word_com(file_path, devmode)
+            
+            # 方法2: 尝试使用Excel COM对象进行打印（如果是Excel文档）
+            elif file_path.lower().endswith(('.xls', '.xlsx')):
+                return self.print_with_excel_com(file_path, devmode)
+            
+            # 方法3: 尝试使用Adobe Reader COM对象进行打印（如果是PDF文档）
+            elif file_path.lower().endswith('.pdf'):
+                return self.print_with_adobe_reader(file_path, devmode)
+            
+            # 方法4: 对于其他文件类型，使用系统关联程序
+            else:
+                return self.print_with_system_association(file_path, devmode)
+                
+        except Exception as e:
+            print(f"带设置打印失败: {e}")
+            return False
+    
+    def print_with_word_com(self, file_path, devmode):
+        """使用Word COM对象进行打印"""
+        try:
+            import win32com.client
+            
+            word = win32com.client.Dispatch("Word.Application")
+            word.Visible = False
+            
+            try:
+                doc = word.Documents.Open(file_path, ReadOnly=True)
+                
+                # 设置打印机
+                word.ActivePrinter = self.printer_name
+                
+                # 打印文档
+                doc.PrintOut(
+                    Copies=devmode.Copies if hasattr(devmode, 'Copies') else 1,
+                    ManualDuplexPrint=not devmode.Duplex if hasattr(devmode, 'Duplex') else False
+                )
+                
+                doc.Close(False)
+                return True
+                
+            finally:
+                word.Quit()
+                
+        except Exception as e:
+            print(f"Word COM打印失败: {e}")
+            return False
+    
+    def print_with_excel_com(self, file_path, devmode):
+        """使用Excel COM对象进行打印"""
+        try:
+            import win32com.client
+            
+            excel = win32com.client.Dispatch("Excel.Application")
+            excel.Visible = False
+            excel.DisplayAlerts = False
+            
+            try:
+                workbook = excel.Workbooks.Open(file_path, ReadOnly=True)
+                worksheet = workbook.ActiveSheet
+                
+                # 设置打印机
+                excel.ActivePrinter = self.printer_name
+                
+                # 打印工作表
+                worksheet.PrintOut(
+                    Copies=devmode.Copies if hasattr(devmode, 'Copies') else 1
+                )
+                
+                workbook.Close(False)
+                return True
+                
+            finally:
+                excel.Quit()
+                
+        except Exception as e:
+            print(f"Excel COM打印失败: {e}")
+            return False
+    
+    def print_with_adobe_reader(self, file_path, devmode):
+        """使用Adobe Reader进行PDF打印"""
+        try:
+            # 尝试多种方法打印PDF
+            
+            # 方法1: 使用Adobe Reader命令行
+            try:
+                import subprocess
+                
+                # 查找Adobe Reader可执行文件
+                adobe_paths = [
+                    r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe",
+                    r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe",
+                    r"C:\Program Files\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"
+                ]
+                
+                adobe_exe = None
+                for path in adobe_paths:
+                    if os.path.exists(path):
+                        adobe_exe = path
+                        break
+                
+                if adobe_exe:
+                    # 构建命令行参数
+                    cmd = [
+                        adobe_exe,
+                        "/t",  # 打印文档
+                        file_path,
+                        self.printer_name
+                    ]
+                    
+                    subprocess.run(cmd, timeout=30)
+                    time.sleep(2)  # 等待打印作业开始
+                    return True
+                    
+            except Exception as e:
+                print(f"Adobe Reader命令行打印失败: {e}")
+            
+            # 方法2: 使用SumatraPDF（如果可用）
+            try:
+                sumatra_paths = [
+                    r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
+                    r"C:\Program Files (x86)\SumatraPDF\SumatraPDF.exe"
+                ]
+                
+                sumatra_exe = None
+                for path in sumatra_paths:
+                    if os.path.exists(path):
+                        sumatra_exe = path
+                        break
+                
+                if sumatra_exe:
+                    cmd = [
+                        sumatra_exe,
+                        "-print-to",
+                        self.printer_name,
+                        file_path
+                    ]
+                    
+                    subprocess.run(cmd, timeout=30)
+                    time.sleep(2)
+                    return True
+                    
+            except Exception as e:
+                print(f"SumatraPDF打印失败: {e}")
+            
+            # 方法3: 回退到系统关联程序
+            return self.print_with_system_association(file_path, devmode)
+            
+        except Exception as e:
+            print(f"PDF打印失败: {e}")
+            return False
+    
+    def print_with_system_association(self, file_path, devmode):
+        """使用系统关联程序打印"""
+        try:
+            # 临时设置打印机为默认打印机
+            original_printer = None
+            try:
+                original_printer = win32print.GetDefaultPrinter()
+                if self.printer_name != original_printer:
+                    win32print.SetDefaultPrinter(self.printer_name)
+                    time.sleep(0.5)
+            except:
+                pass
+            
+            # 使用ShellExecute打印
+            result = win32api.ShellExecute(
+                0, "print", file_path, None, ".", 0
+            )
+            
+            # 恢复原始默认打印机
+            if original_printer and self.printer_name != original_printer:
+                try:
+                    win32print.SetDefaultPrinter(original_printer)
+                except:
+                    pass
+            
+            return result > 32
+            
+        except Exception as e:
+            print(f"系统关联程序打印失败: {e}")
+            return False
+    
+    def print_file_simple_with_settings(self, file_path, duplex, copies, page_range, orientation):
+        """简单方法打印文件（回退方案）"""
+        try:
+            # 如果需要多份，重复打印
+            for copy_num in range(copies):
+                self.print_file(file_path)
+                if copies > 1:
+                    time.sleep(2)  # 多份之间延迟
+            
+        except Exception as e:
+            raise Exception(f"简单打印失败: {str(e)}")
     
     def pause(self):
         """暂停打印"""
@@ -799,12 +1056,129 @@ class BatchPrinterGUI(QMainWindow):
             if default_printer and default_printer in printers:
                 index = printers.index(default_printer)
                 self.combo_printer.setCurrentIndex(index)
+            
+            # 连接打印机选择变化事件（延迟连接，等UI初始化完成）
+            QTimer.singleShot(100, lambda: self.setup_printer_connection())
                 
             self.status_bar.showMessage(f"找到 {len(printers)} 台打印机")
             
         except Exception as e:
             QMessageBox.warning(self, "警告", f"无法获取打印机列表: {str(e)}")
             self.status_bar.showMessage("无法获取打印机列表")
+    
+    def setup_printer_connection(self):
+        """设置打印机连接（延迟执行，确保UI初始化完成）"""
+        # 连接打印机选择变化事件
+        self.combo_printer.currentTextChanged.connect(self.on_printer_changed)
+        
+        # 如果有打印机，检查当前选中的打印机能力
+        if self.combo_printer.count() > 0:
+            self.on_printer_changed(self.combo_printer.currentText())
+    
+    def on_printer_changed(self, printer_name):
+        """打印机选择改变时检查打印机能力"""
+        if not printer_name:
+            return
+            
+        try:
+            # 获取打印机能力
+            capabilities = self.get_printer_capabilities(printer_name)
+            
+            # 更新UI根据打印机能力
+            self.update_ui_based_on_printer_capabilities(capabilities)
+            
+            # 显示打印机信息
+            duplex_support = "支持" if capabilities.get('duplex_support', False) else "不支持"
+            self.status_bar.showMessage(f"打印机: {printer_name} | 双面打印: {duplex_support}")
+            
+        except Exception as e:
+            print(f"检查打印机能力时出错: {e}")
+            self.status_bar.showMessage(f"无法获取打印机 {printer_name} 的能力信息")
+    
+    def get_printer_capabilities(self, printer_name):
+        """获取打印机能力"""
+        capabilities = {
+            'duplex_support': False,
+            'duplex_modes': [],
+            'paper_sizes': [],
+            'orientations': ['portrait', 'landscape'],
+            'resolutions': []
+        }
+        
+        try:
+            import win32con
+            
+            # 获取打印机句柄
+            hprinter = win32print.OpenPrinter(printer_name)
+            
+            try:
+                # 获取设备能力
+                # 检查是否支持双面打印
+                duplex_caps = win32print.DeviceCapabilities(
+                    printer_name, None, win32con.DC_DUPLEX
+                )
+                
+                if duplex_caps and duplex_caps != 0:
+                    capabilities['duplex_support'] = True
+                    capabilities['duplex_modes'] = ['单面', '双面长边翻转', '双面短边翻转']
+                else:
+                    capabilities['duplex_support'] = False
+                    capabilities['duplex_modes'] = ['单面']
+                
+                # 获取支持的纸张大小
+                try:
+                    paper_sizes = win32print.DeviceCapabilities(
+                        printer_name, None, win32con.DC_PAPERS
+                    )
+                    if paper_sizes:
+                        capabilities['paper_sizes'] = paper_sizes
+                except:
+                    pass
+                
+                # 获取打印分辨率
+                try:
+                    resolutions = win32print.DeviceCapabilities(
+                        printer_name, None, win32con.DC_ENUMRESOLUTIONS
+                    )
+                    if resolutions:
+                        capabilities['resolutions'] = resolutions
+                except:
+                    pass
+                    
+            finally:
+                win32print.ClosePrinter(hprinter)
+                
+        except Exception as e:
+            print(f"获取打印机能力失败: {e}")
+            # 如果无法获取具体能力，设置默认值
+            capabilities['duplex_support'] = True  # 假设支持双面打印
+            capabilities['duplex_modes'] = ['单面', '双面']
+        
+        return capabilities
+    
+    def update_ui_based_on_printer_capabilities(self, capabilities):
+        """根据打印机能力更新UI"""
+        # 更新双面打印选项
+        duplex_support = capabilities.get('duplex_support', False)
+        
+        # 启用或禁用双面打印选项
+        self.radio_duplex.setEnabled(duplex_support)
+        
+        if not duplex_support:
+            # 如果不支持双面打印，强制选择单面
+            self.radio_simplex.setChecked(True)
+            self.radio_duplex.setChecked(False)
+            self.radio_duplex.setToolTip("当前打印机不支持双面打印")
+        else:
+            self.radio_duplex.setToolTip("双面打印（长边翻转）")
+            
+        # 更新已有文件的双面打印控件
+        for row in range(self.table_files.rowCount()):
+            duplex_combo = self.table_files.cellWidget(row, 4)
+            if duplex_combo:
+                duplex_combo.setEnabled(duplex_support)
+                if not duplex_support:
+                    duplex_combo.setCurrentText("单面")
     
     def add_files(self):
         """添加文件到打印列表"""
@@ -815,6 +1189,22 @@ class BatchPrinterGUI(QMainWindow):
         )
         
         if files:
+            # 检查文件数量限制
+            current_count = len(self.file_list)
+            new_files_count = len(files)
+            total_count = current_count + new_files_count
+            
+            if total_count > 50:
+                QMessageBox.warning(
+                    self, "文件数量限制", 
+                    f"不能添加 {new_files_count} 个文件！\n\n"
+                    f"当前列表已有 {current_count} 个文件，\n"
+                    f"添加后将有 {total_count} 个文件，\n"
+                    f"超过了最大限制 50 个文件。\n\n"
+                    f"请减少选择的文件数量或先清空部分文件。"
+                )
+                return
+            
             added_count = 0
             for file_path in files:
                 if self.add_file_to_list(file_path):
@@ -828,14 +1218,42 @@ class BatchPrinterGUI(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "选择包含待打印文件的文件夹")
         
         if folder:
-            added_count = 0
+            current_count = len(self.file_list)
             folder_path = Path(folder)
             
-            # 递归查找支持的文件类型
+            # 先收集文件夹中的所有支持文件
+            found_files = []
             for file_path in folder_path.rglob("*"):
                 if file_path.is_file() and file_path.suffix.lower() in self.supported_extensions:
-                    if self.add_file_to_list(str(file_path)):
-                        added_count += 1
+                    # 检查文件是否已存在
+                    file_str = str(file_path)
+                    if not any(existing['path'] == file_str for existing in self.file_list):
+                        found_files.append(file_str)
+            
+            if not found_files:
+                QMessageBox.information(self, "提示", "文件夹中没有找到新的支持文件")
+                return
+            
+            # 检查文件数量限制
+            new_files_count = len(found_files)
+            total_count = current_count + new_files_count
+            
+            if total_count > 50:
+                QMessageBox.warning(
+                    self, "文件数量限制", 
+                    f"不能添加文件夹中的 {new_files_count} 个文件！\n\n"
+                    f"当前列表已有 {current_count} 个文件，\n"
+                    f"添加后将有 {total_count} 个文件，\n"
+                    f"超过了最大限制 50 个文件。\n\n"
+                    f"请先清空部分文件后再添加文件夹。"
+                )
+                return
+            
+            # 添加文件
+            added_count = 0
+            for file_path in found_files:
+                if self.add_file_to_list(file_path):
+                    added_count += 1
             
             self.update_file_count()
             self.status_bar.showMessage(f"从文件夹中添加了 {added_count} 个文件")
@@ -974,7 +1392,15 @@ class BatchPrinterGUI(QMainWindow):
     def update_file_count(self):
         """更新文件数量显示"""
         count = len(self.file_list)
-        self.lbl_file_count.setText(f"文件列表 ({count} 个文件)")
+        self.lbl_file_count.setText(f"文件列表 ({count}/50 个文件)")
+        
+        # 如果接近限制，改变颜色提醒
+        if count >= 45:
+            self.lbl_file_count.setStyleSheet("QLabel { color: red; font-weight: bold; }")
+        elif count >= 35:
+            self.lbl_file_count.setStyleSheet("QLabel { color: orange; font-weight: bold; }")
+        else:
+            self.lbl_file_count.setStyleSheet("QLabel { color: #333333; font-size: 12px; font-weight: bold; }")
         
         # 更新表头复选框状态
         if hasattr(self, 'header_checkbox'):
@@ -1462,18 +1888,45 @@ class BatchPrinterGUI(QMainWindow):
     
     def dropEvent(self, event):
         """拖拽放下事件"""
+        current_count = len(self.file_list)
         files = []
+        
         for url in event.mimeData().urls():
             file_path = url.toLocalFile()
             if os.path.isfile(file_path):
-                files.append(file_path)
+                # 检查文件是否已存在和是否支持
+                if (file_path not in [f['path'] for f in self.file_list] and 
+                    Path(file_path).suffix.lower() in self.supported_extensions):
+                    files.append(file_path)
             elif os.path.isdir(file_path):
                 # 如果是文件夹，递归添加支持的文件
                 folder_path = Path(file_path)
                 for file in folder_path.rglob("*"):
-                    if file.is_file() and file.suffix.lower() in self.supported_extensions:
+                    if (file.is_file() and 
+                        file.suffix.lower() in self.supported_extensions and
+                        str(file) not in [f['path'] for f in self.file_list]):
                         files.append(str(file))
         
+        if not files:
+            self.status_bar.showMessage("没有找到新的支持文件")
+            return
+        
+        # 检查文件数量限制
+        new_files_count = len(files)
+        total_count = current_count + new_files_count
+        
+        if total_count > 50:
+            QMessageBox.warning(
+                self, "文件数量限制", 
+                f"不能添加拖拽的 {new_files_count} 个文件！\n\n"
+                f"当前列表已有 {current_count} 个文件，\n"
+                f"添加后将有 {total_count} 个文件，\n"
+                f"超过了最大限制 50 个文件。\n\n"
+                f"请先清空部分文件后再拖拽添加。"
+            )
+            return
+        
+        # 添加文件
         added_count = 0
         for file_path in files:
             if self.add_file_to_list(file_path):
