@@ -16,3 +16,4 @@ htmlcov/
 
 # Logs
 *.log
+nuitka-crash-report.xml

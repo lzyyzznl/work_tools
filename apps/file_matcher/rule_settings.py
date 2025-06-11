@@ -10,7 +10,7 @@ from PySide6.QtGui import QIcon, QColor, QCursor
 import sys
 import os
 import pandas as pd
-from .rule_manager import RuleManager
+from rule_manager import RuleManager
 
 
 class RuleEditDialog(QDialog):

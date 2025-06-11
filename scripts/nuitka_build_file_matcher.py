@@ -67,6 +67,8 @@ class FileMatcherBuilder:
             f"--output-dir={self.output_dir}",
             "--remove-output",              # 清理旧输出
             "--include-data-dir=apps/file_matcher/resources=resources",  # 包含资源文件
+            "--include-data-files=apps/file_matcher/rule_manager.py=rule_manager.py",    # 包含规则管理模块
+            "--include-data-files=apps/file_matcher/rule_settings.py=rule_settings.py", # 包含规则设置模块
             "--assume-yes-for-downloads",   # 自动下载依赖
         ]
 

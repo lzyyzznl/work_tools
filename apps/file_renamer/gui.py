@@ -1,40 +1,23 @@
+import json
 import math
 import os
+import shutil
 import sys
 from pathlib import Path
-from PySide6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QTextEdit,
-    QFileDialog,
-    QHBoxLayout,
-    QRadioButton,
-    QButtonGroup,
-    QCheckBox,
-    QGroupBox,
-    QStatusBar,
-    QSplitter,
-    QTableWidget,
-    QTableWidgetItem,
-    QHeaderView,
-    QMenu,
-    QMessageBox,
-    QAbstractItemView,
-    QTabWidget,
-    QToolBar,
-    QStyle,
-    QInputDialog,
-)
-from PySide6.QtCore import Qt, QUrl, QSize, QTimer, QDateTime, QSettings
-from PySide6.QtGui import QDesktopServices, QKeySequence, QIcon, QColor, QCursor, QPixmap, QAction, QShortcut
-from PySide6.QtWidgets import QDialog, QFormLayout, QDialogButtonBox, QKeySequenceEdit, QScrollArea
-import shutil
-import json
+
+from PySide6.QtCore import QDateTime, QSettings, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import (QAction, QColor, QCursor, QDesktopServices, QIcon,
+                           QKeySequence, QPixmap, QShortcut)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QButtonGroup,
+                               QCheckBox, QDialog, QDialogButtonBox,
+                               QFileDialog, QFormLayout, QGroupBox,
+                               QHBoxLayout, QHeaderView, QInputDialog,
+                               QKeySequenceEdit, QLabel, QLineEdit,
+                               QMainWindow, QMenu, QMessageBox, QPushButton,
+                               QRadioButton, QScrollArea, QSplitter,
+                               QStatusBar, QStyle, QTableWidget,
+                               QTableWidgetItem, QTabWidget, QTextEdit,
+                               QToolBar, QVBoxLayout, QWidget)
 
 
 class CustomKeySequenceEdit(QKeySequenceEdit):
@@ -107,8 +90,10 @@ class CustomKeySequenceEdit(QKeySequenceEdit):
         
         # 如果没有设置快捷键且没有焦点，显示占位符
         if self.keySequence().isEmpty() and not self.is_focused:
-            from PySide6.QtGui import QPainter, QColor, QFont as QtFont
             from PySide6.QtCore import Qt
+            from PySide6.QtGui import QColor
+            from PySide6.QtGui import QFont as QtFont
+            from PySide6.QtGui import QPainter
             
             painter = QPainter(self)
             painter.setRenderHint(QPainter.Antialiasing)
@@ -426,8 +411,8 @@ class QuickTooltipLabel(QLabel):
     def _show_tooltip(self):
         """Show the tooltip at cursor position."""
         if self._tooltip_text:
-            from PySide6.QtWidgets import QToolTip
             from PySide6.QtGui import QCursor
+            from PySide6.QtWidgets import QToolTip
             QToolTip.showText(QCursor.pos(), self._tooltip_text, self)
 
 
@@ -458,6 +443,8 @@ class FileRenamer(QMainWindow):
         self.preview_timer.timeout.connect(self.auto_preview_changes)
 
         # --- Setup Paths and Icons ---
+        # 设置资源路径用于图标加载
+        self.resource_path = os.path.join(os.path.dirname(__file__), "resources")
         self.set_window_icon()
         
         # --- Enable Drag and Drop ---
@@ -562,7 +549,7 @@ class FileRenamer(QMainWindow):
     def setup_apple_fonts(self):
         """设置苹果官网风格的字体系统"""
         from PySide6.QtGui import QFont, QFontDatabase
-        
+
         # 苹果字体优先级：PingFang SC > SF Pro > System UI > 备选字体
         apple_font_families = [
             "PingFang SC",           # 苹方字体 (macOS/iOS中文)

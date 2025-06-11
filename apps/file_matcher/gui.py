@@ -17,16 +17,8 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication,
                              QTableWidgetItem, QToolBar, QVBoxLayout, QWidget)
 from PySide6.QtGui import QAction, QShortcut
 
-try:
-    from .rule_manager import RuleManager
-    from .rule_settings import RuleSettingsDialog, RuleEditDialog
-except ImportError:
-    # 用于直接运行的绝对导入
-    import os
-    import sys
-    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from file_matcher.rule_manager import RuleManager
-    from file_matcher.rule_settings import RuleSettingsDialog, RuleEditDialog
+from rule_manager import RuleManager
+from rule_settings import RuleSettingsDialog, RuleEditDialog
 
 
 class FileMatcherGUI(QMainWindow):
