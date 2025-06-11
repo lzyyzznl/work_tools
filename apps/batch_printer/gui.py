@@ -10,22 +10,22 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QTableWidget, QTableWidgetItem,
     QFileDialog, QGroupBox, QCheckBox, QRadioButton, QButtonGroup,
     QProgressBar, QStatusBar, QHeaderView, QAbstractItemView,
     QMessageBox, QSplitter, QFrame, QLineEdit, QSpinBox
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QSettings
-from PyQt5.QtGui import QIcon, QColor, QFont, QPixmap
+from PySide6.QtCore import Qt, QThread, Signal, QTimer, QSettings
+from PySide6.QtGui import QIcon, QColor, QFont, QPixmap
 
 
 class PrintWorker(QThread):
     """打印工作线程"""
-    progress_updated = pyqtSignal(int, str, str)  # row, status, message
-    finished = pyqtSignal()
-    log_print_result = pyqtSignal(str, str, bool, int, str, str, str)  # file_name, printer, duplex, copies, result, page_range, orientation
+    progress_updated = Signal(int, str, str)  # row, status, message
+    finished = Signal()
+    log_print_result = Signal(str, str, bool, int, str, str, str)  # file_name, printer, duplex, copies, result, page_range, orientation
     
     def __init__(self, print_queue, printer_name, print_settings):
         super().__init__()
@@ -468,7 +468,7 @@ class BatchPrinterGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("批量打印工具")
-        self.setGeometry(100, 100, 1500, 1500)
+        self.setGeometry(100, 100, 1000, 1000)
         
         # 设置窗口图标
         self.setup_icon()
@@ -2025,7 +2025,7 @@ def main():
     window.show()
     
     # 运行应用程序
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

@@ -59,7 +59,7 @@ class BatchPrinterBuilder:
             sys.executable, "-m", "nuitka",
             "--onefile",                    # 单文件模式
             "--standalone",                 # 独立模式
-            "--enable-plugin=pyqt5",        # PyQt5插件
+            "--enable-plugin=pyside6",       # PySide6插件
             f"--output-filename={self.app_name}.exe",
             f"--output-dir={self.output_dir}",
             "--remove-output",              # 清理旧输出

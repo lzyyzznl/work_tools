@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Windows小工具集合：文件前缀处理工具、文件名匹配工具和批量打印工具"
 authors = [{ name = "荔枝鱼", email = "632795136@qq.com" }]
 dependencies = [
-  "PyQt5>=5.15.0",
+  "PySide6>=6.5.0",
   "nuitka>=2.0.0",
   "pandas>=2.0.0",
   "openpyxl>=3.0.0",

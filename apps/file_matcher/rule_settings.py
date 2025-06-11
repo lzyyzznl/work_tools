@@ -1,11 +1,12 @@
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QPushButton, QLineEdit, QComboBox, QLabel, QMessageBox, QHeaderView,
-    QMenu, QAction, QInputDialog, QFormLayout, QDialogButtonBox, QGroupBox,
+    QMenu, QInputDialog, QFormLayout, QDialogButtonBox, QGroupBox,
     QScrollArea, QWidget, QSplitter
 )
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon, QColor, QCursor
+from PySide6.QtGui import QAction
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QIcon, QColor, QCursor
 import sys
 import os
 import pandas as pd
@@ -24,8 +25,9 @@ class RuleEditDialog(QDialog):
         
         self.setWindowTitle("编辑规则" if rule_data else "添加规则")
         self.setModal(True)
-        # 移除帮助按钮(?)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        # 设置窗口标志：对话框，带有标题栏、系统菜单、最小化和关闭按钮，但不显示帮助按钮
+        self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.WindowSystemMenuHint | 
+                           Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint)
         self.setup_ui()
         self.setup_apple_style()
         
@@ -267,8 +269,9 @@ class RuleSettingsDialog(QDialog):
         self.rule_manager = RuleManager()
         self.setWindowTitle("匹配规则设置")
         self.setModal(True)
-        # 移除帮助按钮(?)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        # 设置窗口标志：对话框，带有标题栏、系统菜单、最小化和关闭按钮，但不显示帮助按钮
+        self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.WindowSystemMenuHint | 
+                           Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint)
         self.resize(800, 600)
         
         self.setup_ui()

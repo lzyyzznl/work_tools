@@ -2,7 +2,7 @@ import math
 import os
 import sys
 from pathlib import Path
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QWidget,
@@ -23,7 +23,6 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QMenu,
-    QAction,
     QMessageBox,
     QAbstractItemView,
     QTabWidget,
@@ -31,9 +30,9 @@ from PyQt5.QtWidgets import (
     QStyle,
     QInputDialog,
 )
-from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QDateTime, QSettings
-from PyQt5.QtGui import QDesktopServices, QKeySequence, QIcon, QColor, QCursor, QPixmap
-from PyQt5.QtWidgets import QShortcut, QDialog, QFormLayout, QDialogButtonBox, QKeySequenceEdit, QScrollArea
+from PySide6.QtCore import Qt, QUrl, QSize, QTimer, QDateTime, QSettings
+from PySide6.QtGui import QDesktopServices, QKeySequence, QIcon, QColor, QCursor, QPixmap, QAction, QShortcut
+from PySide6.QtWidgets import QDialog, QFormLayout, QDialogButtonBox, QKeySequenceEdit, QScrollArea
 import shutil
 import json
 
@@ -108,8 +107,8 @@ class CustomKeySequenceEdit(QKeySequenceEdit):
         
         # 如果没有设置快捷键且没有焦点，显示占位符
         if self.keySequence().isEmpty() and not self.is_focused:
-            from PyQt5.QtGui import QPainter, QColor, QFont as QtFont
-            from PyQt5.QtCore import Qt
+            from PySide6.QtGui import QPainter, QColor, QFont as QtFont
+            from PySide6.QtCore import Qt
             
             painter = QPainter(self)
             painter.setRenderHint(QPainter.Antialiasing)
@@ -137,8 +136,9 @@ class ShortcutSettingsDialog(QDialog):
         self.setModal(True)
         self.setFixedSize(600, 500)
         
-        # 移除标题栏的问号帮助按钮
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        # 设置窗口标志：对话框，带有标题栏、系统菜单、最小化和关闭按钮，但不显示帮助按钮
+        self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.WindowSystemMenuHint | 
+                           Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint)
         
         # 设置苹果风格的样式
         self.setStyleSheet("""
@@ -419,15 +419,15 @@ class QuickTooltipLabel(QLabel):
     def leaveEvent(self, event):
         """Hide tooltip when mouse leaves."""
         self.tooltip_timer.stop()
-        from PyQt5.QtWidgets import QToolTip
+        from PySide6.QtWidgets import QToolTip
         QToolTip.hideText()
         super().leaveEvent(event)
     
     def _show_tooltip(self):
         """Show the tooltip at cursor position."""
         if self._tooltip_text:
-            from PyQt5.QtWidgets import QToolTip
-            from PyQt5.QtGui import QCursor
+            from PySide6.QtWidgets import QToolTip
+            from PySide6.QtGui import QCursor
             QToolTip.showText(QCursor.pos(), self._tooltip_text, self)
 
 
@@ -458,32 +458,42 @@ class FileRenamer(QMainWindow):
         self.preview_timer.timeout.connect(self.auto_preview_changes)
 
         # --- Setup Paths and Icons ---
-        try:
-            base_path = sys._MEIPASS  # PyInstaller临时目录
-        except AttributeError:
-            base_path = os.path.dirname(os.path.abspath(__file__)).rsplit(f"{os.sep}src{os.sep}", 1)[0]
-
-        # 修复打包后的资源路径问题
-        if hasattr(sys, '_MEIPASS'):
-            # 在打包的exe中，资源文件被复制到resources文件夹
-            self.resource_path = os.path.join(base_path, "resources")
-        else:
-            # 在开发环境中，使用新的项目结构
-            self.resource_path = os.path.join(base_path, "resources")
-        
-        icon_path = os.path.join(self.resource_path, "icon.png")
-        if os.path.exists(icon_path):
-            self.setWindowIcon(QIcon(icon_path))
-        else:
-            # 如果PNG图标不存在，尝试加载ICO图标
-            ico_path = os.path.join(self.resource_path, "icon.ico")
-            if os.path.exists(ico_path):
-                self.setWindowIcon(QIcon(ico_path))
+        self.set_window_icon()
         
         # --- Enable Drag and Drop ---
         self.setAcceptDrops(True)
 
         self.init_ui()
+
+    def set_window_icon(self):
+        """设置窗口图标 - 兼容不同的打包方式"""
+        icon_files = ["icon.png", "icon.ico"]
+        
+        # 尝试多种路径查找图标
+        search_paths = [
+            # Nuitka打包后的资源路径
+            "resources",
+            # 开发环境路径
+            "apps/file_renamer/resources",
+            # 相对路径
+            os.path.join(os.path.dirname(__file__), "resources"),
+            # 绝对路径（开发环境）
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "apps", "file_renamer", "resources")
+        ]
+        
+        for search_path in search_paths:
+            for icon_file in icon_files:
+                icon_path = os.path.join(search_path, icon_file)
+                if os.path.exists(icon_path):
+                    try:
+                        self.setWindowIcon(QIcon(icon_path))
+                        print(f"成功加载图标: {icon_path}")
+                        return
+                    except Exception as e:
+                        print(f"加载图标失败 {icon_path}: {e}")
+                        continue
+        
+        print("未找到合适的图标文件")
 
     def load_shortcuts_config(self):
         """加载快捷键配置"""
@@ -551,7 +561,7 @@ class FileRenamer(QMainWindow):
 
     def setup_apple_fonts(self):
         """设置苹果官网风格的字体系统"""
-        from PyQt5.QtGui import QFont, QFontDatabase
+        from PySide6.QtGui import QFont, QFontDatabase
         
         # 苹果字体优先级：PingFang SC > SF Pro > System UI > 备选字体
         apple_font_families = [
@@ -2038,7 +2048,7 @@ def main():
     window.show()
     
     # 运行应用程序
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':

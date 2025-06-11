@@ -6,15 +6,16 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
-from PyQt5.QtCore import QMimeData, QSize, Qt, QTimer, QUrl
-from PyQt5.QtGui import (QBrush, QColor, QCursor, QDesktopServices, QIcon,
+from PySide6.QtCore import QMimeData, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import (QBrush, QColor, QCursor, QDesktopServices, QIcon,
                          QKeySequence, QPixmap)
-from PyQt5.QtWidgets import (QAbstractItemView, QAction, QApplication,
+from PySide6.QtWidgets import (QAbstractItemView, QApplication,
                              QCheckBox, QDialog, QFileDialog, QGroupBox, QHBoxLayout,
                              QHeaderView, QLabel, QLineEdit, QMainWindow,
-                             QMenu, QMessageBox, QPushButton, QShortcut,
+                             QMenu, QMessageBox, QPushButton,
                              QSizePolicy, QSplitter, QStatusBar, QTableWidget,
                              QTableWidgetItem, QToolBar, QVBoxLayout, QWidget)
+from PySide6.QtGui import QAction, QShortcut
 
 try:
     from .rule_manager import RuleManager
@@ -35,14 +36,7 @@ class FileMatcherGUI(QMainWindow):
         self.setGeometry(100, 100, 1200, 800)
         
         # 设置窗口图标
-        try:
-            base_path = sys._MEIPASS
-        except AttributeError:
-            base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
-        icon_path = os.path.join(base_path, "resources", "icon.png")
-        if os.path.exists(icon_path):
-            self.setWindowIcon(QIcon(icon_path))
+        self.set_window_icon()
 
         # 初始化数据
         self.rule_manager = RuleManager()
@@ -55,10 +49,40 @@ class FileMatcherGUI(QMainWindow):
         # 启用拖拽
         self.setAcceptDrops(True)
 
+    def set_window_icon(self):
+        """设置窗口图标 - 兼容不同的打包方式"""
+        icon_files = ["icon.png", "icon.ico"]
+        
+        # 尝试多种路径查找图标
+        search_paths = [
+            # Nuitka打包后的资源路径
+            "resources",
+            # 开发环境路径
+            "apps/file_matcher/resources",
+            # 相对路径
+            os.path.join(os.path.dirname(__file__), "resources"),
+            # 绝对路径（开发环境）
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "apps", "file_matcher", "resources")
+        ]
+        
+        for search_path in search_paths:
+            for icon_file in icon_files:
+                icon_path = os.path.join(search_path, icon_file)
+                if os.path.exists(icon_path):
+                    try:
+                        self.setWindowIcon(QIcon(icon_path))
+                        print(f"成功加载图标: {icon_path}")
+                        return
+                    except Exception as e:
+                        print(f"加载图标失败 {icon_path}: {e}")
+                        continue
+        
+        print("未找到合适的图标文件")
+
     def setup_apple_style(self):
         """设置苹果官网风格的样式和字体"""
         # 设置字体
-        from PyQt5.QtGui import QFont, QFontDatabase
+        from PySide6.QtGui import QFont, QFontDatabase
         
         apple_font_families = [
             "PingFang SC", "SF Pro Display", "SF Pro Text", "system-ui",
@@ -914,7 +938,7 @@ def main():
     window.show()
     
     # 运行应用程序
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

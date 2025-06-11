@@ -16,7 +16,7 @@ Nuitka 相比 PyInstaller 有以下优势：
 在使用构建脚本之前，请确保安装了必要的依赖：
 
 ```bash
-pip install nuitka PyQt5 pywin32 pandas
+pip install nuitka PySide6 pywin32 pandas
 ```
 
 对于图标转换功能，还需要安装：

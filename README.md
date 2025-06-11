@@ -52,7 +52,7 @@ windows_small_tools/
 
 ### 环境要求
 - Python 3.8+
-- PyQt5
+- PySide6 (原PyQt5已迁移)
 - 其他依赖见 `pyproject.toml`
 
 ### 安装依赖
@@ -111,7 +111,7 @@ python scripts/nuitka_build_all.py --list
 Nuitka相比PyInstaller有以下优势：
 - **更好的性能** - 编译为C++代码，运行速度更快
 - **更小的文件** - 通过优化生成更紧凑的可执行文件
-- **更好的兼容性** - 对PyQt5等复杂库支持更佳
+- **更好的兼容性** - 对PySide6等复杂库支持更佳
 
 详细构建说明请参考 `scripts/README_Nuitka.md`
 
@@ -158,7 +158,14 @@ python apps/工具名/run.py
 
 ## 📝 更新日志
 
-### v3.0.0 (当前版本)
+### v3.1.0 (当前版本)
+- 🔄 **重大更新：从PyQt5迁移到PySide6**
+- 🚀 提升应用性能和稳定性  
+- 🛠️ 更新所有构建脚本支持PySide6
+- 📝 更新文档反映迁移变化
+- ✅ 保持所有原有功能和UI风格
+
+### v3.0.0  
 - ✨ 重新组织项目结构，三个工具完全分离
 - 🔄 从PyInstaller迁移到Nuitka构建系统  
 - 📁 资源文件与代码文件分离管理
