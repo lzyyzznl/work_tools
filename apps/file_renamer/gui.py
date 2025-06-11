@@ -465,18 +465,18 @@ class FileRenamer(QMainWindow):
 
         # 修复打包后的资源路径问题
         if hasattr(sys, '_MEIPASS'):
-            # 在打包的exe中，资源文件被复制到resource文件夹
-            self.resource_path = os.path.join(base_path, "resource")
+            # 在打包的exe中，资源文件被复制到resources文件夹
+            self.resource_path = os.path.join(base_path, "resources")
         else:
-            # 在开发环境中，保持原有路径
-            self.resource_path = os.path.join(base_path, "src", "resource")
+            # 在开发环境中，使用新的项目结构
+            self.resource_path = os.path.join(base_path, "resources")
         
-        icon_path = os.path.join(self.resource_path, "打印机.png")
+        icon_path = os.path.join(self.resource_path, "icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         else:
             # 如果PNG图标不存在，尝试加载ICO图标
-            ico_path = os.path.join(self.resource_path, "打印机.ico")
+            ico_path = os.path.join(self.resource_path, "icon.ico")
             if os.path.exists(ico_path):
                 self.setWindowIcon(QIcon(ico_path))
         
@@ -2024,8 +2024,22 @@ class FileRenamer(QMainWindow):
         return f"{s} {size_name[i]}"
 
 
-if __name__ == '__main__':
+def main():
+    """批量文件重命名工具主函数"""
     app = QApplication(sys.argv)
+    
+    # 设置应用程序信息
+    app.setApplicationName("批量文件重命名工具")
+    app.setApplicationVersion("3.0.0")
+    app.setOrganizationName("荔枝鱼")
+    
+    # 创建并显示主窗口
     window = FileRenamer()
     window.show()
+    
+    # 运行应用程序
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()

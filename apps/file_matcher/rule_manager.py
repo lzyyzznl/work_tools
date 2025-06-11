@@ -13,8 +13,21 @@ class RuleManager:
             try:
                 base_path = sys._MEIPASS
             except AttributeError:
-                base_path = os.path.dirname(os.path.dirname(__file__))
-            self.csv_path = os.path.join(base_path, "resource", "content.csv")
+                # 从rule_manager.py -> src/file_matcher -> src -> apps/file_matcher -> apps -> 项目根目录
+                base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+            
+            # 优先检查新结构路径 apps/file_matcher/resources/content.csv
+            app_resources_path = os.path.join(base_path, "apps", "file_matcher", "resources", "content.csv")
+            if os.path.exists(app_resources_path):
+                self.csv_path = app_resources_path
+            else:
+                # 尝试旧结构兼容路径
+                old_path = os.path.join(base_path, "apps", "file_matcher", "src", "resource", "content.csv")
+                if os.path.exists(old_path):
+                    self.csv_path = old_path
+                else:
+                    # 默认使用新结构路径（即使文件不存在，稍后会创建）
+                    self.csv_path = app_resources_path
         else:
             self.csv_path = csv_path
             
@@ -24,8 +37,11 @@ class RuleManager:
     def load_rules(self):
         """加载规则文件"""
         try:
+            print(f"尝试加载规则文件: {self.csv_path}")  # 调试信息
             if os.path.exists(self.csv_path):
                 self.df_rules = pd.read_csv(self.csv_path)
+                print(f"成功加载规则文件，共{len(self.df_rules)}条规则")  # 调试信息
+                
                 # 确保至少有基本列
                 required_columns = ['code', '30d', 'match_rule1']
                 for col in required_columns:
@@ -40,14 +56,22 @@ class RuleManager:
                     self.df_rules[col] = self.df_rules[col].apply(
                         lambda x: '' if pd.isna(x) or str(x).strip() == '' or str(x).strip().lower() == 'nan' else str(x).strip()
                     )
+                
+                # 检查是否为空的规则集，如果是则加载默认规则
+                if self.df_rules.empty or len(self.df_rules) == 0:
+                    print("规则文件为空，加载默认规则...")
+                    self.reset_to_default()
             else:
-                # 创建默认的空规则文件
-                self.df_rules = pd.DataFrame(columns=['code', '30d', 'match_rule1'])
-                self.save_rules()
+                print(f"规则文件不存在，创建默认规则: {self.csv_path}")
+                # 文件不存在，直接加载默认规则
+                self.reset_to_default()
         except Exception as e:
             print(f"加载规则文件失败: {e}")
+            print("尝试加载默认规则...")
             # 创建空的DataFrame作为备选
             self.df_rules = pd.DataFrame(columns=['code', '30d', 'match_rule1'])
+            # 尝试加载默认规则
+            self.reset_to_default()
     
     def save_rules(self):
         """保存规则到文件"""

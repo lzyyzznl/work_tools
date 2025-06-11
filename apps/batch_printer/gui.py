@@ -492,10 +492,19 @@ class BatchPrinterGUI(QMainWindow):
         """设置窗口图标"""
         try:
             # 处理打包和开发两种模式
-            base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.dirname(__file__)))
-            icon_path = os.path.join(base_path, "resource", "打印机.png")
+            if hasattr(sys, '_MEIPASS'):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            
+            icon_path = os.path.join(base_path, "resources", "打印机.png")
             if os.path.exists(icon_path):
                 self.setWindowIcon(QIcon(icon_path))
+            else:
+                # 如果PNG图标不存在，尝试加载ICO图标
+                ico_path = os.path.join(base_path, "resources", "打印机.ico")
+                if os.path.exists(ico_path):
+                    self.setWindowIcon(QIcon(ico_path))
         except Exception:
             pass
     
@@ -2003,15 +2012,19 @@ class BatchPrinterGUI(QMainWindow):
 
 
 def main():
-    """主函数"""
+    """批量打印工具主函数"""
     app = QApplication(sys.argv)
-    app.setApplicationName("批量打印工具")
-    app.setApplicationVersion("1.0.0")
     
-    # 创建主窗口
+    # 设置应用程序信息
+    app.setApplicationName("批量打印工具")
+    app.setApplicationVersion("3.0.0")
+    app.setOrganizationName("荔枝鱼")
+    
+    # 创建并显示主窗口
     window = BatchPrinterGUI()
     window.show()
     
+    # 运行应用程序
     sys.exit(app.exec_())
 
 

@@ -38,9 +38,9 @@ class FileMatcherGUI(QMainWindow):
         try:
             base_path = sys._MEIPASS
         except AttributeError:
-            base_path = os.path.dirname(os.path.dirname(__file__))
+            base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
-        icon_path = os.path.join(base_path, "resource", "icon.png")
+        icon_path = os.path.join(base_path, "resources", "icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
@@ -900,8 +900,22 @@ class FileMatcherGUI(QMainWindow):
                 self.match_files()
 
 
-if __name__ == "__main__":
+def main():
+    """文件名匹配工具主函数"""
     app = QApplication(sys.argv)
+    
+    # 设置应用程序信息
+    app.setApplicationName("文件名匹配工具")
+    app.setApplicationVersion("3.0.0")
+    app.setOrganizationName("荔枝鱼")
+    
+    # 创建并显示主窗口
     window = FileMatcherGUI()
     window.show()
-    sys.exit(app.exec_()) 
+    
+    # 运行应用程序
+    sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main() 
