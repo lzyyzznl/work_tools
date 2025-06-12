@@ -6,7 +6,6 @@ dist/
 .venv/
 
 # IDE
-.vscode/
 .idea/
 
 # Test

@@ -1,0 +1,104 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "文件名匹配工具 - 调试模式",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/file_matcher/gui.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "args": [],
+      "justMyCode": false
+    },
+    {
+      "name": "批量文件重命名工具 - 调试模式",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/file_renamer/gui.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "args": [],
+      "justMyCode": false
+    },
+    {
+      "name": "批量打印工具 - 调试模式",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/batch_printer/gui.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "args": [],
+      "justMyCode": false
+    },
+    {
+      "name": "Nuitka构建 - 文件匹配工具(调试)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/nuitka_build_file_matcher.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--debug"
+      ]
+    },
+    {
+      "name": "Nuitka构建 - 文件匹配工具(发布)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/nuitka_build_file_matcher.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": []
+    },
+    {
+      "name": "Nuitka构建 - 文件重命名工具(调试)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/nuitka_build_file_renamer.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--debug"
+      ]
+    },
+    {
+      "name": "Nuitka构建 - 文件重命名工具(发布)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/nuitka_build_file_renamer.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": []
+    },
+    {
+      "name": "Nuitka构建 - 批量打印工具(调试)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/nuitka_build_batch_printer.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--debug"
+      ]
+    },
+    {
+      "name": "Nuitka构建 - 批量打印工具(发布)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/nuitka_build_batch_printer.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": []
+    }
+  ]
+}

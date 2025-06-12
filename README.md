@@ -36,17 +36,17 @@ windows_small_tools/
 ### 🖨️ 批量打印工具
 - **功能**: 批量打印多个文件，支持各种文件格式
 - **特色**: 智能打印设置、预览功能、错误处理
-- **运行**: `python apps/batch_printer/run.py`
+- **运行**: `python apps/batch_printer/gui.py`
 
 ### 📋 文件名匹配工具  
 - **功能**: 根据条件匹配和筛选文件，支持Excel导出
 - **特色**: 多种匹配模式、实时预览、数据分析
-- **运行**: `python apps/file_matcher/run.py`
+- **运行**: `python apps/file_matcher/gui.py`
 
 ### 🔄 批量文件重命名工具
 - **功能**: 批量重命名文件，支持多种重命名模式
 - **特色**: 实时预览、撤销功能、智能跳过
-- **运行**: `python apps/file_renamer/run.py`
+- **运行**: `python apps/file_renamer/gui.py`
 
 ## 🚀 快速开始
 
@@ -55,34 +55,31 @@ windows_small_tools/
 - PySide6 (原PyQt5已迁移)
 - 其他依赖见 `pyproject.toml`
 
-### 安装依赖
-```bash
-# 使用uv (推荐)
-uv pip install -e .
+### 安装依赖（使用uv来进行依赖管理）
 
-# 或使用pip
-pip install -e .
+```bash
+# 第一步先安装uv
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# pip安装
+pip install uv
+
+#第二步创建环境
+uv venv --python 3.12
+# 激活环境（windows环境）
+.venv\Scripts\activate
+
+# 第三步使用uv安装所有依赖项
+# 在根目录下，安装所有依赖
+uv pip install -r pyproject.toml  
 ```
 
-### 运行工具
-```bash
-# 批量打印工具
-python apps/batch_printer/run.py
-
-# 文件名匹配工具
-python apps/file_matcher/run.py
-
-# 批量文件重命名工具
-python apps/file_renamer/run.py
-```
 
 ## 📦 打包为可执行文件
-
-### 安装Nuitka
-```bash
-pip install nuitka
-```
-
 ### 构建单个工具
 ```bash
 # 构建批量打印工具
@@ -147,17 +144,8 @@ Nuitka相比PyInstaller有以下优势：
 - 共享资源放在 `apps/shared_resources/`
 - 构建时自动包含相应资源
 
-### 开发环境
-```bash
-# 安装开发依赖
-pip install -e ".[dev]"
-
-# 运行特定工具进行开发测试
-python apps/工具名/run.py
-```
 
 ## 📝 更新日志
-
 ### v3.1.0 (当前版本)
 - 🔄 **重大更新：从PyQt5迁移到PySide6**
 - 🚀 提升应用性能和稳定性  
