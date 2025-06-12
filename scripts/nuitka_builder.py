@@ -79,18 +79,8 @@ class NuitkaBuilder:
             else:
                 logger.warning(f"图标文件不存在: {self.icon_path}")
 
-        # 根据模式添加不同的参数
-        if self.debug_mode:
-            # 调试模式参数
-            cmd.extend([
-                "--debug",                      # 生成调试信息
-                "--unstripped",                 # 保留符号表
-                "--verbose",                    # 详细日志
-                "--show-memory",                # 显示内存使用
-            ])
-            logger.info("调试模式：保持目录结构，包含调试信息")
-        else:
-            # 发布模式参数
+        # 发布模式参数
+        if not self.debug_mode:
             cmd.extend([
                 "--onefile",                    # 单文件打包
                 "--lto=yes",                    # 链接时优化
@@ -98,6 +88,7 @@ class NuitkaBuilder:
                 "--python-flag=no_asserts",     # 禁用断言提升性能
             ])
             logger.info("发布模式：优化性能，单文件打包")
+           
 
         # 添加入口点
         cmd.append(self.entry_point)
