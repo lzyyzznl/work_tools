@@ -101,8 +101,6 @@ python scripts/nuitka_build_all.py all
 python scripts/nuitka_build_all.py --list
 ```
 
-构建完成后，可执行文件位于 `dist/` 目录。
-
 ### 为什么选择Nuitka
 
 Nuitka相比PyInstaller有以下优势：
