@@ -1,0 +1,279 @@
+{
+	"rules": [
+		{
+			"code": "01.33.06.01",
+			"30d": "N",
+			"match_rules": ["Confidential Disclosure Agreements", "CDA"]
+		},
+		{
+			"code": "01.33.06.02",
+			"30d": "N",
+			"match_rules": ["one way letter"]
+		},
+		{
+			"code": "01.33.10.02",
+			"30d": "N",
+			"match_rules": ["Privacy notice", "PN"]
+		},
+		{
+			"code": "02.02.03",
+			"30d": "N",
+			"match_rules": ["FDC"]
+		},
+		{
+			"code": "02.03.03",
+			"30d": "Y",
+			"match_rules": ["Local Destruction", "493847"]
+		},
+		{
+			"code": "02.03.04",
+			"30d": "Y",
+			"match_rules": [" Extension Expiry Date Memo", "药品有效期延长说明"]
+		},
+		{
+			"code": "02.03.06",
+			"30d": "Y",
+			"match_rules": [
+				"Final Investigational Product Reconciliation Statement Form",
+				"000539 "
+			]
+		},
+		{
+			"code": "02.03.08",
+			"30d": "N",
+			"match_rules": ["000541"]
+		},
+		{
+			"code": "02.03.08",
+			"30d": "N",
+			"match_rules": ["081612"]
+		},
+		{
+			"code": "02.03.14",
+			"30d": "N",
+			"match_rules": ["001512"]
+		},
+		{
+			"code": "02.03.15",
+			"30d": "N",
+			"match_rules": ["Temperature Log"]
+		},
+		{
+			"code": "02.03.18",
+			"30d": "N",
+			"match_rules": ["DV", "DPW"]
+		},
+		{
+			"code": "02.05.02",
+			"30d": "N",
+			"match_rules": ["EC approval", "伦理批件"]
+		},
+		{
+			"code": "02.05.02",
+			"30d": "N",
+			"match_rules": ["EC notification", "伦理意见"]
+		},
+		{
+			"code": "02.05.03",
+			"30d": "N",
+			"match_rules": ["EC Member", "伦理委员会成员"]
+		},
+		{
+			"code": "02.05.03",
+			"30d": "",
+			"match_rules": ["statement of compliance", "伦理委员会声明"]
+		},
+		{
+			"code": "02.05.04",
+			"30d": "N",
+			"match_rules": [
+				"EC submission letter",
+				"伦理签收",
+				"伦理接收",
+				"递交信-PI to EC"
+			]
+		},
+		{
+			"code": "02.05.04",
+			"30d": "N",
+			"match_rules": ["EC applications form", "伦理申请表"]
+		},
+		{
+			"code": "02.05.04",
+			"30d": "N",
+			"match_rules": ["annual report", "年度报告"]
+		},
+		{
+			"code": "02.06.01",
+			"30d": "N",
+			"match_rules": ["Lab certificate", "室间质评"]
+		},
+		{
+			"code": "02.06.03",
+			"30d": "N",
+			"match_rules": ["Local lab normal range", "正常值范围"]
+		},
+		{
+			"code": "02.07.03",
+			"30d": "Y",
+			"match_rules": ["SEV  follow up letter"]
+		},
+		{
+			"code": "02.07.05",
+			"30d": "Y",
+			"match_rules": ["SIV/RMV/FMV/SEV confirmation letter"]
+		},
+		{
+			"code": "02.07.05",
+			"30d": "Y",
+			"match_rules": ["CRA transition letter"]
+		},
+		{
+			"code": "02.07.06",
+			"30d": "N",
+			"match_rules": ["Site Recruitment Plan", "招募计划"]
+		},
+		{
+			"code": "02.07.08",
+			"30d": "N",
+			"match_rules": ["Training Record", "培训记录"]
+		},
+		{
+			"code": "02.07.09",
+			"30d": "N",
+			"match_rules": ["MV follow up letter"]
+		},
+		{
+			"code": "02.07.10",
+			"30d": "Y",
+			"match_rules": ["000551", "Sponsor Visit Log", "访视登记表"]
+		},
+		{
+			"code": "02.07.12",
+			"30d": "Y",
+			"match_rules": ["492536", "IIR", "Investigator Initiation Report"]
+		},
+		{
+			"code": "02.07.12",
+			"30d": "Y",
+			"match_rules": [
+				"493981",
+				"EDC Survey",
+				"Electronic Data Capture (EDC) Site Survey & Site IT Capability Verification Form",
+				"501678"
+			]
+		},
+		{
+			"code": "02.07.13",
+			"30d": "N",
+			"match_rules": ["SIV follow up letter"]
+		},
+		{
+			"code": "02.07.22",
+			"30d": "Y",
+			"match_rules": ["Site Closure Memorandum"]
+		},
+		{
+			"code": "02.07.24",
+			"30d": "Y",
+			"match_rules": ["494231", "Source Document Identity Form", "SDIF"]
+		},
+		{
+			"code": "02.07.25",
+			"30d": "Y",
+			"match_rules": ["EMR Checklist"]
+		},
+		{
+			"code": "02.07.26",
+			"30d": "Y",
+			"match_rules": [
+				"504077",
+				"Clinical Site Digital Signature Application Checklist"
+			]
+		},
+		{
+			"code": "02.08.01",
+			"30d": "Y",
+			"match_rules": ["492316", "NTF"]
+		},
+		{
+			"code": "02.08.02",
+			"30d": "N",
+			"match_rules": [
+				"495099",
+				"Investigator File Note Form",
+				"Investigator NTF"
+			]
+		},
+		{
+			"code": "02.11.01",
+			"30d": "Y",
+			"match_rules": ["IB 签收", "IB接收", "receive of IB"]
+		},
+		{
+			"code": "02.11.02",
+			"30d": "N",
+			"match_rules": ["CRF 签收", "CRF接收", "receive of CRF"]
+		},
+		{
+			"code": "02.11.03",
+			"30d": "N",
+			"match_rules": ["PI submission letter of", "PI 签收条", "PI接收"]
+		},
+		{
+			"code": "02.11.03",
+			"30d": "N",
+			"match_rules": ["CRC receive"]
+		},
+		{
+			"code": "02.11.05",
+			"30d": "Y",
+			"match_rules": ["Protocol Signature Page", "方案签字页"]
+		},
+		{
+			"code": "02.12.01",
+			"30d": "Y",
+			"match_rules": ["site selection letter"]
+		},
+		{
+			"code": "02.13.01",
+			"30d": "N",
+			"match_rules": ["Main ICF"]
+		},
+		{
+			"code": "02.13.02",
+			"30d": "Y",
+			"match_rules": ["494429"]
+		},
+		{
+			"code": "02.15.03.03",
+			"30d": "N",
+			"match_rules": ["SSR"]
+		},
+		{
+			"code": "02.15.03.04",
+			"30d": "Y",
+			"match_rules": ["internal commination email"]
+		},
+		{
+			"code": "02.15.04.03",
+			"30d": "N",
+			"match_rules": ["Equipment Calibration", "校准证书"]
+		},
+		{
+			"code": "02.16.02/ 03/ 04",
+			"30d": "N",
+			"match_rules": ["CV"]
+		},
+		{
+			"code": "02.16.05",
+			"30d": "N",
+			"match_rules": ["DoA", "DOA", "授权表"]
+		},
+		{
+			"code": "02.16.08",
+			"30d": "N",
+			"match_rules": ["GCP", "资质"]
+		}
+	]
+}

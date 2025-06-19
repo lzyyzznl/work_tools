@@ -9,7 +9,6 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QColor, QCursor
 import sys
 import os
-import pandas as pd
 from rule_manager import RuleManager
 
 
@@ -20,7 +19,7 @@ class RuleEditDialog(QDialog):
         super().__init__(parent)
         self.rule_manager = rule_manager
         self.rule_data = rule_data or {}
-        self.match_rule_widgets = {}
+        self.match_rule_widgets = []  # 改为列表存储匹配规则控件
         self.is_editing = rule_data is not None
         
         self.setWindowTitle("编辑规则" if rule_data else "添加规则")
@@ -34,8 +33,8 @@ class RuleEditDialog(QDialog):
         if rule_data:
             self.load_rule_data()
         else:
-            # 只有新增时才添加默认的match_rule1
-            self.add_match_rule_widget("match_rule1")
+            # 只有新增时才添加默认的匹配规则
+            self.add_match_rule_widget()
     
     def setup_ui(self):
         """设置界面"""
@@ -87,7 +86,7 @@ class RuleEditDialog(QDialog):
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
     
-    def add_match_rule_widget(self, rule_name, value=""):
+    def add_match_rule_widget(self, value=""):
         """添加匹配规则输入控件"""
         rule_widget = QWidget()
         rule_layout = QHBoxLayout(rule_widget)
@@ -95,46 +94,45 @@ class RuleEditDialog(QDialog):
         
         rule_edit = QLineEdit()
         rule_edit.setText(value)
-        rule_edit.setPlaceholderText(f"输入{rule_name}的匹配关键字")
+        rule_edit.setPlaceholderText("输入匹配关键字")
         
         remove_btn = QPushButton("🗑")
         remove_btn.setFixedSize(30, 30)
-        remove_btn.clicked.connect(lambda: self.remove_match_rule(rule_name))
+        remove_btn.clicked.connect(lambda widget=rule_widget, edit=rule_edit: self.remove_match_rule(widget, edit))
         
         rule_layout.addWidget(rule_edit)
         rule_layout.addWidget(remove_btn)
         
-        self.match_rule_widgets[rule_name] = rule_edit
-        self.rules_form_layout.addRow(f"{rule_name}:", rule_widget)
+        self.match_rule_widgets.append(rule_edit)
+        self.rules_form_layout.addRow(f"匹配规则 {len(self.match_rule_widgets)}:", rule_widget)
     
     def add_new_match_rule(self):
         """添加新的匹配规则"""
-        if self.rule_manager:
-            next_rule = self.rule_manager.get_next_match_rule_column()
-        else:
-            # 基于现有的规则数量生成下一个
-            current_count = len(self.match_rule_widgets)
-            next_rule = f"match_rule{current_count + 1}"
-        
-        self.add_match_rule_widget(next_rule)
+        self.add_match_rule_widget()
     
-    def remove_match_rule(self, rule_name):
+    def remove_match_rule(self, widget, edit):
         """移除匹配规则"""
-        # 编辑时允许删除所有规则，保存时再检查
-        if rule_name in self.match_rule_widgets:
+        if edit in self.match_rule_widgets:
+            # 从列表中移除
+            self.match_rule_widgets.remove(edit)
+            
             # 找到并移除对应的行
             for i in range(self.rules_form_layout.rowCount()):
-                label_item = self.rules_form_layout.itemAt(i, QFormLayout.LabelRole)
-                if label_item and label_item.widget():
-                    label_text = label_item.widget().text()
-                    if label_text.startswith(f"{rule_name}:"):
-                        # 直接移除行，Qt会自动清理相关的widget
-                        self.rules_form_layout.removeRow(i)
-                        break
+                field_item = self.rules_form_layout.itemAt(i, QFormLayout.FieldRole)
+                if field_item and field_item.widget() == widget:
+                    self.rules_form_layout.removeRow(i)
+                    break
             
-            # 从字典中移除引用
-            del self.match_rule_widgets[rule_name]
+            # 更新标签
+            self.update_rule_labels()
     
+    def update_rule_labels(self):
+        """更新规则标签"""
+        for i in range(self.rules_form_layout.rowCount()):
+            label_item = self.rules_form_layout.itemAt(i, QFormLayout.LabelRole)
+            if label_item and label_item.widget():
+                label_item.widget().setText(f"匹配规则 {i + 1}:")
+
     def load_rule_data(self):
         """加载规则数据到界面"""
         self.code_edit.setText(str(self.rule_data.get('code', '')))
@@ -144,22 +142,21 @@ class RuleEditDialog(QDialog):
             self.thirty_d_combo.setCurrentIndex(index)
         
         # 清除现有的匹配规则控件
-        for rule_name in list(self.match_rule_widgets.keys()):
-            self.remove_match_rule(rule_name)
+        self.match_rule_widgets.clear()
+        # 清除表单中的所有行
+        while self.rules_form_layout.rowCount() > 0:
+            self.rules_form_layout.removeRow(0)
         
         # 加载匹配规则
-        if self.rule_manager:
-            rule_columns = self.rule_manager.get_match_rule_columns()
-            for col in rule_columns:
-                if col in self.rule_data:
-                    value = self.rule_data[col]
-                    # 检查值是否为有效的非空字符串，排除nan值
-                    if (pd.notna(value) and 
-                        str(value).strip() and 
-                        str(value).strip().lower() != 'nan' and
-                        str(value).strip() != ''):
-                        clean_value = str(value).strip()
-                        self.add_match_rule_widget(col, clean_value)
+        match_rules = self.rule_data.get('match_rules', [])
+        if match_rules:
+            for rule_value in match_rules:
+                if rule_value and str(rule_value).strip():
+                    self.add_match_rule_widget(str(rule_value).strip())
+        
+        # 如果没有匹配规则，至少添加一个空的
+        if not self.match_rule_widgets:
+            self.add_match_rule_widget()
     
     def accept_rule(self):
         """确认规则"""
@@ -171,11 +168,11 @@ class RuleEditDialog(QDialog):
         thirty_d = self.thirty_d_combo.currentText()
         
         # 收集匹配规则
-        match_rules = {}
-        for rule_name, widget in self.match_rule_widgets.items():
+        match_rules = []
+        for widget in self.match_rule_widgets:
             value = widget.text().strip()
             if value:  # 只保存非空的规则
-                match_rules[rule_name] = value
+                match_rules.append(value)
         
         if not match_rules:
             QMessageBox.warning(self, "警告", "请至少输入一个匹配规则")
@@ -382,40 +379,29 @@ class RuleSettingsDialog(QDialog):
     def load_rules(self):
         """加载规则到表格"""
         self.rule_manager.load_rules()
-        df_rules = self.rule_manager.get_all_rules()
+        rules = self.rule_manager.get_all_rules()
         
         # 设置表格列
         self.rules_table.setColumnCount(3)
         self.rules_table.setHorizontalHeaderLabels(["Code", "30d", "匹配规则"])
         
-        if df_rules.empty:
+        if not rules:
             self.rules_table.setRowCount(0)
             return
         
-        # 获取所有匹配规则列
-        match_columns = self.rule_manager.get_match_rule_columns()
-        
         # 设置表格行数
-        self.rules_table.setRowCount(len(df_rules))
+        self.rules_table.setRowCount(len(rules))
         
         # 填充数据
-        for row, (_, rule) in enumerate(df_rules.iterrows()):
+        for row, rule in enumerate(rules):
             # Code列
             self.rules_table.setItem(row, 0, QTableWidgetItem(str(rule.get('code', ''))))
             # 30d列
             self.rules_table.setItem(row, 1, QTableWidgetItem(str(rule.get('30d', ''))))
             
             # 合并所有匹配规则到一列，用|分割
-            match_rules = []
-            for col_name in match_columns:
-                value = rule.get(col_name, '')
-                # 检查值是否为有效的非空字符串
-                if pd.notna(value) and str(value).strip() and str(value).strip().lower() != 'nan':
-                    clean_value = str(value).strip()
-                    if clean_value:  # 再次确认不是空字符串
-                        match_rules.append(clean_value)
-            
-            combined_rules = ' | '.join(match_rules)
+            match_rules = rule.get('match_rules', [])
+            combined_rules = ' | '.join(match_rules) if match_rules else ''
             self.rules_table.setItem(row, 2, QTableWidgetItem(combined_rules))
         
         # 调整列宽
@@ -438,7 +424,7 @@ class RuleSettingsDialog(QDialog):
     def add_rule(self):
         """添加新规则"""
         dialog = RuleEditDialog(self, rule_manager=self.rule_manager)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.Accepted:
             result = dialog.result_data
             if self.rule_manager.add_rule(
                 result['code'], 
@@ -458,14 +444,14 @@ class RuleSettingsDialog(QDialog):
             return
         
         # 获取当前行的数据
-        df_rules = self.rule_manager.get_all_rules()
-        if current_row >= len(df_rules):
+        rules = self.rule_manager.get_all_rules()
+        if current_row >= len(rules):
             return
         
-        rule_data = df_rules.iloc[current_row].to_dict()
+        rule_data = rules[current_row]
         
         dialog = RuleEditDialog(self, rule_data, self.rule_manager)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.Accepted:
             result = dialog.result_data
             if self.rule_manager.update_rule(
                 current_row,

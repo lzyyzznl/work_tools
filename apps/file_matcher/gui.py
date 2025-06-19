@@ -3,22 +3,20 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
 
 import pandas as pd
-from PySide6.QtCore import QMimeData, QSize, Qt, QTimer, QUrl
-from PySide6.QtGui import (QBrush, QColor, QCursor, QDesktopServices, QIcon,
-                         QKeySequence, QPixmap)
-from PySide6.QtWidgets import (QAbstractItemView, QApplication,
-                             QCheckBox, QDialog, QFileDialog, QGroupBox, QHBoxLayout,
-                             QHeaderView, QLabel, QLineEdit, QMainWindow,
-                             QMenu, QMessageBox, QPushButton,
-                             QSizePolicy, QSplitter, QStatusBar, QTableWidget,
-                             QTableWidgetItem, QToolBar, QVBoxLayout, QWidget)
-from PySide6.QtGui import QAction, QShortcut
-
+from PySide6.QtCore import  Qt, QUrl
+from PySide6.QtGui import (QAction, QColor, QDesktopServices,
+                           QIcon)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
+                               QDialog, QFileDialog, QHBoxLayout,
+                               QHeaderView, QLabel, QLineEdit, QMainWindow,
+                               QMenu, QMessageBox, QPushButton,
+                               QSplitter, QStatusBar, QTableWidget,
+                               QTableWidgetItem, QToolBar, QVBoxLayout,
+                               QWidget)
 from rule_manager import RuleManager
-from rule_settings import RuleSettingsDialog, RuleEditDialog
+from rule_settings import RuleEditDialog, RuleSettingsDialog
 
 
 class FileMatcherGUI(QMainWindow):
@@ -82,8 +80,7 @@ class FileMatcherGUI(QMainWindow):
             "Microsoft YaHei UI", "Segoe UI", "Arial", "sans-serif"
         ]
         
-        font_db = QFontDatabase()
-        available_fonts = font_db.families()
+        available_fonts = QFontDatabase.families()
         
         selected_font_family = "Arial"
         for font_family in apple_font_families:
@@ -690,11 +687,7 @@ class FileMatcherGUI(QMainWindow):
         if 0 <= row < len(self.files_data):
             file_path = self.files_data[row]["path"]
             try:
-                if os.name == "nt":  # Windows
-                    os.startfile(file_path)
-                else:  # Mac and Linux
-                    opener = "open" if sys.platform == "darwin" else "xdg-open"
-                    subprocess.call([opener, file_path])
+                QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
                 self.update_status(f"已打开文件: {Path(file_path).name}")
             except Exception as e:
                 QMessageBox.warning(self, "打开失败", f"无法打开文件:\n{str(e)}")
@@ -705,11 +698,11 @@ class FileMatcherGUI(QMainWindow):
             file_path = self.files_data[row]["path"]
             try:
                 if os.name == "nt":  # Windows
-                    subprocess.run(f'explorer /select,"{file_path}"')
+                    subprocess.run(f'explorer /select,"{file_path}"', check=True)
                 elif sys.platform == "darwin":  # macOS
-                    subprocess.run(["open", "-R", file_path])
+                    subprocess.run(["open", "-R", file_path], check=True)
                 else:  # Linux
-                    subprocess.run(["xdg-open", str(Path(file_path).parent)])
+                    subprocess.run(["xdg-open", str(Path(file_path).parent)], check=True)
                 self.update_status(f"已打开文件夹: {Path(file_path).parent}")
             except Exception as e:
                 QMessageBox.warning(self, "打开失败", f"无法打开文件夹:\n{str(e)}")
@@ -818,11 +811,7 @@ class FileMatcherGUI(QMainWindow):
             
             if reply == QMessageBox.Yes:
                 try:
-                    if os.name == "nt":
-                        os.startfile(file_path)
-                    else:
-                        opener = "open" if sys.platform == "darwin" else "xdg-open"
-                        subprocess.call([opener, file_path])
+                    QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
                 except Exception as e:
                     QMessageBox.warning(self, "打开失败", f"无法打开文件:\n{str(e)}")
 
@@ -832,7 +821,7 @@ class FileMatcherGUI(QMainWindow):
     def show_rule_settings(self):
         """显示规则设置对话框"""
         dialog = RuleSettingsDialog(self)
-        if dialog.exec_() == dialog.Accepted:
+        if dialog.exec() == QDialog.Accepted:
             # 重新加载规则
             self.rule_manager.load_rules()
             self.update_status("规则设置已更新")
@@ -911,7 +900,7 @@ class FileMatcherGUI(QMainWindow):
                 base_name = filename.rsplit('.', 1)[0] if '.' in filename else filename
                 dialog.match_rule_widgets["match_rule1"].setText(base_name)
             
-            if dialog.exec_() == QDialog.Accepted:
+            if dialog.exec() == QDialog.Accepted:
                 # 重新匹配文件
                 self.match_files()
 
