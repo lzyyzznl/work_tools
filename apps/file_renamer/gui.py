@@ -46,7 +46,6 @@ class CustomKeySequenceEdit(QKeySequenceEdit):
             QKeySequenceEdit:focus {
                 border: 3px solid #007AFF;
                 background: rgba(255, 255, 255, 1.0);
-                box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
             }
             QKeySequenceEdit:hover {
                 background: rgba(255, 255, 255, 1.0);
@@ -73,7 +72,6 @@ class CustomKeySequenceEdit(QKeySequenceEdit):
                 font-weight: 400;
                 color: #1d1d1f;
                 min-height: 20px;
-                box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
             }
         """)
     
@@ -158,7 +156,6 @@ class ShortcutSettingsDialog(QDialog):
                     stop:0 rgba(255, 255, 255, 1.0),
                     stop:1 rgba(250, 250, 252, 1.0));
                 border: 1px solid rgba(0, 0, 0, 0.15);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
             QPushButton:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -566,8 +563,7 @@ class FileRenamer(QMainWindow):
         ]
         
         # 检查可用字体
-        font_db = QFontDatabase()
-        available_fonts = font_db.families()
+        available_fonts = QFontDatabase.families()
         
         selected_font_family = "Arial"  # 默认备选
         for font_family in apple_font_families:
@@ -765,7 +761,6 @@ class FileRenamer(QMainWindow):
             }
             QToolButton:hover { 
                 background-color: rgba(0, 0, 0, 0.05);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
         """)
         self.addToolBar(toolbar)
@@ -869,7 +864,7 @@ class FileRenamer(QMainWindow):
                 font-weight: 600;
                 min-width: 100px;
                 text-align: center;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
             }
             
             /* 标签页悬停效果 */
@@ -878,8 +873,6 @@ class FileRenamer(QMainWindow):
                     stop:0 rgba(255, 255, 255, 1.0),
                     stop:1 rgba(250, 250, 252, 1.0));
                 border: 1px solid rgba(0, 0, 0, 0.15);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-                transform: translateY(-1px);
             }
             
             /* 选中标签页样式 - 苹果蓝色 */
@@ -889,7 +882,7 @@ class FileRenamer(QMainWindow):
                     stop:1 #0051D5);
                 color: white;
                 border: 1px solid #0051D5;
-                box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+
                 font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
                 font-weight: 700;
             }
@@ -902,8 +895,6 @@ class FileRenamer(QMainWindow):
                     stop:0 rgba(255, 255, 255, 0.98),
                     stop:1 rgba(250, 250, 252, 0.98));
                 margin-top: 2px;
-                box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-                backdrop-filter: blur(10px);
             }
             
             /* 内容面板顶部圆角调整 */
@@ -1261,17 +1252,32 @@ class FileRenamer(QMainWindow):
         table.itemDoubleClicked.connect(self.table_item_double_clicked)
         
         header = table.horizontalHeader()
+        # 设置列调整模式：允许用户手动拖拽调整列宽
         resize_modes = [
-            QHeaderView.ResizeToContents,  # 选择框
-            QHeaderView.Stretch,           # 当前文件名
-            QHeaderView.Stretch,           # 预览
-            QHeaderView.ResizeToContents,  # 执行结果
-            QHeaderView.ResizeToContents,  # 最后更新时间
-            QHeaderView.ResizeToContents,  # 文件大小
-            QHeaderView.Stretch            # 路径
+            QHeaderView.ResizeToContents,  # 选择框 - 固定内容宽度
+            QHeaderView.Interactive,       # 当前文件名 - 可拖拽调整
+            QHeaderView.Interactive,       # 预览 - 可拖拽调整
+            QHeaderView.ResizeToContents,  # 执行结果 - 固定内容宽度
+            QHeaderView.ResizeToContents,  # 最后更新时间 - 固定内容宽度
+            QHeaderView.ResizeToContents,  # 文件大小 - 固定内容宽度
+            QHeaderView.Interactive        # 路径 - 可拖拽调整
         ]
         for i, size_mode in enumerate(resize_modes):
             header.setSectionResizeMode(i, size_mode)
+        
+        # 设置合理的初始列宽
+        initial_widths = [
+            50,   # 选择框
+            200,  # 当前文件名
+            200,  # 预览
+            80,   # 执行结果
+            150,  # 最后更新时间
+            80,   # 文件大小
+            250   # 路径
+        ]
+        for i, width in enumerate(initial_widths):
+            if resize_modes[i] == QHeaderView.Interactive:
+                table.setColumnWidth(i, width)
         
         return table, select_all_layout
 
@@ -1485,6 +1491,7 @@ class FileRenamer(QMainWindow):
                 
                 preview_item = QTableWidgetItem(final_name)
                 preview_item.setForeground(QColor("red"))
+                preview_item.setToolTip(f"预览: {final_name}")  # 设置工具提示显示完整预览名称
                 self.file_table.setItem(row, 2, preview_item)
             else:
                 # File will not be changed - show original name in normal color
@@ -1492,6 +1499,7 @@ class FileRenamer(QMainWindow):
                 
                 preview_item = QTableWidgetItem(original_name)
                 preview_item.setForeground(QColor("black"))  # Normal color
+                preview_item.setToolTip(f"原始: {original_name}")  # 设置工具提示显示完整原始名称
                 self.file_table.setItem(row, 2, preview_item)
         
         changed_count = sum(1 for row in rows_to_process if self.files_data[row]["preview_name"])
@@ -1522,8 +1530,14 @@ class FileRenamer(QMainWindow):
                 current_batch_history.append((str(old_path), str(new_path)))
                 file_data.update(path_obj=new_path, original_name=new_path.name, preview_name="")
                 
-                self.file_table.item(row, 1).setText(new_path.name)
-                self.file_table.item(row, 2).setText("")
+                filename_item = self.file_table.item(row, 1)
+                filename_item.setText(new_path.name)
+                filename_item.setToolTip(new_path.name)  # 更新文件名工具提示
+                
+                preview_item = self.file_table.item(row, 2)
+                preview_item.setText("")
+                preview_item.setToolTip("")  # 清空预览工具提示
+                
                 self.file_table.setItem(row, 3, QTableWidgetItem("✅ 成功"))
                 success += 1
             except OSError as e:
@@ -1697,16 +1711,23 @@ class FileRenamer(QMainWindow):
         # Create clickable path item
         path_item = QTableWidgetItem(str(path_obj.parent))
         path_item.setForeground(QColor("blue"))
-        path_item.setToolTip("点击打开文件夹")
+        path_item.setToolTip(f"完整路径: {str(path_obj.parent)}\n点击打开文件夹")
+        
+        # Create current filename item with tooltip
+        filename_item = QTableWidgetItem(path_obj.name)
+        filename_item.setToolTip(path_obj.name)  # 显示完整文件名
         
         # Set items to table: "", "当前文件名", "预览", "执行结果", "最后更新时间", "文件大小", "路径"
         self.file_table.setItem(row, 0, chk_box)                                    # 选择框
-        self.file_table.setItem(row, 1, QTableWidgetItem(path_obj.name))          # 当前文件名
+        self.file_table.setItem(row, 1, filename_item)                            # 当前文件名
         self.file_table.setItem(row, 2, preview_item)                             # 预览
         self.file_table.setItem(row, 3, QTableWidgetItem(""))                     # 执行结果
         self.file_table.setItem(row, 4, time_item)                                # 最后更新时间
         self.file_table.setItem(row, 5, size_item)                                # 文件大小
         self.file_table.setItem(row, 6, path_item)                                # 路径
+        
+        # 为预览项设置工具提示（显示完整文件名）
+        preview_item.setToolTip(path_obj.name)
 
     def get_rows_to_process(self):
         """Returns a list of row indices to be processed (checked, or all if none checked)."""
@@ -1734,7 +1755,7 @@ class FileRenamer(QMainWindow):
     def show_shortcut_settings(self):
         """显示快捷键设置对话框"""
         dialog = ShortcutSettingsDialog(self, self.shortcuts)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.Accepted:
             # 保存新的快捷键配置
             self.shortcuts = dialog.get_shortcuts()
             self.save_shortcuts_config()

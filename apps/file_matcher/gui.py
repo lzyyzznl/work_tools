@@ -1,6 +1,5 @@
 import datetime
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -40,19 +39,13 @@ class FileMatcherGUI(QMainWindow):
         self.setAcceptDrops(True)
 
     def set_window_icon(self):
-        """设置窗口图标 - 兼容不同的打包方式"""
+        """设置窗口图标 - 安全的资源加载方式"""
         icon_files = ["icon.png", "icon.ico"]
         
-        # 尝试多种路径查找图标
+        # 简化的安全路径查找，避免复杂的动态路径构建
         search_paths = [
-            # Nuitka打包后的资源路径
-            "resources",
-            # 开发环境路径
-            "apps/file_matcher/resources",
-            # 相对路径
-            os.path.join(os.path.dirname(__file__), "resources"),
-            # 绝对路径（开发环境）
-            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "apps", "file_matcher", "resources")
+            "resources",  # 打包后的资源路径
+            os.path.join(os.path.dirname(__file__), "resources"),  # 开发环境相对路径
         ]
         
         for search_path in search_paths:
@@ -61,13 +54,11 @@ class FileMatcherGUI(QMainWindow):
                 if os.path.exists(icon_path):
                     try:
                         self.setWindowIcon(QIcon(icon_path))
-                        print(f"成功加载图标: {icon_path}")
+                        # 在生产环境中减少控制台输出
                         return
-                    except Exception as e:
-                        print(f"加载图标失败 {icon_path}: {e}")
+                    except Exception:
+                        # 静默处理图标加载失败，避免不必要的错误输出
                         continue
-        
-        print("未找到合适的图标文件")
 
     def setup_apple_style(self):
         """设置苹果官网风格的样式和字体"""
@@ -331,18 +322,22 @@ class FileMatcherGUI(QMainWindow):
         self.file_table.setAlternatingRowColors(True)
         self.file_table.setSortingEnabled(True)
         
-        # 设置列宽策略
+        # 设置列宽策略：允许用户手动拖拽调整列宽
         header = self.file_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.Fixed)  # 选择列固定宽度
-        header.setSectionResizeMode(1, QHeaderView.Stretch)  # 文件名自适应
-        header.setSectionResizeMode(2, QHeaderView.Stretch)  # 路径自适应
+        header.setSectionResizeMode(1, QHeaderView.Interactive)  # 文件名可拖拽调整
+        header.setSectionResizeMode(2, QHeaderView.Interactive)  # 路径可拖拽调整
         header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # 匹配结果
         header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Code
         header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # 30d
-        header.setSectionResizeMode(6, QHeaderView.Stretch)  # 匹配规则
+        header.setSectionResizeMode(6, QHeaderView.Interactive)  # 匹配规则可拖拽调整
         header.setSectionResizeMode(7, QHeaderView.Fixed)  # 操作列固定宽度
         
-        self.file_table.setColumnWidth(0, 60)  # 选择列宽度
+        # 设置合理的初始列宽
+        self.file_table.setColumnWidth(0, 60)   # 选择列宽度
+        self.file_table.setColumnWidth(1, 250)  # 文件名列宽度
+        self.file_table.setColumnWidth(2, 200)  # 路径列宽度
+        self.file_table.setColumnWidth(6, 180)  # 匹配规则列宽度
         self.file_table.setColumnWidth(7, 110)  # 操作列宽度
 
         # 设置右键菜单
@@ -559,11 +554,15 @@ class FileMatcherGUI(QMainWindow):
             if file_data["matched"]:
                 match_item = QTableWidgetItem("✅ 匹配")
                 match_item.setBackground(QColor(144, 238, 144))  # 淡绿色
+                match_item.setToolTip("文件匹配成功")
                 
                 info = file_data["match_info"]
                 code_item = QTableWidgetItem(str(info["code"]))
+                code_item.setToolTip(f"Code: {info['code']}")
                 thirty_d_item = QTableWidgetItem(str(info["30d"]))
+                thirty_d_item.setToolTip(f"30d: {info['30d']}")
                 rule_item = QTableWidgetItem(info["matched_rule"])
+                rule_item.setToolTip(f"匹配规则: {info['matched_rule']}")
                 
                 code_item.setBackground(QColor(144, 238, 144))
                 thirty_d_item.setBackground(QColor(144, 238, 144))
@@ -571,10 +570,14 @@ class FileMatcherGUI(QMainWindow):
             else:
                 match_item = QTableWidgetItem("❌ 未匹配")
                 match_item.setBackground(QColor(255, 182, 193))  # 淡红色
+                match_item.setToolTip("文件未匹配到任何规则")
                 
                 code_item = QTableWidgetItem("")
+                code_item.setToolTip("无匹配结果")
                 thirty_d_item = QTableWidgetItem("")
+                thirty_d_item.setToolTip("无匹配结果")
                 rule_item = QTableWidgetItem("")
+                rule_item.setToolTip("无匹配规则")
                 
                 code_item.setBackground(QColor(255, 182, 193))
                 thirty_d_item.setBackground(QColor(255, 182, 193))
@@ -697,12 +700,9 @@ class FileMatcherGUI(QMainWindow):
         if 0 <= row < len(self.files_data):
             file_path = self.files_data[row]["path"]
             try:
-                if os.name == "nt":  # Windows
-                    subprocess.run(f'explorer /select,"{file_path}"', check=True)
-                elif sys.platform == "darwin":  # macOS
-                    subprocess.run(["open", "-R", file_path], check=True)
-                else:  # Linux
-                    subprocess.run(["xdg-open", str(Path(file_path).parent)], check=True)
+                # 使用Qt的安全方式打开文件夹，避免直接执行系统命令
+                folder_path = str(Path(file_path).parent)
+                QDesktopServices.openUrl(QUrl.fromLocalFile(folder_path))
                 self.update_status(f"已打开文件夹: {Path(file_path).parent}")
             except Exception as e:
                 QMessageBox.warning(self, "打开失败", f"无法打开文件夹:\n{str(e)}")

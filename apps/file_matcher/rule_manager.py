@@ -6,106 +6,96 @@ from pathlib import Path
 
 
 class RuleManager:
-    """文件匹配规则管理器"""
+    """文件匹配规则管理器 - 使用统一配置文件"""
     
-    def __init__(self, default_rules_path: str = None, user_rules_path: str = None):
-        # 设置默认规则文件路径
-        if default_rules_path is None:
-            try:
-                base_path = sys._MEIPASS
-            except AttributeError:
-                # 从rule_manager.py -> apps/file_matcher -> apps -> 项目根目录
+    def __init__(self, config_path: str = None):
+        # 设置配置文件路径
+        if config_path is None:
+            # 优先尝试打包后的资源路径
+            if os.path.exists("resources/config.json"):
+                self.config_path = "resources/config.json"
+            else:
+                # 开发环境路径
                 base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-            
-            self.default_rules_path = os.path.join(base_path, "apps", "file_matcher", "resources", "default_rules.json")
+                self.config_path = os.path.join(base_path, "apps", "file_matcher", "resources", "config.json")
         else:
-            self.default_rules_path = default_rules_path
-        
-        # 设置用户规则文件路径
-        if user_rules_path is None:
-            user_home = Path.home()
-            user_config_dir = user_home / ".file_matcher"
-            user_config_dir.mkdir(exist_ok=True)
-            self.user_rules_path = user_config_dir / "user_rules.json"
-        else:
-            self.user_rules_path = Path(user_rules_path)
+            self.config_path = config_path
             
-        self.rules = []  # 存储规则列表
-        self.load_rules()
+        self.config = {}  # 存储完整配置
+        self.rules = []  # 存储合并后的规则列表
+        self.load_config()
     
-    def load_default_rules(self) -> List[Dict]:
-        """加载默认规则"""
+    def load_config(self):
+        """加载配置文件"""
         try:
-            print(f"尝试加载默认规则文件: {self.default_rules_path}")
-            if os.path.exists(self.default_rules_path):
-                with open(self.default_rules_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    return data.get('rules', [])
+            if os.path.exists(self.config_path):
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    self.config = json.load(f)
             else:
-                print("默认规则文件不存在")
-                return []
-        except Exception as e:
-            print(f"加载默认规则失败: {e}")
-            return []
-    
-    def load_user_rules(self) -> List[Dict]:
-        """加载用户规则"""
-        try:
-            print(f"尝试加载用户规则文件: {self.user_rules_path}")
-            if self.user_rules_path.exists():
-                with open(self.user_rules_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    return data.get('rules', [])
-            else:
-                print("用户规则文件不存在")
-                return []
-        except Exception as e:
-            print(f"加载用户规则失败: {e}")
-            return []
-    
-    def load_rules(self):
-        """加载并合并规则"""
-        try:
-            # 1. 加载默认规则
-            default_rules = self.load_default_rules()
-            print(f"加载了 {len(default_rules)} 条默认规则")
+                # 创建默认配置
+                self.config = {
+                    "version": "1.0",
+                    "settings": {
+                        "auto_save": True,
+                        "default_export_format": "xlsx",
+                        "window_geometry": {"x": 100, "y": 100, "width": 1200, "height": 800},
+                        "table_column_widths": [60, 250, 200, 120, 80, 80, 180, 110],
+                        "search_history": [],
+                        "last_export_path": "",
+                        "theme": "default"
+                    },
+                    "rules": {
+                        "default": [],
+                        "user": []
+                    }
+                }
+                self.save_config()
             
-            # 2. 加载用户规则
-            user_rules = self.load_user_rules()
-            print(f"加载了 {len(user_rules)} 条用户规则")
+            # 合并规则
+            self.merge_rules()
             
-            # 3. 合并规则：用户规则按code覆盖默认规则
+        except Exception as e:
+            # 静默处理加载失败，使用空配置
+            self.config = {
+                "version": "1.0",
+                "settings": {},
+                "rules": {"default": [], "user": []}
+            }
+            self.rules = []
+    
+    def merge_rules(self):
+        """合并默认规则和用户规则"""
+        try:
+            default_rules = self.config.get('rules', {}).get('default', [])
+            user_rules = self.config.get('rules', {}).get('user', [])
+            
+            # 合并规则：用户规则按code覆盖默认规则
             merged_rules = {}
             
             # 先添加默认规则
             for rule in default_rules:
-                code = rule.get('code', '')
-                if code and self._is_valid_rule(rule):
-                    # 为每个code创建唯一键，如果有重复code，使用索引区分
+                if self._is_valid_rule(rule):
                     key = self._generate_rule_key(rule, merged_rules)
-                    merged_rules[key] = rule
+                    merged_rules[key] = {**rule, 'source': 'default'}
             
             # 再添加用户规则，按code覆盖
             for rule in user_rules:
-                code = rule.get('code', '')
-                if code and self._is_valid_rule(rule):
+                if self._is_valid_rule(rule):
+                    code = rule.get('code', '')
                     # 查找是否有相同code的默认规则需要覆盖
                     for key in list(merged_rules.keys()):
                         if merged_rules[key].get('code') == code:
-                            print(f"用户规则覆盖默认规则: {code}")
                             del merged_rules[key]
                             break
                     
                     # 添加用户规则
                     key = self._generate_rule_key(rule, merged_rules)
-                    merged_rules[key] = rule
+                    merged_rules[key] = {**rule, 'source': 'user'}
             
             # 转换为列表
             self.rules = list(merged_rules.values())
-            print(f"最终合并了 {len(self.rules)} 条规则")
             
-        except Exception as e:
-            print(f"加载规则失败: {e}")
+        except Exception:
             self.rules = []
     
     def _is_valid_rule(self, rule: Dict) -> bool:
@@ -124,33 +114,23 @@ class RuleManager:
             key = f"{code}_{counter}"
         return key
     
-    def save_user_rules(self):
-        """保存用户规则到文件"""
+    def save_config(self):
+        """保存配置到文件"""
         try:
             # 确保目录存在
-            self.user_rules_path.parent.mkdir(exist_ok=True)
+            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
             
-            # 只保存用户添加或修改的规则
-            user_rules_data = {
-                "rules": self.get_user_modified_rules()
-            }
-            
-            with open(self.user_rules_path, 'w', encoding='utf-8') as f:
-                json.dump(user_rules_data, f, ensure_ascii=False, indent=2)
+            with open(self.config_path, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, ensure_ascii=False, indent=2)
             
             return True
-        except Exception as e:
-            print(f"保存用户规则失败: {e}")
+        except Exception:
             return False
-    
-    def get_user_modified_rules(self) -> List[Dict]:
-        """获取用户修改过的规则"""        # 这里简化处理，所有当前规则都视为用户规则
-        # 在实际应用中，可以通过标记来区分用户规则和默认规则
-        return self.rules
     
     def get_all_rules(self) -> List[Dict]:
         """获取所有规则"""
-        return self.rules.copy()
+        # 返回规则副本，去除source字段
+        return [{k: v for k, v in rule.items() if k != 'source'} for rule in self.rules]
     
     def add_rule(self, code: str, thirty_d: str, match_rules: List[str]) -> bool:
         """添加新规则"""
@@ -162,13 +142,21 @@ class RuleManager:
             }
             
             if not self._is_valid_rule(new_rule):
-                print("规则无效")
                 return False
             
-            self.rules.append(new_rule)
-            return self.save_user_rules()
-        except Exception as e:
-            print(f"添加规则失败: {e}")
+            # 添加到用户规则
+            if 'rules' not in self.config:
+                self.config['rules'] = {'default': [], 'user': []}
+            if 'user' not in self.config['rules']:
+                self.config['rules']['user'] = []
+            
+            self.config['rules']['user'].append(new_rule)
+            
+            # 重新合并规则
+            self.merge_rules()
+            
+            return self.save_config()
+        except Exception:
             return False
     
     def update_rule(self, index: int, code: str, thirty_d: str, match_rules: List[str]) -> bool:
@@ -182,25 +170,84 @@ class RuleManager:
                 }
                 
                 if not self._is_valid_rule(updated_rule):
-                    print("规则无效")
                     return False
                 
-                self.rules[index] = updated_rule
-                return self.save_user_rules()
+                # 获取当前规则的来源
+                current_rule = self.rules[index]
+                rule_source = current_rule.get('source', 'user')
+                rule_code = current_rule.get('code', '')
+                
+                if rule_source == 'default':
+                    # 如果是默认规则，则将更新的规则添加到用户规则中
+                    if 'rules' not in self.config:
+                        self.config['rules'] = {'default': [], 'user': []}
+                    if 'user' not in self.config['rules']:
+                        self.config['rules']['user'] = []
+                    
+                    # 检查用户规则中是否已存在同code的规则
+                    user_rules = self.config['rules']['user']
+                    found = False
+                    for i, rule in enumerate(user_rules):
+                        if rule.get('code') == rule_code:
+                            user_rules[i] = updated_rule
+                            found = True
+                            break
+                    
+                    if not found:
+                        user_rules.append(updated_rule)
+                else:
+                    # 如果是用户规则，直接更新
+                    user_rules = self.config['rules']['user']
+                    for i, rule in enumerate(user_rules):
+                        if rule.get('code') == rule_code:
+                            user_rules[i] = updated_rule
+                            break
+                
+                # 重新合并规则
+                self.merge_rules()
+                
+                return self.save_config()
             return False
-        except Exception as e:
-            print(f"更新规则失败: {e}")
+        except Exception:
             return False
     
     def delete_rule(self, index: int) -> bool:
         """删除指定索引的规则"""
         try:
             if 0 <= index < len(self.rules):
-                del self.rules[index]
-                return self.save_user_rules()
+                current_rule = self.rules[index]
+                rule_source = current_rule.get('source', 'user')
+                rule_code = current_rule.get('code', '')
+                
+                if rule_source == 'default':
+                    # 如果是默认规则，添加一个空的用户规则来覆盖它
+                    if 'rules' not in self.config:
+                        self.config['rules'] = {'default': [], 'user': []}
+                    if 'user' not in self.config['rules']:
+                        self.config['rules']['user'] = []
+                    
+                    # 添加一个标记为删除的规则
+                    deleted_rule = {
+                        'code': rule_code,
+                        '30d': '',
+                        'match_rules': [],
+                        'deleted': True
+                    }
+                    self.config['rules']['user'].append(deleted_rule)
+                else:
+                    # 如果是用户规则，直接删除
+                    user_rules = self.config['rules']['user']
+                    self.config['rules']['user'] = [
+                        rule for rule in user_rules 
+                        if rule.get('code') != rule_code
+                    ]
+                
+                # 重新合并规则
+                self.merge_rules()
+                
+                return self.save_config()
             return False
-        except Exception as e:
-            print(f"删除规则失败: {e}")
+        except Exception:
             return False
     
     def match_filename(self, filename: str) -> tuple:
@@ -208,6 +255,10 @@ class RuleManager:
         匹配文件名，返回 (是否匹配, 匹配的规则信息)
         """
         for index, rule in enumerate(self.rules):
+            # 跳过被删除的规则
+            if rule.get('deleted', False):
+                continue
+                
             match_rules = rule.get('match_rules', [])
             
             for match_rule in match_rules:
@@ -222,27 +273,44 @@ class RuleManager:
         return False, None
     
     def reset_to_default(self) -> bool:
-        """重置用户规则（删除用户规则文件，重新加载默认规则）"""
+        """重置用户规则（清空用户规则，只保留默认规则）"""
         try:
-            # 删除用户规则文件
-            if self.user_rules_path.exists():
-                self.user_rules_path.unlink()
+            if 'rules' in self.config:
+                self.config['rules']['user'] = []
             
-            # 重新加载规则
-            self.load_rules()
-            return True
+            # 重新合并规则
+            self.merge_rules()
             
-        except Exception as e:
-            print(f"重置规则失败: {e}")
+            return self.save_config()
+            
+        except Exception:
             return False
     
-    # 保持兼容性的方法，适配原有的UI代码
+    def load_rules(self):
+        """重新加载配置文件（兼容性方法）"""
+        self.load_config()
+    
+    # 保持兼容性的方法
     def get_match_rule_columns(self) -> List[str]:
         """获取匹配规则列名（兼容性方法）"""
-        # 由于新的JSON结构不再使用match_rule1, match_rule2格式
-        # 这里返回一个固定的列表以保持兼容性
         return ['match_rules']
     
     def get_next_match_rule_column(self) -> str:
         """获取下一个可用的匹配规则列名（兼容性方法）"""
         return 'match_rules'
+    
+    # 新增配置管理方法
+    def get_setting(self, key: str, default=None):
+        """获取设置值"""
+        return self.config.get('settings', {}).get(key, default)
+    
+    def set_setting(self, key: str, value):
+        """设置配置值"""
+        if 'settings' not in self.config:
+            self.config['settings'] = {}
+        self.config['settings'][key] = value
+        return self.save_config()
+    
+    def get_all_settings(self) -> Dict:
+        """获取所有设置"""
+        return self.config.get('settings', {}).copy()
