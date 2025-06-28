@@ -1,14 +1,10 @@
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
-    QPushButton, QLineEdit, QComboBox, QLabel, QMessageBox, QHeaderView,
-    QMenu, QInputDialog, QFormLayout, QDialogButtonBox, QGroupBox,
-    QScrollArea, QWidget, QSplitter
-)
-from PySide6.QtGui import QAction
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon, QColor, QCursor
-import sys
-import os
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox,
+                               QFormLayout, QGroupBox, QHBoxLayout,
+                               QHeaderView, QLabel, QLineEdit, QMenu,
+                               QMessageBox, QPushButton, QScrollArea,
+                               QTableWidget, QTableWidgetItem, QVBoxLayout,
+                               QWidget)
 from rule_manager import RuleManager
 
 

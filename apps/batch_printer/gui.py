@@ -1,14 +1,11 @@
 import os
 import sys
 import csv
-import subprocess
 import win32print
 import win32api
-import threading
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -18,7 +15,7 @@ from PySide6.QtWidgets import (
     QMessageBox, QSplitter, QFrame, QLineEdit, QSpinBox
 )
 from PySide6.QtCore import Qt, QThread, Signal, QTimer, QSettings
-from PySide6.QtGui import QIcon, QColor, QFont, QPixmap
+from PySide6.QtGui import QIcon, QColor, QFont
 
 
 class PrintWorker(QThread):

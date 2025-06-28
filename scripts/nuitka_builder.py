@@ -54,10 +54,6 @@ class NuitkaBuilder:
             f"--output-dir={self.output_dir}",
             f"--include-data-dir={self.app_dir}/resources=resources",  # 包含资源文件
             "--assume-yes-for-downloads",   # 自动下载依赖
-            "--include-module=encodings",    # 包含编码模块
-            "--include-module=codecs",       # 包含编解码器
-            "--include-module=locale",       # 包含本地化模块
-            "--include-module=sys",          # 包含系统模块
             "--show-progress",              # 显示构建进度
         ]
 
