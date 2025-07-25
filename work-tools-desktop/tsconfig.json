@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "@/types": [
+        "src/renderer/types"
+      ],
+      "@/components": [
+        "src/renderer/components"
+      ],
+      "@/composables": [
+        "src/renderer/composables"
+      ],
+      "@/stores": [
+        "src/renderer/stores"
+      ],
+      "@/utils": [
+        "src/renderer/utils"
+      ]
+    },
+    "types": [
+      "node",
+      "electron",
+      "vite/client"
+    ]
+  },
+  "include": [
+    "src/**/*",
+    "*.ts",
+    "*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".vite"
+  ]
+}
