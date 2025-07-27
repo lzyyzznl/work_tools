@@ -247,25 +247,38 @@ function handleKeydown(e: KeyboardEvent) {
 <template>
 	<Teleport to="body">
 		<div
-			class="rule-editor-overlay"
+			class="fixed top-0 left-0 right-0 bottom-0 bg-overlay flex items-center justify-center z-1000 backdrop-blur-4px"
 			@click.self="handleCancel"
 			@keydown="handleKeydown"
 			tabindex="0"
 		>
-			<div class="rule-editor">
+			<div
+				class="bg-white rounded-lg shadow-xl w-full max-w-600px max-h-80vh flex flex-col overflow-hidden"
+			>
 				<!-- 标题栏 -->
-				<div class="editor-header">
-					<h3 class="editor-title">{{ title }}</h3>
-					<button class="btn btn-sm" @click="handleCancel">✕</button>
+				<div
+					class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50"
+				>
+					<h3 class="text-lg font-semibold text-gray-900 m-0">
+						{{ title }}
+					</h3>
+					<button
+						@click="handleCancel"
+						class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+					>
+						<span class="text-xl">✕</span>
+					</button>
 				</div>
 
 				<!-- 表单内容 -->
-				<div class="editor-content">
+				<div class="flex-1 p-6 overflow-y-auto">
 					<!-- 默认规则编辑提示 -->
-					<div v-if="isEditingDefault" class="default-rule-notice">
-						<div class="notice-content">
-							<span class="notice-icon">ℹ️</span>
-							<span class="notice-text">
+					<div v-if="isEditingDefault" class="mb-6">
+						<div
+							class="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800"
+						>
+							<span class="text-lg">ℹ️</span>
+							<span class="flex-1 text-sm font-medium">
 								您正在编辑默认规则，保存后将创建用户规则来覆盖此默认规则。
 							</span>
 						</div>
@@ -273,55 +286,68 @@ function handleKeydown(e: KeyboardEvent) {
 
 					<form @submit.prevent="handleSave">
 						<!-- 代码字段 -->
-						<div class="form-group">
-							<label class="form-label">代码 *</label>
+						<div class="mb-6">
+							<label class="block text-sm font-semibold text-gray-700 mb-2"
+								>代码 *</label
+							>
 							<input
 								v-model="formData.code"
 								type="text"
-								class="input"
-								:class="{ error: errors.code }"
+								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								:class="{ 'border-red-500': errors.code }"
 								placeholder="例如: 01.33.06.01"
 								maxlength="50"
 							/>
-							<div v-if="errors.code" class="error-message">
+							<div v-if="errors.code" class="text-xs text-red-600 mt-1">
 								{{ errors.code }}
 							</div>
 						</div>
 
 						<!-- 30D字段 -->
-						<div class="form-group">
-							<label class="form-label">30D标记</label>
-							<select v-model="formData.thirtyD" class="input">
+						<div class="mb-6">
+							<label class="block text-sm font-semibold text-gray-700 mb-2"
+								>30D标记</label
+							>
+							<select
+								v-model="formData.thirtyD"
+								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							>
 								<option value="N">N - 否</option>
 								<option value="Y">Y - 是</option>
 							</select>
-							<div class="form-hint">标记文件是否需要在30天内处理</div>
+							<div class="text-xs text-gray-500 mt-1">
+								标记文件是否需要在30天内处理
+							</div>
 						</div>
 
 						<!-- 错误信息显示 -->
-						<div v-if="saveError" class="form-group">
-							<div class="error-banner">
-								<span class="error-icon">⚠️</span>
-								<span class="error-text">{{ saveError }}</span>
+						<div v-if="saveError" class="mb-6">
+							<div
+								class="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800"
+							>
+								<span class="text-lg">⚠️</span>
+								<span class="flex-1 text-sm font-medium">{{ saveError }}</span>
 								<button
 									type="button"
-									class="error-close"
 									@click="saveError = ''"
+									class="p-1 text-red-400 hover:text-red-600 hover:bg-red-100 rounded transition-colors"
 								>
-									✕
+									<span class="text-lg">✕</span>
 								</button>
 							</div>
 						</div>
 
 						<!-- 匹配规则字段 -->
-						<div class="form-group">
-							<div class="form-label-with-action">
-								<label class="form-label">匹配规则 *</label>
+						<div class="mb-6">
+							<div class="flex justify-between items-center mb-2">
+								<label class="block text-sm font-semibold text-gray-700"
+									>匹配规则 *</label
+								>
 								<button
 									type="button"
-									class="btn btn-sm"
 									@click="togglePreview"
-									:class="{ active: previewMode }"
+									class="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+									:class="{ 'bg-blue-600 text-white': previewMode }"
 								>
 									{{ previewMode ? "📝 编辑" : "🔍 测试" }}
 								</button>
@@ -331,65 +357,84 @@ function handleKeydown(e: KeyboardEvent) {
 								<div
 									v-for="(matchRule, index) in formData.matchRules"
 									:key="index"
-									class="match-rule-row"
+									class="flex gap-3 mb-3 items-center"
 								>
 									<input
 										v-model="formData.matchRules[index]"
 										type="text"
-										class="input"
+										class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										:placeholder="`匹配规则 ${index + 1}`"
 									/>
 									<button
 										type="button"
-										class="btn btn-sm"
 										@click="removeMatchRule(index)"
 										:disabled="formData.matchRules.length <= 1"
+										class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 									>
-										➖
+										<span class="text-lg">➖</span>
 									</button>
 								</div>
-								<button type="button" class="btn btn-sm" @click="addMatchRule">
+								<button
+									type="button"
+									@click="addMatchRule"
+									class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+								>
 									➕ 添加规则
 								</button>
 							</div>
 
 							<!-- 规则测试区域 -->
 							<div v-else class="rule-test-container">
-								<div class="test-input-group">
-									<label class="test-label">测试文件名:</label>
+								<div class="mb-4">
+									<label class="block text-sm font-medium text-gray-700 mb-1"
+										>测试文件名:</label
+									>
 									<input
 										v-model="testFileName"
 										type="text"
-										class="input"
+										class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										placeholder="输入文件名进行测试..."
 										@input="testRule"
 									/>
 								</div>
-								<div v-if="testResult" class="test-result">
-									<div v-if="testResult.matched" class="result-success">
+								<div v-if="testResult" class="p-4 rounded-lg text-sm">
+									<div
+										v-if="testResult.matched"
+										class="text-green-800 bg-green-50 p-3 rounded-lg"
+									>
 										✅ 匹配成功！匹配规则: {{ testResult.matchedRule }}
 									</div>
-									<div v-else class="result-failure">❌ 未匹配到任何规则</div>
+									<div v-else class="text-red-800 bg-red-50 p-3 rounded-lg">
+										❌ 未匹配到任何规则
+									</div>
 								</div>
 							</div>
 
-							<div v-if="errors.matchRules" class="error-message">
+							<div v-if="errors.matchRules" class="text-xs text-red-600 mt-1">
 								{{ errors.matchRules }}
 							</div>
-							<div class="form-hint">文件名包含任一规则即可匹配</div>
+							<div class="text-xs text-gray-500 mt-1">
+								文件名包含任一规则即可匹配
+							</div>
 						</div>
 					</form>
 				</div>
 
 				<!-- 操作按钮 -->
-				<div class="editor-footer">
-					<button class="btn" @click="handleCancel" :disabled="isSaving">
+				<div
+					class="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-200"
+				>
+					<button
+						@click="handleCancel"
+						:disabled="isSaving"
+						class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					>
 						取消
 					</button>
 					<button
-						class="btn btn-primary"
 						@click="handleSave"
 						:disabled="isSaving"
+						class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						<span v-if="isSaving">保存中...</span>
 						<span v-else>{{ isEditing ? "更新" : "添加" }}</span>
@@ -399,214 +444,3 @@ function handleKeydown(e: KeyboardEvent) {
 		</div>
 	</Teleport>
 </template>
-
-<style scoped lang="scss">
-.rule-editor-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: var(--color-overlay);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 1000;
-	backdrop-filter: blur(4px);
-}
-
-.rule-editor {
-	background: var(--color-background-primary);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-lg);
-	width: 90%;
-	max-width: 600px;
-	max-height: 80vh;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-}
-
-.editor-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: var(--spacing-lg);
-	background: var(--color-background-secondary);
-	border-bottom: 1px solid var(--color-border-primary);
-
-	.editor-title {
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-semibold);
-		color: var(--color-text-primary);
-		margin: 0;
-	}
-}
-
-.editor-content {
-	flex: 1;
-	padding: var(--spacing-lg);
-	overflow-y: auto;
-}
-
-.form-group {
-	margin-bottom: var(--spacing-lg);
-
-	.form-label {
-		display: block;
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-semibold);
-		color: var(--color-text-primary);
-		margin-bottom: var(--spacing-sm);
-	}
-
-	.input {
-		width: 100%;
-
-		&.error {
-			border-color: var(--color-error);
-		}
-	}
-
-	.form-hint {
-		font-size: var(--font-size-xs);
-		color: var(--color-text-tertiary);
-		margin-top: var(--spacing-xs);
-	}
-
-	.error-message {
-		font-size: var(--font-size-xs);
-		color: var(--color-error);
-		margin-top: var(--spacing-xs);
-	}
-}
-
-.form-label-with-action {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: var(--spacing-sm);
-
-	.btn.active {
-		background: var(--color-primary);
-		color: white;
-	}
-}
-
-.match-rules-container {
-	.match-rule-row {
-		display: flex;
-		gap: var(--spacing-sm);
-		margin-bottom: var(--spacing-sm);
-		align-items: center;
-
-		.input {
-			flex: 1;
-		}
-	}
-}
-
-.rule-test-container {
-	.test-input-group {
-		margin-bottom: var(--spacing-md);
-
-		.test-label {
-			display: block;
-			font-size: var(--font-size-sm);
-			font-weight: var(--font-weight-medium);
-			color: var(--color-text-primary);
-			margin-bottom: var(--spacing-xs);
-		}
-	}
-
-	.test-result {
-		padding: var(--spacing-md);
-		border-radius: var(--radius-md);
-		font-size: var(--font-size-sm);
-
-		.result-success {
-			color: var(--color-success);
-			background: rgba(34, 197, 94, 0.1);
-			padding: var(--spacing-sm);
-			border-radius: var(--radius-sm);
-		}
-
-		.result-failure {
-			color: var(--color-error);
-			background: rgba(239, 68, 68, 0.1);
-			padding: var(--spacing-sm);
-			border-radius: var(--radius-sm);
-		}
-	}
-}
-
-.editor-footer {
-	display: flex;
-	justify-content: flex-end;
-	gap: var(--spacing-md);
-	padding: var(--spacing-lg);
-	background: var(--color-background-secondary);
-	border-top: 1px solid var(--color-border-primary);
-}
-
-.error-banner {
-	display: flex;
-	align-items: center;
-	gap: var(--spacing-sm);
-	padding: var(--spacing-md);
-	background: rgba(239, 68, 68, 0.1);
-	border: 1px solid rgba(239, 68, 68, 0.2);
-	border-radius: var(--radius-md);
-	color: var(--color-error);
-
-	.error-icon {
-		font-size: var(--font-size-lg);
-	}
-
-	.error-text {
-		flex: 1;
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-medium);
-	}
-
-	.error-close {
-		background: none;
-		border: none;
-		color: var(--color-error);
-		cursor: pointer;
-		padding: var(--spacing-xs);
-		border-radius: var(--radius-sm);
-		font-size: var(--font-size-sm);
-		transition: background-color var(--transition-fast);
-
-		&:hover {
-			background: rgba(239, 68, 68, 0.1);
-		}
-	}
-}
-
-.default-rule-notice {
-	margin-bottom: var(--spacing-lg);
-
-	.notice-content {
-		display: flex;
-		align-items: center;
-		gap: var(--spacing-sm);
-		padding: var(--spacing-md);
-		background: rgba(59, 130, 246, 0.1);
-		border: 1px solid rgba(59, 130, 246, 0.2);
-		border-radius: var(--radius-md);
-		color: var(--color-primary);
-
-		.notice-icon {
-			font-size: var(--font-size-lg);
-		}
-
-		.notice-text {
-			flex: 1;
-			font-size: var(--font-size-sm);
-			font-weight: var(--font-weight-medium);
-		}
-	}
-}
-</style>

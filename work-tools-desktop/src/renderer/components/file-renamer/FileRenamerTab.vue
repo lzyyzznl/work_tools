@@ -225,34 +225,46 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="file-renamer-tab">
+	<div class="file-renamer-tab flex flex-col h-full">
 		<!-- 工具栏 -->
-		<div class="toolbar">
-			<div class="toolbar-section">
-				<button class="btn btn-primary" @click="handleSelectFiles">
+		<div
+			class="toolbar flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50"
+		>
+			<div class="toolbar-left flex items-center gap-3">
+				<button
+					@click="handleSelectFiles"
+					class="btn-primary px-4 py-2 rounded-lg transition-colors"
+				>
 					📁 选择文件
 				</button>
-				<button class="btn" @click="handleSelectDirectory">
+				<button
+					@click="handleSelectDirectory"
+					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+				>
 					📂 选择文件夹
 				</button>
-				<button class="btn" @click="clearFiles" :disabled="!fileStore.hasFiles">
+				<button
+					@click="clearFiles"
+					:disabled="!fileStore.hasFiles"
+					class="btn-danger px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				>
 					🗑️ 清空
 				</button>
 				<button
-					class="btn"
 					@click="quickImport"
 					:disabled="isImporting"
 					title="导入文件列表和历史记录"
+					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					<span v-if="isImporting">⏳</span>
 					<span v-else>📥</span>
 					导入
 				</button>
 				<button
-					class="btn"
 					@click="() => exportFileList('csv')"
 					:disabled="!fileStore.hasFiles || isExporting"
 					title="导出当前文件列表为CSV格式"
+					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					<span v-if="isExporting">⏳</span>
 					<span v-else>📤</span>
@@ -260,30 +272,28 @@ onMounted(() => {
 				</button>
 			</div>
 
-			<div class="toolbar-spacer"></div>
-
-			<div class="toolbar-section">
+			<div class="toolbar-right flex items-center gap-3">
 				<button
-					class="btn"
 					@click="handlePreview"
 					:disabled="!fileStore.hasFiles || !renameStore.hasValidParams"
 					title="生成重命名预览 (Ctrl+P)"
+					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					👁️ 预览
 				</button>
 				<button
-					class="btn btn-primary"
 					@click="handleExecuteRename"
 					:disabled="
 						!fileStore.hasFiles || !renameStore.hasValidParams || isExecuting
 					"
 					title="执行批量重命名 (Ctrl+Enter)"
+					class="btn-primary px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					<span v-if="isExecuting">
 						⏳ 执行中...
 						<span
 							v-if="renameStore.executionProgress > 0"
-							class="progress-text"
+							class="ml-2 text-xs opacity-80"
 						>
 							({{ Math.round(renameStore.executionProgress) }}%)
 						</span>
@@ -291,28 +301,43 @@ onMounted(() => {
 					<span v-else>✅ 执行重命名</span>
 				</button>
 				<button
-					class="btn"
 					@click="handleUndoRename"
 					:disabled="!renameStore.canUndo"
+					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					↩️ 撤回
 				</button>
-				<button class="btn" @click="openSettings" title="设置 (Ctrl+,)">
+				<button
+					@click="openSettings"
+					title="设置 (Ctrl+,)"
+					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+				>
 					⚙️ 设置
 				</button>
-				<button class="btn" @click="openHelp" title="帮助 (F1)">❓ 帮助</button>
+				<button
+					@click="openHelp"
+					title="帮助 (F1)"
+					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+				>
+					❓ 帮助
+				</button>
 			</div>
 		</div>
 
 		<!-- 执行状态消息 -->
 		<div
 			v-if="executionMessage"
-			class="execution-message"
+			class="execution-message p-3 text-center text-sm font-medium"
 			:class="{
-				success:
+				'bg-green-100 text-green-800 border-b border-green-200':
 					executionMessage.includes('完成') ||
 					executionMessage.includes('成功'),
-				error: executionMessage.includes('失败'),
+				'bg-red-100 text-red-800 border-b border-red-200':
+					executionMessage.includes('失败'),
+				'bg-blue-100 text-blue-800 border-b border-blue-200':
+					!executionMessage.includes('完成') &&
+					!executionMessage.includes('成功') &&
+					!executionMessage.includes('失败'),
 			}"
 		>
 			{{ executionMessage }}
@@ -323,8 +348,8 @@ onMounted(() => {
 
 		<!-- 拖拽区域 -->
 		<div
-			class="drop-zone"
-			:class="{ 'drag-over': isDragOver }"
+			class="drop-zone flex-1 flex flex-col relative overflow-hidden border-2 border-dashed border-gray-300 m-4 rounded-lg transition-colors"
+			:class="{ 'border-blue-500 bg-blue-50': isDragOver }"
 			@dragenter="handleDragEnter"
 			@dragover.prevent
 			@dragleave="handleDragLeave"
@@ -332,6 +357,18 @@ onMounted(() => {
 		>
 			<!-- 文件表格 -->
 			<FileTable :show-preview="true" :show-selection="true" />
+
+			<!-- 拖拽提示 -->
+			<div
+				v-if="isDragOver"
+				class="absolute inset-0 flex items-center justify-center pointer-events-none"
+			>
+				<div
+					class="text-2xl font-semibold text-blue-600 bg-white px-6 py-4 rounded-lg border-2 border-blue-500"
+				>
+					拖拽文件到此处
+				</div>
+			</div>
 		</div>
 
 		<!-- 通知容器 -->
@@ -352,107 +389,3 @@ onMounted(() => {
 		/>
 	</div>
 </template>
-
-<style scoped lang="scss">
-.file-renamer-tab {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-}
-
-.toolbar {
-	display: flex;
-	align-items: center;
-	padding: var(--spacing-md) var(--spacing-lg);
-	background: var(--color-background-secondary);
-	border-bottom: 1px solid var(--color-border-primary);
-
-	.toolbar-section {
-		display: flex;
-		align-items: center;
-		gap: var(--spacing-sm);
-	}
-
-	.toolbar-spacer {
-		flex: 1;
-	}
-}
-
-.execution-message {
-	padding: var(--spacing-sm) var(--spacing-lg);
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-medium);
-	text-align: center;
-
-	&.success {
-		background: rgba(52, 199, 89, 0.1);
-		color: var(--color-success);
-		border-bottom: 1px solid rgba(52, 199, 89, 0.2);
-	}
-
-	&.error {
-		background: rgba(255, 59, 48, 0.1);
-		color: var(--color-error);
-		border-bottom: 1px solid rgba(255, 59, 48, 0.2);
-	}
-
-	&:not(.success):not(.error) {
-		background: rgba(0, 122, 255, 0.1);
-		color: var(--color-primary);
-		border-bottom: 1px solid rgba(0, 122, 255, 0.2);
-	}
-}
-
-.progress-text {
-	font-size: var(--font-size-xs);
-	opacity: 0.8;
-	margin-left: var(--spacing-xs);
-}
-
-.btn {
-	position: relative;
-	overflow: hidden;
-
-	&:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	&:not(:disabled):hover {
-		transform: translateY(-1px);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-	}
-
-	&:not(:disabled):active {
-		transform: translateY(0);
-	}
-}
-
-.drop-zone {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	position: relative;
-	overflow: hidden;
-
-	&.drag-over {
-		background: rgba(0, 122, 255, 0.05);
-
-		&::after {
-			content: "拖拽文件到此处";
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			font-size: var(--font-size-xl);
-			font-weight: var(--font-weight-semibold);
-			color: var(--color-primary);
-			background: var(--color-background-primary);
-			padding: var(--spacing-lg) var(--spacing-2xl);
-			border-radius: var(--radius-lg);
-			border: 2px dashed var(--color-primary);
-			z-index: 10;
-		}
-	}
-}
-</style>
