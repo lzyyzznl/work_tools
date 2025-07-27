@@ -13,7 +13,6 @@ export interface RuleConfig {
 	settings: {
 		autoSave: boolean;
 		defaultExportFormat: string;
-		theme: string;
 	};
 	rules: {
 		default: Rule[];

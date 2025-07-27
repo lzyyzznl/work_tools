@@ -98,18 +98,19 @@ export const useRuleStore = defineStore("rule", () => {
 		try {
 			// 从 localStorage 加载规则（Electron 环境）
 			const storedConfig = localStorage.getItem(STORAGE_KEYS.RULES);
-			const config: RuleConfig = storedConfig ? JSON.parse(storedConfig) : {
-				version: "1.0",
-				settings: {
-					autoSave: true,
-					defaultExportFormat: "xlsx",
-					theme: "light",
-				},
-				rules: {
-					default: defaultRules,
-					user: [],
-				},
-			};
+			const config: RuleConfig = storedConfig
+				? JSON.parse(storedConfig)
+				: {
+						version: "1.0",
+						settings: {
+							autoSave: true,
+							defaultExportFormat: "xlsx",
+						},
+						rules: {
+							default: defaultRules,
+							user: [],
+						},
+				  };
 
 			// 合并默认规则和用户规则
 			const mergedRules = [...config.rules.default, ...config.rules.user];
@@ -135,7 +136,6 @@ export const useRuleStore = defineStore("rule", () => {
 				settings: {
 					autoSave: true,
 					defaultExportFormat: "xlsx",
-					theme: "light",
 				},
 				rules: {
 					default: systemRules.value,
@@ -260,6 +260,9 @@ export const useRuleStore = defineStore("rule", () => {
 	}
 
 	function matchFilename(filename: string) {
+		// 转换为小写以实现不区分大小写的匹配
+		const lowerFilename = filename.toLowerCase();
+
 		for (let i = 0; i < rules.value.length; i++) {
 			const rule = rules.value[i];
 
@@ -267,7 +270,7 @@ export const useRuleStore = defineStore("rule", () => {
 			if (rule.matchRules.length === 0) continue;
 
 			for (const matchRule of rule.matchRules) {
-				if (matchRule && filename.includes(matchRule)) {
+				if (matchRule && lowerFilename.includes(matchRule.toLowerCase())) {
 					return {
 						matched: true,
 						matchInfo: {

@@ -207,14 +207,15 @@ function testRule() {
 		return;
 	}
 
-	const fileName = testFileName.value.trim();
+	// 转换为小写以实现不区分大小写的匹配
+	const lowerFileName = testFileName.value.trim().toLowerCase();
 	const matchRules = Array.isArray(formData.value.matchRules)
 		? formData.value.matchRules
 		: [];
 	const validMatchRules = matchRules.filter((rule) => rule && rule.trim());
 
 	for (const matchRule of validMatchRules) {
-		if (matchRule && fileName.includes(matchRule)) {
+		if (matchRule && lowerFileName.includes(matchRule.toLowerCase())) {
 			testResult.value = {
 				matched: true,
 				matchedRule: matchRule,

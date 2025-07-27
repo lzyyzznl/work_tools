@@ -70,18 +70,16 @@ function toggleHelp() {
 <template>
 	<div class="add-operation flex flex-col gap-lg">
 		<div class="operation-header">
-			<h3
-				class="operation-title flex items-center gap-sm m-0 text-lg font-semibold text-text-primary"
-			>
-				<span class="operation-icon text-xl">➕</span>
-				添加前缀/后缀
-			</h3>
 			<button
 				class="help-button bg-none border-none text-lg cursor-pointer text-text-secondary ml-auto p-xs rounded-md hover:bg-background-secondary hover:text-primary"
 				title="查看帮助"
 				@click="toggleHelp"
 			>
-				❓
+				<span
+					class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300"
+				>
+					?
+				</span>
 			</button>
 		</div>
 
@@ -100,6 +98,40 @@ function toggleHelp() {
 				<p class="m-0 text-sm text-text-secondary leading-1.5 mb-lg">
 					在文件名的开头或结尾添加指定的文本内容
 				</p>
+				<div class="mb-6">
+					<h5 class="mb-2 text-sm font-semibold text-text-primary">
+						使用示例:
+					</h5>
+					<ul class="text-sm text-text-secondary space-y-1">
+						<li class="flex gap-sm">
+							<span
+								class="example-label min-w-80px text-text-secondary font-medium"
+								>日期前缀:</span
+							>
+							<span class="example-content text-text-tertiary font-mono"
+								>"2024-01-15_" → 2024-01-15_document.txt</span
+							>
+						</li>
+						<li class="flex gap-sm">
+							<span
+								class="example-label min-w-80px text-text-secondary font-medium"
+								>备份后缀:</span
+							>
+							<span class="example-content text-text-tertiary font-mono"
+								>"_backup" → document_backup.txt</span
+							>
+						</li>
+						<li class="flex gap-sm">
+							<span
+								class="example-label min-w-80px text-text-secondary font-medium"
+								>版本标记:</span
+							>
+							<span class="example-content text-text-tertiary font-mono"
+								>"_v2" → document_v2.txt</span
+							>
+						</li>
+					</ul>
+				</div>
 				<button
 					class="close-button absolute top-sm right-sm bg-none border-none text-lg cursor-pointer text-text-secondary w-30px h-30px flex items-center justify-center rounded-md hover:bg-background-secondary hover:text-text-primary"
 					@click="toggleHelp"
@@ -249,41 +281,6 @@ function toggleHelp() {
 					<span class="example-new text-primary font-mono font-medium">
 						{{ isPrefix ? `${text}document.txt` : `document${text}.txt` }}
 					</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- 使用示例 -->
-		<div class="operation-examples">
-			<h4
-				class="examples-title m-0 text-sm font-semibold text-text-primary mb-sm"
-			>
-				使用示例:
-			</h4>
-			<div class="examples-list flex flex-col gap-xs">
-				<div class="example-item flex gap-sm text-xs">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>日期前缀:</span
-					>
-					<span class="example-content text-text-tertiary font-mono"
-						>"2024-01-15_" → 2024-01-15_document.txt</span
-					>
-				</div>
-				<div class="example-item flex gap-sm text-xs">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>备份后缀:</span
-					>
-					<span class="example-content text-text-tertiary font-mono"
-						>"_backup" → document_backup.txt</span
-					>
-				</div>
-				<div class="example-item flex gap-sm text-xs">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>版本标记:</span
-					>
-					<span class="example-content text-text-tertiary font-mono"
-						>"_v2" → document_v2.txt</span
-					>
 				</div>
 			</div>
 		</div>

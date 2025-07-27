@@ -104,18 +104,16 @@ function toggleHelp() {
 <template>
 	<div class="delete-operation flex flex-col gap-lg">
 		<div class="operation-header">
-			<h3
-				class="operation-title flex items-center gap-sm m-0 text-lg font-semibold text-text-primary"
-			>
-				<span class="operation-icon text-xl">✂️</span>
-				删除字符
-			</h3>
 			<button
 				class="help-button bg-none border-none text-lg cursor-pointer text-text-secondary ml-auto p-xs rounded-md hover:bg-background-secondary hover:text-primary"
 				title="查看帮助"
 				@click="toggleHelp"
 			>
-				❓
+				<span
+					class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300"
+				>
+					?
+				</span>
 			</button>
 		</div>
 
@@ -134,6 +132,40 @@ function toggleHelp() {
 				<p class="m-0 text-sm text-text-secondary leading-1.5 mb-lg">
 					从文件名中删除指定位置和数量的字符，支持从左侧或右侧删除
 				</p>
+				<div class="mb-6">
+					<h5 class="mb-2 text-sm font-semibold text-text-primary">
+						使用示例:
+					</h5>
+					<ul class="text-sm text-text-secondary space-y-1">
+						<li class="flex gap-sm">
+							<span
+								class="example-label min-w-80px text-text-secondary font-medium"
+								>删除前缀:</span
+							>
+							<span class="example-content text-text-tertiary font-mono"
+								>位置1，删除4个 → "IMG_" 被删除</span
+							>
+						</li>
+						<li class="flex gap-sm">
+							<span
+								class="example-label min-w-80px text-text-secondary font-medium"
+								>删除后缀:</span
+							>
+							<span class="example-content text-text-tertiary font-mono"
+								>从右数位置1，删除3个 → 删除末尾字符</span
+							>
+						</li>
+						<li class="flex gap-sm">
+							<span
+								class="example-label min-w-80px text-text-secondary font-medium"
+								>删除中间:</span
+							>
+							<span class="example-content text-text-tertiary font-mono"
+								>位置5，删除8个 → 删除日期部分</span
+							>
+						</li>
+					</ul>
+				</div>
 				<button
 					class="close-button absolute top-sm right-sm bg-none border-none text-lg cursor-pointer text-text-secondary w-30px h-30px flex items-center justify-center rounded-md hover:bg-background-secondary hover:text-text-primary"
 					@click="toggleHelp"
@@ -263,143 +295,6 @@ function toggleHelp() {
 							fromLeft ? "从左侧计算位置" : "从右侧计算位置"
 						}}，只处理文件名部分
 					</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- 删除示例 -->
-		<div
-			class="preview-example p-md bg-background-secondary rounded-md border border-border-secondary"
-		>
-			<h4
-				class="example-title m-0 text-sm font-semibold text-text-primary mb-sm"
-			>
-				删除示例:
-			</h4>
-			<div class="example-content flex flex-col gap-xs">
-				<div class="example-item flex gap-sm text-sm">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>原文件名:</span
-					>
-					<span class="example-original text-text-tertiary font-mono"
-						>IMG_20240115_document.txt</span
-					>
-				</div>
-				<div class="example-item flex gap-sm text-sm">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>新文件名:</span
-					>
-					<span class="example-new text-primary font-mono font-medium">
-						{{ generateExample("IMG_20240115_document.txt") }}
-					</span>
-				</div>
-				<div class="example-item flex gap-sm text-sm">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>删除说明:</span
-					>
-					<span class="example-description text-text-secondary italic">
-						{{
-							fromLeft
-								? `从第${startPos}个字符开始删除${count}个字符`
-								: `从右数第${startPos}个位置删除${count}个字符`
-						}}
-					</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- 位置指示器 -->
-		<div
-			class="position-indicator p-md bg-background-secondary rounded-md border border-border-secondary"
-		>
-			<h4
-				class="indicator-title m-0 text-sm font-semibold text-text-primary mb-sm"
-			>
-				位置指示 (以 "IMG_20240115_document" 为例):
-			</h4>
-			<div class="indicator-content">
-				<div class="char-positions flex flex-col gap-xs">
-					<div class="char-row flex items-center gap-sm">
-						<span
-							class="char-label min-w-40px text-xs text-text-secondary font-medium"
-							>字符:</span
-						>
-						<div class="chars flex gap-1px">
-							<span
-								v-for="(char, index) in 'IMG_20240115_document'.split('')"
-								:key="index"
-								class="char flex items-center justify-center w-20px h-24px font-mono text-xs bg-background-primary border border-border-secondary"
-								:class="{
-									'highlight bg-error text-white font-semibold': fromLeft
-										? index >= startPos - 1 && index < startPos - 1 + count
-										: index >=
-												'IMG_20240115_document'.length - startPos - count + 1 &&
-										  index < 'IMG_20240115_document'.length - startPos + 1,
-								}"
-							>
-								{{ char }}
-							</span>
-						</div>
-					</div>
-					<div class="position-row flex items-center gap-sm">
-						<span
-							class="char-label min-w-40px text-xs text-text-secondary font-medium"
-							>位置:</span
-						>
-						<div class="positions flex gap-1px">
-							<span
-								v-for="(char, index) in 'IMG_20240115_document'.split('')"
-								:key="index"
-								class="position flex items-center justify-center w-20px h-24px font-mono text-xs bg-background-primary border border-border-secondary"
-								:class="{
-									'highlight bg-error text-white font-semibold': fromLeft
-										? index >= startPos - 1 && index < startPos - 1 + count
-										: index >=
-												'IMG_20240115_document'.length - startPos - count + 1 &&
-										  index < 'IMG_20240115_document'.length - startPos + 1,
-								}"
-							>
-								{{
-									fromLeft ? index + 1 : "IMG_20240115_document".length - index
-								}}
-							</span>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- 使用示例 -->
-		<div class="operation-examples">
-			<h4
-				class="examples-title m-0 text-sm font-semibold text-text-primary mb-sm"
-			>
-				使用示例:
-			</h4>
-			<div class="examples-list flex flex-col gap-xs">
-				<div class="example-item flex gap-sm text-xs">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>删除前缀:</span
-					>
-					<span class="example-content text-text-tertiary font-mono"
-						>位置1，删除4个 → "IMG_" 被删除</span
-					>
-				</div>
-				<div class="example-item flex gap-sm text-xs">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>删除后缀:</span
-					>
-					<span class="example-content text-text-tertiary font-mono"
-						>从右数位置1，删除3个 → 删除末尾字符</span
-					>
-				</div>
-				<div class="example-item flex gap-sm text-xs">
-					<span class="example-label min-w-80px text-text-secondary font-medium"
-						>删除中间:</span
-					>
-					<span class="example-content text-text-tertiary font-mono"
-						>位置5，删除8个 → 删除日期部分</span
-					>
 				</div>
 			</div>
 		</div>

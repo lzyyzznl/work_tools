@@ -121,18 +121,16 @@ function toggleHelp() {
 <template>
 	<div class="flex flex-col gap-4">
 		<div>
-			<h3
-				class="flex items-center gap-2 mb-1 text-lg font-semibold text-gray-800 dark:text-gray-200"
-			>
-				<span class="text-xl">🔢</span>
-				批量添加序号
-			</h3>
 			<button
 				class="bg-none border-none text-lg cursor-pointer text-gray-500 dark:text-gray-400 ml-auto py-1 px-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
 				title="查看帮助"
 				@click="toggleHelp"
 			>
-				❓
+				<span
+					class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300"
+				>
+					?
+				</span>
 			</button>
 		</div>
 
@@ -151,6 +149,51 @@ function toggleHelp() {
 				<p class="mb-6 text-sm text-gray-500 dark:text-gray-400 leading-normal">
 					为文件名添加自动递增的序号，支持自定义起始数字、位数和步长
 				</p>
+				<div class="mb-6">
+					<h5
+						class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200"
+					>
+						使用示例:
+					</h5>
+					<ul class="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+						<li class="flex gap-2">
+							<span
+								class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
+								>标准编号:</span
+							>
+							<span class="text-gray-400 dark:text-gray-500 font-mono"
+								>001_, 002_, 003_ ...</span
+							>
+						</li>
+						<li class="flex gap-2">
+							<span
+								class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
+								>从10开始:</span
+							>
+							<span class="text-gray-400 dark:text-gray-500 font-mono"
+								>010_, 011_, 012_ ...</span
+							>
+						</li>
+						<li class="flex gap-2">
+							<span
+								class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
+								>步长为5:</span
+							>
+							<span class="text-gray-400 dark:text-gray-500 font-mono"
+								>001_, 006_, 011_ ...</span
+							>
+						</li>
+						<li class="flex gap-2">
+							<span
+								class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
+								>后缀模式:</span
+							>
+							<span class="text-gray-400 dark:text-gray-500 font-mono"
+								>_001, _002, _003 ...</span
+							>
+						</li>
+					</ul>
+				</div>
 				<button
 					class="absolute top-2 right-2 bg-none border-none text-lg cursor-pointer text-gray-500 dark:text-gray-400 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200"
 					@click="toggleHelp"
@@ -324,88 +367,6 @@ function toggleHelp() {
 					>
 						... (共 {{ fileStore.files.length }} 个文件)
 					</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- 完整示例 -->
-		<div
-			class="p-3 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"
-		>
-			<h4 class="mb-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
-				完整示例:
-			</h4>
-			<div class="flex flex-col gap-1">
-				<div class="flex gap-2 text-sm">
-					<span
-						class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-						>原文件名:</span
-					>
-					<span class="text-gray-400 dark:text-gray-500 font-mono"
-						>document.txt</span
-					>
-				</div>
-				<div class="flex gap-2 text-sm">
-					<span
-						class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-						>新文件名:</span
-					>
-					<span class="text-blue-500 font-mono font-medium">
-						{{
-							isPrefix
-								? `${start
-										.toString()
-										.padStart(digits, "0")}${separator}document.txt`
-								: `document${separator}${start
-										.toString()
-										.padStart(digits, "0")}.txt`
-						}}
-					</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- 使用示例 -->
-		<div>
-			<h4 class="mb-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
-				使用示例:
-			</h4>
-			<div class="flex flex-col gap-1">
-				<div class="flex gap-2 text-xs">
-					<span
-						class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-						>标准编号:</span
-					>
-					<span class="text-gray-400 dark:text-gray-500 font-mono"
-						>001_, 002_, 003_ ...</span
-					>
-				</div>
-				<div class="flex gap-2 text-xs">
-					<span
-						class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-						>从10开始:</span
-					>
-					<span class="text-gray-400 dark:text-gray-500 font-mono"
-						>010_, 011_, 012_ ...</span
-					>
-				</div>
-				<div class="flex gap-2 text-xs">
-					<span
-						class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-						>步长为5:</span
-					>
-					<span class="text-gray-400 dark:text-gray-500 font-mono"
-						>001_, 006_, 011_ ...</span
-					>
-				</div>
-				<div class="flex gap-2 text-xs">
-					<span
-						class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-						>后缀模式:</span
-					>
-					<span class="text-gray-400 dark:text-gray-500 font-mono"
-						>_001, _002, _003 ...</span
-					>
 				</div>
 			</div>
 		</div>
