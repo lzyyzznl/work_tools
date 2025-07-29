@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import * as fileSystem from "./fileSystem";
@@ -47,7 +47,11 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on("ready", createWindow);
+app.on("ready", () => {
+	// 移除默认菜单栏
+	Menu.setApplicationMenu(null);
+	createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -70,18 +74,18 @@ app.on("activate", () => {
 // code. You can also put them in separate files and import them here.
 
 // 文件系统 IPC 处理器
-ipcMain.handle('file-system:select-files', async (event, options) => {
+ipcMain.handle("file-system:select-files", async (event, options) => {
 	return await fileSystem.selectFiles(options);
 });
 
-ipcMain.handle('file-system:select-directory', async () => {
+ipcMain.handle("file-system:select-directory", async () => {
 	return await fileSystem.selectDirectory();
 });
 
-ipcMain.handle('file-system:read-file', async (event, filePath) => {
+ipcMain.handle("file-system:read-file", async (event, filePath) => {
 	return await fileSystem.readFile(filePath);
 });
 
-ipcMain.handle('file-system:write-file', async (event, filePath, data) => {
+ipcMain.handle("file-system:write-file", async (event, filePath, data) => {
 	return await fileSystem.writeFile(filePath, data);
 });

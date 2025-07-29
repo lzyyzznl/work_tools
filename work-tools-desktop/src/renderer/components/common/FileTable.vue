@@ -98,7 +98,9 @@ const sortedFiles = computed(() => {
 });
 
 const totalHeight = computed(() => filteredFiles.value.length * itemHeight);
-const offsetY = computed(() => Math.floor(virtualScrollTop.value / itemHeight) * itemHeight);
+const offsetY = computed(
+	() => Math.floor(virtualScrollTop.value / itemHeight) * itemHeight
+);
 
 // 方法
 function handleSort(field: string) {
@@ -117,24 +119,20 @@ function handleFileSelect(file: FileItem) {
 
 function handleSelectAll() {
 	if (!props.showSelection) return;
-	
-	const allSelected = filteredFiles.value.every(file => 
+
+	const allSelected = filteredFiles.value.every((file) =>
 		fileStore.selectedFiles.has(file.id)
 	);
-	
+
 	if (allSelected) {
-		filteredFiles.value.forEach(file => 
-			fileStore.unselectFile(file.id)
-		);
+		filteredFiles.value.forEach((file) => fileStore.unselectFile(file.id));
 	} else {
-		filteredFiles.value.forEach(file => 
-			fileStore.selectFile(file.id)
-		);
+		filteredFiles.value.forEach((file) => fileStore.selectFile(file.id));
 	}
 }
 
 function formatDate(timestamp: number): string {
-	return new Date(timestamp).toLocaleString('zh-CN');
+	return new Date(timestamp).toLocaleString("zh-CN");
 }
 
 function getMatchStatusText(file: FileItem): string {
@@ -149,7 +147,7 @@ function getMatchStatusClass(file: FileItem): string {
 // 虚拟滚动处理
 function handleScroll(event: Event) {
 	if (!isVirtualScrollEnabled.value) return;
-	
+
 	const target = event.target as HTMLElement;
 	virtualScrollTop.value = target.scrollTop;
 }
@@ -159,9 +157,11 @@ watch(
 	() => filteredFiles.value.length,
 	(newLength) => {
 		isVirtualScrollEnabled.value = newLength > 100;
+
 		if (isVirtualScrollEnabled.value) {
 			nextTick(() => {
-				visibleItemCount.value = Math.ceil(virtualScrollHeight.value / itemHeight) + 2;
+				visibleItemCount.value =
+					Math.ceil(virtualScrollHeight.value / itemHeight) + 2;
 			});
 		}
 	},
@@ -171,11 +171,13 @@ watch(
 // 计算选中状态
 const isAllSelected = computed(() => {
 	if (filteredFiles.value.length === 0) return false;
-	return filteredFiles.value.every(file => fileStore.selectedFiles.has(file.id));
+	return filteredFiles.value.every((file) =>
+		fileStore.selectedFiles.has(file.id)
+	);
 });
 
 const isIndeterminate = computed(() => {
-	const selectedCount = filteredFiles.value.filter(file =>
+	const selectedCount = filteredFiles.value.filter((file) =>
 		fileStore.selectedFiles.has(file.id)
 	).length;
 	return selectedCount > 0 && selectedCount < filteredFiles.value.length;
@@ -202,10 +204,15 @@ function getColumnCount() {
 					placeholder="搜索文件名、路径或匹配信息..."
 					class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 				/>
-				<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+				<div
+					class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+				>
 					<span class="text-gray-400">🔍</span>
 				</div>
-				<div v-if="searchQuery" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+				<div
+					v-if="searchQuery"
+					class="absolute inset-y-0 right-0 pr-3 flex items-center"
+				>
 					<button
 						@click="searchQuery = ''"
 						class="text-gray-400 hover:text-gray-600 focus:outline-none"
@@ -217,10 +224,12 @@ function getColumnCount() {
 		</div>
 
 		<!-- 文件表格 -->
-		<div 
+		<div
 			v-if="filteredFiles.length > 0"
 			class="table-container flex-1 overflow-auto"
-			:style="{ height: isVirtualScrollEnabled ? `${virtualScrollHeight}px` : 'auto' }"
+			:style="{
+				height: isVirtualScrollEnabled ? `${virtualScrollHeight}px` : 'auto',
+			}"
 			@scroll="handleScroll"
 		>
 			<table class="w-full">
@@ -235,54 +244,69 @@ function getColumnCount() {
 								class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 							/>
 						</th>
-						<th 
+						<th
 							class="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100"
 							@click="handleSort('name')"
 						>
 							文件名
 							<span v-if="sortField === 'name'" class="ml-1 text-xs opacity-60">
-								{{ sortOrder === 'asc' ? '↑' : '↓' }}
+								{{ sortOrder === "asc" ? "↑" : "↓" }}
 							</span>
 						</th>
-						<th 
+						<th
 							class="w-20 px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100"
 							@click="handleSort('size')"
 						>
 							大小
 							<span v-if="sortField === 'size'" class="ml-1 text-xs opacity-60">
-								{{ sortOrder === 'asc' ? '↑' : '↓' }}
+								{{ sortOrder === "asc" ? "↑" : "↓" }}
 							</span>
 						</th>
-						<th 
+						<th
 							class="w-35 px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100"
 							@click="handleSort('lastModified')"
 						>
 							修改时间
-							<span v-if="sortField === 'lastModified'" class="ml-1 text-xs opacity-60">
-								{{ sortOrder === 'asc' ? '↑' : '↓' }}
+							<span
+								v-if="sortField === 'lastModified'"
+								class="ml-1 text-xs opacity-60"
+							>
+								{{ sortOrder === "asc" ? "↑" : "↓" }}
 							</span>
 						</th>
-						<th 
+						<th
 							v-if="props.showMatchInfo"
 							class="w-30 px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100"
 							@click="handleSort('matched')"
 						>
 							匹配状态
-							<span v-if="sortField === 'matched'" class="ml-1 text-xs opacity-60">
-								{{ sortOrder === 'asc' ? '↑' : '↓' }}
+							<span
+								v-if="sortField === 'matched'"
+								class="ml-1 text-xs opacity-60"
+							>
+								{{ sortOrder === "asc" ? "↑" : "↓" }}
 							</span>
 						</th>
-						<th v-if="props.showPreview" class="px-4 py-3 text-left font-medium text-gray-900">
+						<th
+							v-if="props.showPreview"
+							class="px-4 py-3 text-left font-medium text-gray-900"
+						>
 							预览名称
 						</th>
 					</tr>
 				</thead>
 				<tbody>
 					<!-- 虚拟滚动占位符 -->
-					<tr v-if="isVirtualScrollEnabled && offsetY > 0" class="virtual-spacer">
-						<td :colspan="getColumnCount()" :style="{ height: `${offsetY}px` }"></td>
+					<tr
+						v-if="isVirtualScrollEnabled && offsetY > 0"
+						class="virtual-spacer"
+					>
+						<td
+							:colspan="getColumnCount()"
+							:style="{ height: `${offsetY}px` }"
+						></td>
 					</tr>
-					
+
 					<!-- 文件行 -->
 					<tr
 						v-for="file in sortedFiles"
@@ -303,7 +327,10 @@ function getColumnCount() {
 						<td class="px-4 py-3">
 							<div class="flex items-center">
 								<span class="mr-2">📄</span>
-								<span class="truncate font-medium text-gray-900" :title="file.name">
+								<span
+									class="truncate font-medium text-gray-900"
+									:title="file.name"
+								>
 									{{ file.name }}
 								</span>
 							</div>
@@ -314,7 +341,11 @@ function getColumnCount() {
 						<td class="px-4 py-3 text-gray-500">
 							{{ formatDate(file.lastModified) }}
 						</td>
-						<td v-if="props.showMatchInfo" class="px-4 py-3" :class="getMatchStatusClass(file)">
+						<td
+							v-if="props.showMatchInfo"
+							class="px-4 py-3"
+							:class="getMatchStatusClass(file)"
+						>
 							{{ getMatchStatusText(file) }}
 						</td>
 						<td v-if="props.showPreview" class="px-4 py-3 text-gray-500 italic">
@@ -324,12 +355,16 @@ function getColumnCount() {
 							<span v-else class="text-gray-400">无预览</span>
 						</td>
 					</tr>
-					
+
 					<!-- 虚拟滚动底部占位符 -->
 					<tr v-if="isVirtualScrollEnabled" class="virtual-spacer">
-						<td 
-							:colspan="getColumnCount()" 
-							:style="{ height: `${totalHeight - offsetY - sortedFiles.length * itemHeight}px` }"
+						<td
+							:colspan="getColumnCount()"
+							:style="{
+								height: `${
+									totalHeight - offsetY - sortedFiles.length * itemHeight
+								}px`,
+							}"
 						></td>
 					</tr>
 				</tbody>
@@ -337,13 +372,16 @@ function getColumnCount() {
 		</div>
 
 		<!-- 空状态 -->
-		<div v-else class="empty-state flex-1 flex flex-col items-center justify-center p-12 text-center">
+		<div
+			v-else
+			class="empty-state flex-1 flex flex-col items-center justify-center p-12 text-center"
+		>
 			<div class="text-6xl mb-6 opacity-50">📁</div>
 			<div class="text-lg font-medium text-gray-600 mb-2">
-				{{ searchQuery ? '未找到匹配的文件' : '暂无文件' }}
+				{{ searchQuery ? "未找到匹配的文件" : "暂无文件" }}
 			</div>
 			<div class="text-sm text-gray-400">
-				{{ searchQuery ? '尝试调整搜索条件' : '请选择文件或拖拽文件到此处' }}
+				{{ searchQuery ? "尝试调整搜索条件" : "请选择文件或拖拽文件到此处" }}
 			</div>
 		</div>
 	</div>

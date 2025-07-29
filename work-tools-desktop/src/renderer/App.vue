@@ -6,42 +6,6 @@
 		@dragleave="handleGlobalDragLeave"
 		@drop="handleGlobalDrop"
 	>
-		<!-- 标题栏 -->
-		<div
-			class="title-bar flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm"
-		>
-			<div class="title-left flex items-center gap-4">
-				<div class="app-logo flex items-center gap-3">
-					<div
-						class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"
-					>
-						<span class="text-white font-bold text-sm">WT</span>
-					</div>
-					<div>
-						<h1 class="text-xl font-bold text-gray-900">工作工具</h1>
-						<p class="text-xs text-gray-500">文件处理助手</p>
-					</div>
-				</div>
-			</div>
-
-			<div class="title-right flex items-center gap-4">
-				<div class="stats flex items-center gap-6 text-sm text-gray-600">
-					<div class="flex items-center gap-2">
-						<span>文件:</span>
-						<span class="font-semibold text-blue-600">{{
-							fileStore.fileStats.total
-						}}</span>
-					</div>
-					<div class="flex items-center gap-2">
-						<span>规则:</span>
-						<span class="font-semibold text-purple-600">{{
-							ruleStore.ruleCount
-						}}</span>
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<!-- 导航标签 -->
 		<div class="nav-tabs flex bg-white border-b border-gray-200">
 			<button

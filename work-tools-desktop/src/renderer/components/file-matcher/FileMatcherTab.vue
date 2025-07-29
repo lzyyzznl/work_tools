@@ -243,109 +243,92 @@ function closeRuleManager() {
 			</div>
 		</div>
 
-		<!-- 主要内容区域 -->
-		<div class="main-content flex-1 flex flex-col">
-			<!-- 拖拽区域 -->
+		<!-- 拖拽区域 -->
+		<div
+			class="drop-zone flex-1 flex flex-col relative overflow-hidden border-2 border-dashed border-gray-300 m-4 rounded-lg transition-colors"
+			:class="{ 'border-blue-500 bg-blue-50': isDragOver }"
+			@dragenter="handleDragEnter"
+			@dragover.prevent
+			@dragleave="handleDragLeave"
+			@drop="handleDropFiles"
+		>
+			<!-- 文件表格 -->
+			<FileTable
+				:show-match-info="true"
+				:show-selection="true"
+				:show-preview="false"
+			/>
+
+			<!-- 拖拽提示 -->
 			<div
-				v-if="!hasFiles"
-				@dragenter="handleDragEnter"
-				@dragover.prevent
-				@dragleave="handleDragLeave"
-				@drop="handleDropFiles"
-				class="drop-zone flex-1 flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 m-4 rounded-lg transition-colors"
-				:class="{ 'border-blue-500 bg-blue-50': isDragOver }"
+				v-if="isDragOver"
+				class="absolute inset-0 flex items-center justify-center pointer-events-none"
 			>
-				<div class="text-6xl mb-6 opacity-50">📁</div>
-				<div class="text-xl font-medium text-gray-600 mb-4">
-					{{ isDragOver ? "释放文件到此处" : "拖拽文件到此处" }}
-				</div>
-				<div class="text-sm text-gray-400 mb-6 text-center">
-					支持单个文件或整个文件夹<br />
-					也可以点击下方按钮选择文件
-				</div>
-				<div class="flex gap-4">
-					<button
-						@click="handleSelectFiles"
-						class="btn-primary px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-					>
-						选择文件
-					</button>
-					<button
-						@click="handleSelectDirectory"
-						class="btn-secondary px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-					>
-						选择目录
-					</button>
+				<div
+					class="text-2xl font-semibold text-blue-600 bg-white px-6 py-4 rounded-lg border-2 border-blue-500"
+				>
+					拖拽文件到此处
 				</div>
 			</div>
+		</div>
 
-			<!-- 文件列表 -->
-			<div v-else class="file-list flex-1">
-				<FileTable
-					:show-match-info="true"
-					:show-selection="true"
-					:show-preview="false"
-				/>
-			</div>
-
-			<!-- 状态提示 -->
-			<div
-				v-if="hasFiles && !hasRules"
-				class="status-bar p-4 bg-yellow-50 border-t border-yellow-200"
-			>
-				<div class="flex items-center gap-3 text-yellow-800">
-					<span class="text-xl">⚠️</span>
-					<div>
-						<div class="font-medium">尚未配置匹配规则</div>
-						<div class="text-sm">请先添加匹配规则才能进行文件匹配</div>
-					</div>
-					<button
-						@click="openRuleManager"
-						class="ml-auto px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors"
-					>
-						添加规则
-					</button>
+		<!-- 状态提示 -->
+		<div
+			v-if="hasFiles && !hasRules"
+			class="status-bar p-4 bg-yellow-50 border-t border-yellow-200"
+		>
+			<div class="flex items-center gap-3 text-yellow-800">
+				<span class="text-xl">⚠️</span>
+				<div>
+					<div class="font-medium">尚未配置匹配规则</div>
+					<div class="text-sm">请先添加匹配规则才能进行文件匹配</div>
 				</div>
+				<button
+					@click="openRuleManager"
+					class="ml-auto px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors"
+				>
+					添加规则
+				</button>
 			</div>
+		</div>
 
-			<!-- 匹配统计 -->
-			<div
-				v-if="hasFiles && hasRules"
-				class="stats-bar p-4 bg-gray-50 border-t border-gray-200"
-			>
-				<div class="flex items-center justify-between text-sm">
-					<div class="flex items-center gap-6">
-						<div class="flex items-center gap-2">
-							<span class="text-gray-500">总文件:</span>
-							<span class="font-semibold text-gray-900">{{
-								fileStore.fileStats.total
-							}}</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<span class="text-gray-500">已匹配:</span>
-							<span class="font-semibold text-green-600">{{
-								fileStore.fileStats.matched
-							}}</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<span class="text-gray-500">未匹配:</span>
-							<span class="font-semibold text-red-600">{{
-								fileStore.fileStats.unmatched
-							}}</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<span class="text-gray-500">已选中:</span>
-							<span class="font-semibold text-blue-600">{{
-								fileStore.fileStats.selected
-							}}</span>
-						</div>
-					</div>
+		<!-- 匹配统计 -->
+		<div
+			v-if="hasFiles && hasRules"
+			class="stats-bar p-4 bg-gray-50 border-t border-gray-200"
+		>
+			<div class="flex items-center justify-between text-sm">
+				<div class="flex items-center gap-6">
 					<div class="flex items-center gap-2">
-						<span class="text-gray-500">规则数量:</span>
-						<span class="font-semibold text-purple-600">{{
-							ruleStore.ruleCount
+						<span class="text-gray-500">总文件:</span>
+						<span class="font-semibold text-gray-900">{{
+							fileStore.fileStats.total
 						}}</span>
 					</div>
+					<div class="flex items-center gap-2">
+						<span class="text-gray-500">已匹配:</span>
+						<span class="font-semibold text-green-600">{{
+							fileStore.fileStats.matched
+						}}</span>
+					</div>
+					<div class="flex items-center gap-2">
+						<span class="text-gray-500">未匹配:</span>
+						<span class="font-semibold text-red-600">{{
+							fileStore.fileStats.unmatched
+						}}</span>
+					</div>
+					<div class="flex items-center gap-2">
+						<span class="text-gray-500">已选中:</span>
+						<span class="font-semibold text-blue-600">{{
+							fileStore.fileStats.selected
+						}}</span>
+					</div>
+				</div>
+				<div class="flex items-center gap-2">
+					<span class="text-gray-500">规则数量:</span>
+					<span class="font-semibold text-purple-600">{{
+						ruleStore.ruleCount
+					}}</span>
 				</div>
 			</div>
 		</div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { computed, watch } from "vue";
 import { useRenameStore } from "../../../stores/renameStore";
 import { useRenameEngine } from "../../../composables/useRenameEngine";
 import { useFileStore } from "../../../stores/fileStore";
@@ -109,100 +109,10 @@ const previewNumbers = computed(() => {
 	}
 	return numbers;
 });
-
-// 帮助模态框控制
-const showHelp = ref(false);
-
-function toggleHelp() {
-	showHelp.value = !showHelp.value;
-}
 </script>
 
 <template>
 	<div class="flex flex-col gap-4">
-		<div>
-			<button
-				class="bg-none border-none text-lg cursor-pointer text-gray-500 dark:text-gray-400 ml-auto py-1 px-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
-				title="查看帮助"
-				@click="toggleHelp"
-			>
-				<span
-					class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300"
-				>
-					?
-				</span>
-			</button>
-		</div>
-
-		<!-- 帮助模态框 -->
-		<div
-			v-if="showHelp"
-			class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-1000"
-			@click.self="toggleHelp"
-		>
-			<div
-				class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg max-w-[500px] w-[90%] relative"
-			>
-				<h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-200">
-					批量添加序号说明
-				</h4>
-				<p class="mb-6 text-sm text-gray-500 dark:text-gray-400 leading-normal">
-					为文件名添加自动递增的序号，支持自定义起始数字、位数和步长
-				</p>
-				<div class="mb-6">
-					<h5
-						class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200"
-					>
-						使用示例:
-					</h5>
-					<ul class="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-						<li class="flex gap-2">
-							<span
-								class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-								>标准编号:</span
-							>
-							<span class="text-gray-400 dark:text-gray-500 font-mono"
-								>001_, 002_, 003_ ...</span
-							>
-						</li>
-						<li class="flex gap-2">
-							<span
-								class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-								>从10开始:</span
-							>
-							<span class="text-gray-400 dark:text-gray-500 font-mono"
-								>010_, 011_, 012_ ...</span
-							>
-						</li>
-						<li class="flex gap-2">
-							<span
-								class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-								>步长为5:</span
-							>
-							<span class="text-gray-400 dark:text-gray-500 font-mono"
-								>001_, 006_, 011_ ...</span
-							>
-						</li>
-						<li class="flex gap-2">
-							<span
-								class="min-w-[80px] text-gray-500 dark:text-gray-400 font-medium"
-								>后缀模式:</span
-							>
-							<span class="text-gray-400 dark:text-gray-500 font-mono"
-								>_001, _002, _003 ...</span
-							>
-						</li>
-					</ul>
-				</div>
-				<button
-					class="absolute top-2 right-2 bg-none border-none text-lg cursor-pointer text-gray-500 dark:text-gray-400 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200"
-					@click="toggleHelp"
-				>
-					✕
-				</button>
-			</div>
-		</div>
-
 		<div class="flex flex-col gap-3">
 			<!-- 位置选择 -->
 			<div class="flex items-end gap-3">

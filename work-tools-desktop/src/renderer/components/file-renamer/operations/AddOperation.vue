@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { computed, watch } from "vue";
 import { useRenameStore } from "../../../stores/renameStore";
 import { useRenameEngine } from "../../../composables/useRenameEngine";
 
@@ -58,89 +58,10 @@ const presets = {
 function applyPreset(value: string) {
 	text.value = value;
 }
-
-// 帮助模态框控制
-const showHelp = ref(false);
-
-function toggleHelp() {
-	showHelp.value = !showHelp.value;
-}
 </script>
 
 <template>
 	<div class="add-operation flex flex-col gap-lg">
-		<div class="operation-header">
-			<button
-				class="help-button bg-none border-none text-lg cursor-pointer text-text-secondary ml-auto p-xs rounded-md hover:bg-background-secondary hover:text-primary"
-				title="查看帮助"
-				@click="toggleHelp"
-			>
-				<span
-					class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300"
-				>
-					?
-				</span>
-			</button>
-		</div>
-
-		<!-- 帮助模态框 -->
-		<div
-			v-if="showHelp"
-			class="help-modal fixed inset-0 bg-black/50 flex items-center justify-center z-1000"
-			@click.self="toggleHelp"
-		>
-			<div
-				class="help-content bg-background-primary p-lg rounded-lg shadow-lg max-w-500px w-90% relative"
-			>
-				<h4 class="m-0 text-lg font-semibold text-text-primary mb-md">
-					添加前缀/后缀说明
-				</h4>
-				<p class="m-0 text-sm text-text-secondary leading-1.5 mb-lg">
-					在文件名的开头或结尾添加指定的文本内容
-				</p>
-				<div class="mb-6">
-					<h5 class="mb-2 text-sm font-semibold text-text-primary">
-						使用示例:
-					</h5>
-					<ul class="text-sm text-text-secondary space-y-1">
-						<li class="flex gap-sm">
-							<span
-								class="example-label min-w-80px text-text-secondary font-medium"
-								>日期前缀:</span
-							>
-							<span class="example-content text-text-tertiary font-mono"
-								>"2024-01-15_" → 2024-01-15_document.txt</span
-							>
-						</li>
-						<li class="flex gap-sm">
-							<span
-								class="example-label min-w-80px text-text-secondary font-medium"
-								>备份后缀:</span
-							>
-							<span class="example-content text-text-tertiary font-mono"
-								>"_backup" → document_backup.txt</span
-							>
-						</li>
-						<li class="flex gap-sm">
-							<span
-								class="example-label min-w-80px text-text-secondary font-medium"
-								>版本标记:</span
-							>
-							<span class="example-content text-text-tertiary font-mono"
-								>"_v2" → document_v2.txt</span
-							>
-						</li>
-					</ul>
-				</div>
-				<button
-					class="close-button absolute top-sm right-sm bg-none border-none text-lg cursor-pointer text-text-secondary w-30px h-30px flex items-center justify-center rounded-md hover:bg-background-secondary hover:text-text-primary"
-					@click="toggleHelp"
-				>
-					✕
-				</button>
-			</div>
-		</div>
-
 		<div class="operation-form flex flex-col gap-md">
 			<!-- 位置选择 -->
 			<div class="form-row flex items-end gap-md">
