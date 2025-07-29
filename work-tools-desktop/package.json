@@ -15,7 +15,13 @@
 		"test:run": "vitest run",
 		"postinstall": "node node_modules/electron/install.js"
 	},
-	"keywords": ["electron", "file-processing", "batch-rename", "file-matcher", "desktop-app"],
+	"keywords": [
+		"electron",
+		"file-processing",
+		"batch-rename",
+		"file-matcher",
+		"desktop-app"
+	],
 	"author": {
 		"name": "Work Tools Team",
 		"email": "team@work-tools.com"
@@ -23,15 +29,13 @@
 	"license": "MIT",
 	"pnpm": {
 		"onlyBuiltDependencies": [
-			"electron"
+			"electron",
+			"electron-winstaller"
 		]
 	},
 	"devDependencies": {
 		"@electron-forge/cli": "^7.8.1",
-		"@electron-forge/maker-deb": "^7.8.1",
-		"@electron-forge/maker-rpm": "^7.8.1",
 		"@electron-forge/maker-squirrel": "^7.8.1",
-		"@electron-forge/maker-zip": "^7.8.1",
 		"@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
 		"@electron-forge/plugin-fuses": "^7.8.1",
 		"@electron-forge/plugin-vite": "^7.8.1",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, watch, ref } from "vue";
 import { useRenameStore } from "../../../stores/renameStore";
 import { useRenameEngine } from "../../../composables/useRenameEngine";
 
@@ -48,19 +48,27 @@ function toggleDirection() {
 	fromLeft.value = !fromLeft.value;
 }
 
-// 预设配置
-const presets = [
-	{ label: "删除首字符", config: { startPos: 1, count: 1, fromLeft: true } },
-	{ label: "删除前3字符", config: { startPos: 1, count: 3, fromLeft: true } },
-	{ label: "删除末字符", config: { startPos: 1, count: 1, fromLeft: false } },
-	{ label: "删除后3字符", config: { startPos: 1, count: 3, fromLeft: false } },
-	{ label: "删除中间字符", config: { startPos: 3, count: 2, fromLeft: true } },
-];
+// 预设名称输入
+const presetName = ref("");
 
-function applyPreset(config: any) {
-	startPos.value = config.startPos;
-	count.value = config.count;
-	fromLeft.value = config.fromLeft;
+function savePreset() {
+	if (!presetName.value.trim()) {
+		alert("请输入预设名称");
+		return;
+	}
+
+	renameStore.addPreset({
+		name: presetName.value.trim(),
+		type: "delete",
+		params: {
+			startPos: startPos.value,
+			count: count.value,
+			fromLeft: fromLeft.value,
+		},
+	});
+
+	// 保存后清空输入框
+	presetName.value = "";
 }
 
 // 生成示例预览
@@ -184,21 +192,46 @@ function generateExample(originalName: string): string {
 				</div>
 			</div>
 
-			<!-- 预设配置 -->
-			<div class="form-row flex items-end gap-md">
+			<!-- 保存预设 -->
+			<div class="form-row flex items-end gap-md mt-md">
 				<div class="form-group flex-1 flex flex-col gap-xs">
 					<label class="form-label text-sm font-medium text-text-primary"
-						>快速配置:</label
+						>预设管理:</label
 					>
-					<div class="preset-buttons flex flex-wrap gap-xs">
-						<button
-							v-for="preset in presets"
-							:key="preset.label"
-							class="btn btn-sm btn-preset text-xs px-xs py-sm bg-background-secondary border border-border-secondary hover:bg-background-tertiary hover:border-primary"
-							@click="applyPreset(preset.config)"
-							:title="`应用: ${preset.label}`"
+					<div class="flex gap-xs">
+						<input
+							v-model="presetName"
+							type="text"
+							class="form-input px-md py-sm border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+							placeholder="输入预设名称"
+							autocomplete="off"
+							style="width: 120px"
+						/>
+						<select
+							v-if="
+								renameStore.presets.filter((p) => p.type === 'delete').length >
+								0
+							"
+							class="form-input px-md py-sm border border-border-primary rounded-md text-sm bg-white"
+							@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 						>
-							{{ preset.label }}
+							<option value="">选择预设</option>
+							<option
+								v-for="preset in renameStore.presets.filter(
+									(p) => p.type === 'delete'
+								)"
+								:key="preset.id"
+								:value="preset.id"
+							>
+								{{ preset.name }}
+							</option>
+						</select>
+						<button
+							class="btn btn-sm px-md py-xs text-sm bg-primary text-white rounded-md hover:bg-primary/80"
+							@click="savePreset"
+							:disabled="!presetName.trim()"
+						>
+							保存
 						</button>
 					</div>
 				</div>

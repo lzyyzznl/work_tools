@@ -1,8 +1,5 @@
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
-import { MakerZIP } from "@electron-forge/maker-zip";
-import { MakerDeb } from "@electron-forge/maker-deb";
-import { MakerRpm } from "@electron-forge/maker-rpm";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
@@ -27,28 +24,8 @@ const config: ForgeConfig = {
 			name: "work-tools",
 			authors: "Work Tools Team",
 			description: "批量文件处理工具 - 文件匹配和重命名助手",
-			setupIcon: "./assets/icon.ico",
-			iconUrl: "./assets/icon.ico",
-		}),
-		new MakerZIP({}, ["darwin"]),
-		new MakerRpm({
-			options: {
-				name: "work-tools",
-				productName: "工作工具",
-				description: "批量文件处理工具",
-				homepage: "https://github.com/work-tools/desktop",
-				license: "MIT",
-			}
-		}),
-		new MakerDeb({
-			options: {
-				name: "work-tools",
-				productName: "工作工具",
-				description: "批量文件处理工具",
-				homepage: "https://github.com/work-tools/desktop",
-				maintainer: "Work Tools Team",
-				section: "utils",
-			}
+			// setupIcon: "./assets/icon.ico",
+			// iconUrl: "./assets/icon.ico",
 		}),
 	],
 	plugins: [

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, watch, ref } from "vue";
 import { useRenameStore } from "../../../stores/renameStore";
 import { useRenameEngine } from "../../../composables/useRenameEngine";
+import type { AddParams } from "../../../types/rename";
 
 const renameStore = useRenameStore();
 const { generatePreview } = useRenameEngine();
@@ -39,24 +40,31 @@ function togglePosition() {
 	isPrefix.value = !isPrefix.value;
 }
 
-// 常用前缀/后缀预设
-const presets = {
-	prefix: [
-		{ label: "日期前缀", value: new Date().toISOString().split("T")[0] + "_" },
-		{ label: "编号前缀", value: "No." },
-		{ label: "备份前缀", value: "backup_" },
-		{ label: "新建前缀", value: "new_" },
-	],
-	suffix: [
-		{ label: "备份后缀", value: "_backup" },
-		{ label: "副本后缀", value: "_copy" },
-		{ label: "编辑后缀", value: "_edited" },
-		{ label: "最终后缀", value: "_final" },
-	],
-};
+// 预设名称输入
+const presetName = ref("");
 
-function applyPreset(value: string) {
-	text.value = value;
+function savePreset() {
+	if (!text.value) {
+		alert("请输入要保存的文本内容");
+		return;
+	}
+
+	if (!presetName.value.trim()) {
+		alert("请输入预设名称");
+		return;
+	}
+
+	renameStore.addPreset({
+		name: presetName.value.trim(),
+		type: "add",
+		params: {
+			text: text.value,
+			isPrefix: isPrefix.value,
+		},
+	});
+
+	// 保存后清空输入框
+	presetName.value = "";
 }
 </script>
 
@@ -130,26 +138,49 @@ function applyPreset(value: string) {
 				</div>
 			</div>
 
-			<!-- 预设选项 -->
+			<!-- 保存预设 -->
 			<div class="form-row flex items-end gap-md">
 				<div class="form-group flex-1 flex flex-col gap-xs">
 					<label class="form-label text-sm font-medium text-text-primary"
-						>常用预设:</label
+						>预设管理:</label
 					>
-					<div class="preset-buttons flex flex-wrap gap-xs">
-						<button
-							v-for="preset in isPrefix ? presets.prefix : presets.suffix"
-							:key="preset.label"
-							class="btn btn-sm btn-preset text-xs px-xs py-sm bg-background-secondary border border-border-secondary hover:bg-background-tertiary hover:border-primary"
-							@click="applyPreset(preset.value)"
-							:title="`应用: ${preset.value}`"
+					<div class="flex gap-xs">
+						<input
+							v-model="presetName"
+							type="text"
+							class="flex-1 form-input px-md py-sm border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+							placeholder="输入预设名称"
+							autocomplete="off"
+							style="width: 120px"
+						/>
+						<select
+							v-if="
+								renameStore.presets.filter((p) => p.type === 'add').length > 0
+							"
+							class="form-select px-md py-sm border border-border-primary rounded-md text-sm bg-white"
+							@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 						>
-							{{ preset.label }}
+							<option value="">选择预设</option>
+							<option
+								v-for="preset in renameStore.presets.filter(
+									(p) => p.type === 'add'
+								)"
+								:key="preset.id"
+								:value="preset.id"
+							>
+								{{ preset.name }}
+							</option>
+						</select>
+						<button
+							class="btn btn-sm px-md py-xs text-sm bg-primary text-white rounded-md hover:bg-primary/80"
+							@click="savePreset"
+							:disabled="!text || !presetName.trim()"
+						>
+							保存
 						</button>
 					</div>
 				</div>
 			</div>
-
 			<div class="form-actions-row flex items-center justify-between gap-md">
 				<button
 					class="btn btn-sm px-md py-xs text-sm"
