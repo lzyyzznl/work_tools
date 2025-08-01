@@ -6,6 +6,8 @@ import { useFileSystem } from "../../composables/useFileSystem";
 import { useErrorHandler } from "../../composables/useErrorHandler";
 import FileTable from "../common/FileTable.vue";
 import RuleManager from "./RuleManager.vue";
+import type { VxeGridInstance } from "vxe-table";
+import type { FileItem } from "../../types/file";
 
 const fileStore = useFileStore();
 const ruleStore = useRuleStore();
@@ -16,6 +18,7 @@ const isDragOver = ref(false);
 const isMatching = ref(false);
 const showRuleManager = ref(false);
 const isAutoMatching = ref(false);
+const fileTableRef = ref<InstanceType<typeof FileTable> | null>(null);
 
 // 计算属性
 const hasFiles = computed(() => fileStore.files.length > 0);
@@ -178,6 +181,13 @@ function openRuleManager() {
 function closeRuleManager() {
 	showRuleManager.value = false;
 }
+
+// 导出功能
+function handleExport() {
+	if (!fileTableRef.value) return;
+	fileTableRef.value.openExport();
+	handleSuccess("已触发导出功能");
+}
 </script>
 
 <template>
@@ -214,6 +224,16 @@ function closeRuleManager() {
 			</div>
 
 			<div class="toolbar-right flex items-center gap-3">
+				<!-- 导出按钮 -->
+				<button
+					v-if="hasFiles"
+					@click="handleExport"
+					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors flex items-center"
+				>
+					<span class="mr-2">📤</span>
+					导出
+				</button>
+
 				<button
 					@click="openRuleManager"
 					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
@@ -254,6 +274,7 @@ function closeRuleManager() {
 		>
 			<!-- 文件表格 -->
 			<FileTable
+				ref="fileTableRef"
 				:show-match-info="true"
 				:show-selection="true"
 				:show-preview="false"

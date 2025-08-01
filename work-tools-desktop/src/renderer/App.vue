@@ -97,14 +97,18 @@ onMounted(() => {
 		key: "1",
 		ctrl: true,
 		description: "切换到文件匹配器",
-		action: () => (activeTab.value = "matcher"),
+		action: () => {
+			activeTab.value = "matcher";
+		},
 	});
 
 	registerShortcut({
 		key: "2",
 		ctrl: true,
 		description: "切换到文件重命名器",
-		action: () => (activeTab.value = "renamer"),
+		action: () => {
+			activeTab.value = "renamer";
+		},
 	});
 
 	// 文件操作快捷键

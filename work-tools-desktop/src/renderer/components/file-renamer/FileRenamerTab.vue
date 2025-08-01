@@ -14,6 +14,9 @@ import SettingsModal from "../common/SettingsModal.vue";
 import HelpModal from "../common/HelpModal.vue";
 import ImportPreviewModal from "../common/ImportPreviewModal.vue";
 
+// 添加对 FileTable 组件的引用类型
+import type { ComponentExposed } from "vue-component-type-helpers";
+
 const fileStore = useFileStore();
 const renameStore = useRenameStore();
 const { selectFiles, selectDirectory, handleDrop } = useFileSystem();
@@ -24,14 +27,12 @@ const { registerShortcut, commonShortcuts, getShortcutDisplayText } =
 const {
 	exportFileList,
 	exportFullData,
-	quickImport,
 	fullImport,
 	confirmImport,
 	cancelImport,
 	showImportPreview,
 	importPreview,
 	isExporting,
-	isImporting,
 } = useDataManager();
 
 const isDragOver = ref(false);
@@ -39,6 +40,9 @@ const isExecuting = ref(false);
 const executionMessage = ref("");
 const showSettings = ref(false);
 const showHelp = ref(false);
+
+// 添加对 FileTable 组件的引用
+const fileTableRef = ref<ComponentExposed<typeof FileTable> | null>(null);
 
 async function handleSelectFiles() {
 	try {
@@ -141,6 +145,13 @@ function openHelp() {
 	showHelp.value = true;
 }
 
+// 添加导出方法
+function handleExport() {
+	if (fileTableRef.value) {
+		fileTableRef.value.openExport();
+	}
+}
+
 onMounted(() => {
 	// 注册快捷键
 	registerShortcut(commonShortcuts.selectFiles(handleSelectFiles));
@@ -233,41 +244,30 @@ onMounted(() => {
 			<div class="toolbar-left flex items-center gap-3">
 				<button
 					@click="handleSelectFiles"
-					class="btn-primary px-4 py-2 rounded-lg transition-colors"
+					class="px-4 py-2 rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-700"
 				>
 					📁 选择文件
 				</button>
 				<button
 					@click="handleSelectDirectory"
-					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
 				>
 					📂 选择文件夹
 				</button>
 				<button
 					@click="clearFiles"
 					:disabled="!fileStore.hasFiles"
-					class="btn-danger px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					🗑️ 清空
 				</button>
 				<button
-					@click="quickImport"
-					:disabled="isImporting"
-					title="导入文件列表和历史记录"
-					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					:disabled="!fileStore.hasFiles"
+					@click="handleExport"
+					title="导出当前文件列表"
+					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					<span v-if="isImporting">⏳</span>
-					<span v-else>📥</span>
-					导入
-				</button>
-				<button
-					@click="() => exportFileList('csv')"
-					:disabled="!fileStore.hasFiles || isExporting"
-					title="导出当前文件列表为CSV格式"
-					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					<span v-if="isExporting">⏳</span>
-					<span v-else>📤</span>
+					<span>📤</span>
 					导出
 				</button>
 			</div>
@@ -277,7 +277,7 @@ onMounted(() => {
 					@click="handlePreview"
 					:disabled="!fileStore.hasFiles || !renameStore.hasValidParams"
 					title="生成重命名预览 (Ctrl+P)"
-					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					👁️ 预览
 				</button>
@@ -287,7 +287,7 @@ onMounted(() => {
 						!fileStore.hasFiles || !renameStore.hasValidParams || isExecuting
 					"
 					title="执行批量重命名 (Ctrl+Enter)"
-					class="btn-primary px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					class="px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700"
 				>
 					<span v-if="isExecuting">
 						⏳ 执行中...
@@ -303,21 +303,21 @@ onMounted(() => {
 				<button
 					@click="handleUndoRename"
 					:disabled="!renameStore.canUndo"
-					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					↩️ 撤回
 				</button>
 				<button
 					@click="openSettings"
 					title="设置 (Ctrl+,)"
-					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
 				>
 					⚙️ 设置
 				</button>
 				<button
 					@click="openHelp"
 					title="帮助 (F1)"
-					class="btn-secondary px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
 				>
 					❓ 帮助
 				</button>
@@ -356,7 +356,11 @@ onMounted(() => {
 			@drop="handleDropFiles"
 		>
 			<!-- 文件表格 -->
-			<FileTable :show-preview="true" :show-selection="true" />
+			<FileTable
+				ref="fileTableRef"
+				:show-preview="true"
+				:show-selection="true"
+			/>
 
 			<!-- 拖拽提示 -->
 			<div

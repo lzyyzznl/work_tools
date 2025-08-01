@@ -70,39 +70,18 @@ export default defineConfig({
 			bold: "700",
 		},
 		fontFamily: {
-			primary: [
-				"PingFang SC",
-				"SF Pro Display",
-				"SF Pro Text",
-				"system-ui",
-				"-apple-system",
-				"BlinkMacSystemFont",
-				"Helvetica Neue",
-				"Microsoft YaHei UI",
-				"Segoe UI",
-				"Arial",
-				"sans-serif",
-			],
-			mono: [
-				"SF Mono",
-				"Monaco",
-				"Inconsolata",
-				"Roboto Mono",
-				"Source Code Pro",
-				"monospace",
-			],
+			primary:
+				"PingFang SC, SF Pro Display, SF Pro Text, system-ui, -apple-system, BlinkMacSystemFont, Helvetica Neue, Microsoft YaHei UI, Segoe UI, Arial, sans-serif",
+			mono: "SF Mono, Monaco, Inconsolata, Roboto Mono, Source Code Pro, monospace",
 		},
 		boxShadow: {
 			sm: "0 1px 3px rgba(0, 0, 0, 0.1)",
 			md: "0 4px 6px rgba(0, 0, 0, 0.1)",
 			lg: "0 10px 15px rgba(0, 0, 0, 0.1)",
 		},
-		transitionDuration: {
-			fast: "0.15s",
-			normal: "0.25s",
-			slow: "0.35s",
-		},
 	},
+	// 自定义配置
+	safelist: ["duration-150", "duration-250", "duration-350"],
 	shortcuts: {
 		// 按钮样式快捷方式
 		"btn-base":
@@ -165,24 +144,43 @@ export default defineConfig({
 					"linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(245, 245, 247, 0.9))",
 			}),
 		],
+		// vxe-table 样式定制
+		[
+			/^file-table$/,
+			() => ({
+				"--vxe-table-font-size": "var(--un-font-size-base)",
+				"--vxe-table-header-font-size": "var(--un-font-size-base)",
+				"--vxe-table-footer-font-size": "var(--un-font-size-base)",
+				"--vxe-table-row-height": "40px",
+				"--vxe-table-header-row-height": "44px",
+				"--vxe-table-footer-row-height": "40px",
+				"--vxe-table-border-radius": "var(--un-border-radius-md)",
+				"--vxe-table-border-width": "1px",
+				"--vxe-table-border-color": "var(--un-color-border-primary)",
+				"--vxe-table-header-border-color": "var(--un-color-border-primary)",
+				"--vxe-table-footer-border-color": "var(--un-color-border-primary)",
+				"--vxe-table-header-background-color":
+					"var(--un-color-background-secondary)",
+				"--vxe-table-body-background-color":
+					"var(--un-color-background-primary)",
+				"--vxe-table-footer-background-color":
+					"var(--un-color-background-secondary)",
+				"--vxe-table-row-hover-background-color":
+					"var(--un-color-background-secondary)",
+				"--vxe-table-row-current-background-color":
+					"var(--un-color-primary-light)",
+				"--vxe-table-row-hover-current-background-color":
+					"var(--un-color-primary-light)",
+				"--vxe-table-column-hover-background-color":
+					"var(--un-color-background-secondary)",
+				"--vxe-table-column-current-background-color":
+					"var(--un-color-primary-light)",
+				"--vxe-table-cell-padding-left": "var(--un-spacing-md)",
+				"--vxe-table-cell-padding-right": "var(--un-spacing-md)",
+				"--vxe-table-resizable-line-color": "var(--un-color-primary)",
+				"--vxe-table-checkbox-range-background-color":
+					"var(--un-color-primary-light)",
+			}),
+		],
 	],
-	// 深色模式支持
-	darkTheme: {
-		colors: {
-			text: {
-				primary: "#ffffff",
-				secondary: "#a1a1a6",
-				tertiary: "#8e8e93",
-			},
-			background: {
-				primary: "#1c1c1e",
-				secondary: "#2c2c2e",
-				tertiary: "#3a3a3c",
-			},
-			border: {
-				primary: "rgba(255, 255, 255, 0.1)",
-				secondary: "rgba(255, 255, 255, 0.05)",
-			},
-		},
-	},
 });
