@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, dialog } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import * as fileSystem from "./fileSystem";
@@ -88,4 +88,10 @@ ipcMain.handle("file-system:read-file", async (event, filePath) => {
 
 ipcMain.handle("file-system:write-file", async (event, filePath, data) => {
 	return await fileSystem.writeFile(filePath, data);
+});
+
+// 对话框 IPC 处理器
+ipcMain.handle("dialog:show-save-dialog", async (event, options) => {
+	const result = await dialog.showSaveDialog(options);
+	return result;
 });

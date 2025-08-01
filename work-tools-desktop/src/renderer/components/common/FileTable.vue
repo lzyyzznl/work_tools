@@ -22,8 +22,6 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
 	(e: "file-selected", file: FileItem): void;
 	(e: "selection-changed", selectedFiles: FileItem[]): void;
-	(e: "sort-changed", field: string, order: "asc" | "desc"): void;
-	(e: "batch-operation", operation: string, selectedFiles: FileItem[]): void;
 }>();
 
 // 状态管理
@@ -33,162 +31,8 @@ const { formatFileSize } = useFileSystem();
 // 表格引用
 const gridRef = ref<VxeGridInstance<FileItem>>();
 
-// 导出接口实现
-async function exportFileApi(body: any) {
-	console.log("获取导出参数", body);
-
-	try {
-		let blob: Blob;
-		let filename =
-			body.filename || `file-export-${new Date().toISOString().slice(0, 10)}`;
-
-		// 获取实际的表格数据
-		const tableData = sortedFiles.value;
-		const fields = body.fields || [];
-
-		console.log("准备导出的数据量:", tableData.length);
-		console.log("导出字段:", fields);
-
-		// 根据模式确定导出的数据
-		let exportData = tableData;
-		if (body.mode.includes("selected") && body.ids && body.ids.length > 0) {
-			exportData = tableData.filter((item) => body.ids.includes(item.id));
-		}
-
-		console.log("实际导出数据量:", exportData.length);
-
-		if (body.mode.includes("Csv")) {
-			// CSV导出
-			let csvContent = "";
-
-			// 添加列标题
-			if (body.isHeader !== false) {
-				csvContent +=
-					fields
-						.map((field: any) => `"${field.title || field.field}"`)
-						.join(",") + "\n";
-			}
-
-			// 添加数据行
-			exportData.forEach((row: any) => {
-				const values = fields.map((field: any) => {
-					let value = "";
-					if (field.field === "size") {
-						value = formatFileSize(row[field.field] || 0);
-					} else if (field.field === "lastModified") {
-						value = formatDate(row[field.field] || 0);
-					} else if (field.field === "matchInfo") {
-						value = getMatchStatusText(row);
-					} else {
-						value = row[field.field] || "";
-					}
-					// 处理包含逗号、引号或换行符的值
-					return `"${String(value).replace(/"/g, '""')}"`;
-				});
-				csvContent += values.join(",") + "\n";
-			});
-
-			blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-
-			if (!filename.endsWith(".csv")) {
-				filename += ".csv";
-			}
-		} else {
-			// 默认文本格式 (txt)
-			let textContent = "";
-
-			// 添加列标题
-			if (body.isHeader !== false) {
-				textContent +=
-					fields.map((field: any) => field.title || field.field).join("\t") +
-					"\n";
-			}
-
-			// 添加数据行
-			exportData.forEach((row: any) => {
-				const values = fields.map((field: any) => {
-					let value = "";
-					if (field.field === "size") {
-						value = formatFileSize(row[field.field] || 0);
-					} else if (field.field === "lastModified") {
-						value = formatDate(row[field.field] || 0);
-					} else if (field.field === "matchInfo") {
-						value = getMatchStatusText(row);
-					} else {
-						value = row[field.field] || "";
-					}
-					return value;
-				});
-				textContent += values.join("\t") + "\n";
-			});
-
-			blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
-
-			if (!filename.endsWith(".txt")) {
-				filename += ".txt";
-			}
-		}
-
-		console.log("创建的Blob对象:", blob, "大小:", blob.size);
-
-		// 创建下载链接
-		const url = window.URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = filename;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		window.URL.revokeObjectURL(url);
-
-		console.log(`文件导出成功: ${filename}`);
-		return Promise.resolve();
-	} catch (error) {
-		console.error("导出失败:", error);
-		throw error;
-	}
-}
-
-// 处理导出方法
-function handleExportMethod({ options }: { options: any }) {
-	console.log("导出选项:", options);
-
-	// 处理条件参数，参考官方示例
-	const body = {
-		filename: options.filename,
-		sheetName: options.sheetName,
-		isHeader: options.isHeader,
-		original: options.original,
-		mode: options.mode,
-		ids:
-			options.mode === "selected"
-				? options.data.map((item: any) => item.id)
-				: [],
-		fields: options.columns.map((column: any) => {
-			return {
-				field: column.field,
-				title: column.title,
-			};
-		}),
-	};
-
-	console.log("处理后的导出参数:", body);
-
-	return exportFileApi(body);
-}
-
-// 打开导出对话框
-function openExport() {
-	const $grid = gridRef.value;
-	if ($grid) {
-		$grid.openExport();
-	}
-}
-
 // 本地状态
 const searchQuery = ref("");
-const sortField = ref<string>("name");
-const sortOrder = ref<"asc" | "desc">("asc");
 
 // 计算属性
 const filteredFiles = computed(() => {
@@ -211,91 +55,55 @@ const filteredFiles = computed(() => {
 	return files;
 });
 
-const sortedFiles = computed(() => {
-	return [...filteredFiles.value].sort((a, b) => {
-		let aValue: any, bValue: any;
-
-		switch (sortField.value) {
-			case "name":
-				aValue = a.name.toLowerCase();
-				bValue = b.name.toLowerCase();
-				break;
-			case "size":
-				aValue = a.size;
-				bValue = b.size;
-				break;
-			case "lastModified":
-				aValue = a.lastModified;
-				bValue = b.lastModified;
-				break;
-			case "matched":
-				aValue = a.matched ? 1 : 0;
-				bValue = b.matched ? 1 : 0;
-				break;
-			default:
-				return 0;
-		}
-
-		if (aValue < bValue) return sortOrder.value === "asc" ? -1 : 1;
-		if (aValue > bValue) return sortOrder.value === "asc" ? 1 : -1;
-		return 0;
-	});
-});
-
 // Grid配置 - 配置式表格
-const gridOptions = computed<VxeGridProps<FileItem>>(() => ({
-	border: true,
-	height: "auto",
-	loading: fileStore.isLoading,
-	rowConfig: {
-		isCurrent: true,
-		isHover: true,
-		drag: true, // 启用行拖拽
-		dragSort: true, // 启用行拖拽排序
-	},
-	columnConfig: {
-		resizable: true,
-		drag: true, // 启用列拖拽
-	},
-	sortConfig: {
-		remote: true,
-		trigger: "default",
-	},
-	checkboxConfig: props.showSelection
-		? {
-				highlight: true,
-				reserve: true,
-				range: true,
-				trigger: "cell",
-		  }
-		: undefined,
-	editConfig: {
-		trigger: "click",
-		mode: "cell",
-		showStatus: true,
-	},
-	exportConfig: {
-		remote: true,
-		modes: [
-			{ label: "导出全部数据为 TXT", value: "allTxt" },
-			{ label: "导出全部数据为 CSV", value: "allCsv" },
-			{ label: "导出选中数据为 TXT", value: "selectedTxt" },
-			{ label: "导出选中数据为 CSV", value: "selectedCsv" },
-		],
-		exportMethod: handleExportMethod,
-	},
-	scrollX: {
-		enabled: true,
-		gt: 0,
-	},
-	scrollY: {
-		enabled: true,
-		gt: 100,
-	},
-	className: "file-table",
-	data: sortedFiles.value,
-	columns: getColumnsConfig(),
-}));
+const gridOptions = computed<VxeGridProps<FileItem>>(() => {
+	return {
+		border: true,
+		height: "auto",
+		loading: fileStore.isLoading,
+		keepSource: true, // 添加 keep-source 配置
+		rowConfig: {
+			keyField: "id", // 添加唯一键字段，解决 row-config.keyField 警告
+			isCurrent: true,
+			isHover: true,
+			drag: true, // 启用行拖拽
+			dragSort: true, // 启用行拖拽排序
+		},
+		columnConfig: {
+			resizable: true,
+			drag: true, // 启用列拖拽
+		},
+		sortConfig: {
+			remote: false, // 本地排序，让 VXE Table 处理
+			trigger: "default",
+		},
+		checkboxConfig: props.showSelection
+			? {
+					highlight: true,
+					reserve: true,
+					range: true,
+					trigger: "cell",
+			  }
+			: undefined,
+		editConfig: {
+			trigger: "click",
+			mode: "cell",
+			showStatus: true,
+		},
+		exportConfig: {},
+		scrollX: {
+			enabled: true,
+			gt: 0,
+		},
+		scrollY: {
+			enabled: true,
+			gt: 100,
+		},
+		className: "file-table",
+		data: filteredFiles.value,
+		columns: getColumnsConfig(),
+	};
+});
 
 // 列配置函数
 function getColumnsConfig() {
@@ -373,16 +181,6 @@ function getColumnsConfig() {
 	return cols;
 }
 
-// 方法
-function handleSortChange(params: any) {
-	const { property, order } = params;
-	if (property) {
-		sortField.value = property;
-		sortOrder.value = order === "asc" ? "asc" : "desc";
-		emit("sort-changed", property, sortOrder.value);
-	}
-}
-
 function handleSelectChange() {
 	const selectedRecords = gridRef.value?.getCheckboxRecords() || [];
 	emit("selection-changed", selectedRecords as FileItem[]);
@@ -423,57 +221,20 @@ function handleNameEditComplete(row: FileItem) {
 	}
 }
 
-// 拖拽排序相关方法
+// 拖拽排序相关方法 - 让 VXE Table 自己处理拖拽排序
 function handleRowDragStart(params: any) {
-	console.log("🔧 [DEBUG] Row drag start:", params);
+	console.log("🔧 [DEBUG] VXE Table 拖拽开始:", params);
 }
 
 function handleRowDragEnd(params: any) {
-	console.log("🔧 [DEBUG] Row drag end:", params);
-	const { dragRow, targetRow, currRow, nextRow } = params;
-
-	// 更新文件存储中的文件顺序
-	const newFiles = [...fileStore.files];
-	const dragIndex = newFiles.findIndex((file) => file.id === dragRow.id);
-
+	console.log("🔧 [DEBUG] VXE Table 拖拽结束:", params);
+	// VXE Table 会自动更新数据顺序，我们需要同步到 fileStore
+	const newData = gridRef.value?.getTableData().fullData || [];
+	fileStore.files = [...newData];
 	console.log(
-		"🔧 [DEBUG] Drag index:",
-		dragIndex,
-		"Total files:",
-		newFiles.length
+		"🔧 [DEBUG] 同步拖拽结果到 fileStore，前5个文件:",
+		newData.slice(0, 5).map((f: any) => f.name)
 	);
-
-	if (dragIndex !== -1) {
-		// 从原位置移除
-		const [removedFile] = newFiles.splice(dragIndex, 1);
-
-		// 计算新位置
-		let newIndex = newFiles.length; // 默认放到最后
-		if (targetRow) {
-			const targetIndex = newFiles.findIndex(
-				(file) => file.id === targetRow.id
-			);
-			if (targetIndex !== -1) {
-				// 根据currRow和nextRow确定插入位置
-				if (currRow && currRow.id === targetRow.id) {
-					// 插入到目标行之后
-					newIndex = targetIndex + 1;
-				} else {
-					// 插入到目标行之前
-					newIndex = targetIndex;
-				}
-			}
-		}
-
-		console.log("🔧 [DEBUG] Moving file from", dragIndex, "to", newIndex);
-
-		// 插入到新位置
-		newFiles.splice(newIndex, 0, removedFile);
-
-		// 更新文件存储
-		fileStore.files = newFiles;
-		console.log("🔧 [DEBUG] Files updated successfully");
-	}
 }
 
 // 公共方法
@@ -497,86 +258,314 @@ function setSearchQuery(query: string) {
 	searchQuery.value = query;
 }
 
-// 批量操作方法
-function executeBatchOperation(operation: string) {
-	if (!props.showSelection) return;
-	const selectedFiles = getSelectedFiles();
-	if (selectedFiles.length > 0) {
-		emit("batch-operation", operation, selectedFiles);
+// 自定义导出 CSV 文件 - 适配 Electron 环境
+async function exportCSV() {
+	const $grid = gridRef.value;
+	if (!$grid) {
+		console.error("🔧 [DEBUG] Grid 引用为空，无法导出");
+		return;
 	}
-}
-
-// 导出相关方法
-async function exportData(options: {
-	type: "xlsx" | "csv";
-	mode: "current" | "selected";
-	columns?: string[];
-	filename?: string;
-}) {
-	if (!gridRef.value) return;
 
 	try {
-		// 设置默认文件名
-		const defaultFilename =
-			options.filename ||
-			`file-export-${new Date().toISOString().slice(0, 10)}`;
+		console.log("🔧 [DEBUG] 开始自定义 CSV 导出");
 
-		// 根据导出类型设置文件扩展名
-		const extension = options.type === "xlsx" ? ".xlsx" : ".csv";
-		const filename = defaultFilename.endsWith(extension)
-			? defaultFilename
-			: `${defaultFilename}${extension}`;
+		// 获取表格数据
+		const tableData = $grid.getTableData();
+		const { fullData } = tableData;
 
-		// 准备导出选项
-		const exportOptions = {
-			type: options.type,
-			mode: options.mode,
-			filename: filename,
-			// 自定义导出字段映射
-			columnFilterMethod: ({ column }: { column: any }) => {
-				// 过滤掉不需要导出的列，如操作列
-				return column.property !== "actions";
-			},
-			// 自定义数据处理
-			dataFilterMethod: ({ row }: { row: any }) => {
-				// 可以在这里对导出的数据进行处理
-				return row;
-			},
-		};
+		console.log("🔧 [DEBUG] 获取到表格数据条数:", fullData.length);
 
-		// 执行导出
-		await gridRef.value.exportData(exportOptions);
+		if (fullData.length === 0) {
+			console.warn("🔧 [DEBUG] 没有数据可导出");
+			return;
+		}
 
-		// 导出完成回调
-		console.log(`数据导出完成: ${filename}`);
+		// 生成 CSV 内容
+		const csvContent = generateCSVContent(fullData);
+		console.log("🔧 [DEBUG] CSV 内容生成完成，长度:", csvContent.length);
+
+		// 调用 Electron 文件保存对话框
+		const result = await (window as any).electronAPI?.dialog?.showSaveDialog({
+			defaultPath: "file_table_export.csv",
+			filters: [
+				{ name: "CSV Files", extensions: ["csv"] },
+				{ name: "All Files", extensions: ["*"] },
+			],
+		});
+
+		console.log("🔧 [DEBUG] 文件保存对话框结果:", result);
+
+		if (!result.canceled && result.filePath) {
+			// 将 CSV 内容转换为 ArrayBuffer
+			const encoder = new TextEncoder();
+			const csvBuffer = encoder.encode(csvContent);
+
+			// 写入文件
+			const writeResult = await (
+				window as any
+			).electronAPI?.fileSystem?.writeFile(result.filePath, csvBuffer);
+
+			console.log("🔧 [DEBUG] 文件写入结果:", writeResult);
+
+			if (writeResult?.success) {
+				console.log("✅ CSV 导出成功:", result.filePath);
+			} else {
+				console.error("❌ CSV 导出失败:", writeResult);
+			}
+		}
 	} catch (error) {
-		console.error("导出失败:", error);
-		// 可以在这里添加错误处理逻辑，比如显示错误消息
+		console.error("🔧 [DEBUG] 自定义 CSV 导出出错:", error);
 	}
 }
 
-// 导出全部数据
-function exportAllData(type: "xlsx" | "csv" = "xlsx", filename?: string) {
+// 生成 CSV 内容
+function generateCSVContent(data: FileItem[]): string {
+	console.log("🔧 [DEBUG] 开始生成CSV内容");
+
+	// 获取当前表格的实时列配置
 	const $grid = gridRef.value;
-	if ($grid) {
-		const mode = type === "xlsx" ? "allXlsx" : "allCsv";
-		$grid.exportData({
-			mode,
-			filename,
+	if (!$grid) {
+		console.error("🔧 [DEBUG] Grid引用为空");
+		return "";
+	}
+
+	// 获取当前显示的列配置（考虑拖拽排序）
+	const tableColumns = $grid.getColumns();
+	console.log(
+		"🔧 [DEBUG] 当前表格列配置:",
+		tableColumns.map((col) => ({
+			field: col.field,
+			title: col.title,
+			type: col.type,
+			visible: col.visible,
+		}))
+	);
+
+	// 根据实时列配置生成表头
+	const headers: string[] = [];
+	const validColumns = tableColumns.filter(
+		(col) => col.visible !== false && col.type !== "checkbox" && col.title
+	);
+
+	console.log(
+		"🔧 [DEBUG] 有效导出列:",
+		validColumns.map((col) => ({
+			field: col.field,
+			title: col.title,
+		}))
+	);
+
+	validColumns.forEach((col) => {
+		headers.push(col.title || col.field || "");
+	});
+
+	console.log("🔧 [DEBUG] 实时生成的表头:", headers);
+
+	// 转义 CSV 字段
+	const escapeCSVField = (field: string): string => {
+		if (field.includes(",") || field.includes('"') || field.includes("\n")) {
+			return `"${field.replace(/"/g, '""')}"`;
+		}
+		return field;
+	};
+
+	// 生成 CSV 行
+	const csvRows = [headers.map(escapeCSVField).join(",")];
+
+	data.forEach((file, index) => {
+		console.log("🔧 [DEBUG] 处理文件:", file.name, "索引:", index);
+
+		// 根据实时列配置生成数据行
+		const row: string[] = [];
+
+		validColumns.forEach((col) => {
+			let cellValue = "";
+
+			switch (col.field) {
+				case "index":
+					cellValue = (index + 1).toString();
+					break;
+				case "name":
+					cellValue = escapeCSVField(file.name);
+					break;
+				case "size":
+					cellValue = formatFileSize(file.size);
+					break;
+				case "lastModified":
+					cellValue = formatDate(file.lastModified);
+					break;
+				case "matchInfo":
+					cellValue = escapeCSVField(getMatchStatusText(file));
+					break;
+				case "previewName":
+					cellValue = escapeCSVField(file.previewName || "");
+					break;
+				default:
+					cellValue = "";
+					console.warn("🔧 [DEBUG] 未知列字段:", col.field);
+			}
+
+			row.push(cellValue);
 		});
+
+		console.log("🔧 [DEBUG] 生成的数据行:", row);
+		csvRows.push(row.join(","));
+	});
+
+	return csvRows.join("\n");
+}
+
+// 自定义导出功能 - 适配 Electron 环境，支持CSV和TXT格式
+async function exportData(type: "csv" | "txt" = "csv") {
+	const $grid = gridRef.value;
+	if (!$grid) {
+		console.error("🔧 [DEBUG] Grid 引用为空，无法导出");
+		return;
+	}
+
+	try {
+		console.log(`🔧 [DEBUG] 开始自定义 ${type.toUpperCase()} 导出`);
+
+		// 获取表格数据
+		const tableData = $grid.getTableData();
+		const { fullData } = tableData;
+
+		if (fullData.length === 0) {
+			console.warn("🔧 [DEBUG] 没有数据可导出");
+			return;
+		}
+
+		// 根据类型生成不同格式的内容
+		let content: string;
+		let extension: string;
+		let filterName: string;
+
+		switch (type) {
+			case "csv":
+				content = generateCSVContent(fullData);
+				extension = "csv";
+				filterName = "CSV Files";
+				break;
+			case "txt":
+				content = generateTXTContent(fullData);
+				extension = "txt";
+				filterName = "Text Files";
+				break;
+			default:
+				content = generateCSVContent(fullData);
+				extension = "csv";
+				filterName = "CSV Files";
+		}
+
+		// 调用 Electron 文件保存对话框
+		const result = await (window as any).electronAPI?.dialog?.showSaveDialog({
+			defaultPath: `file_table_export.${extension}`,
+			filters: [
+				{ name: filterName, extensions: [extension] },
+				{ name: "All Files", extensions: ["*"] },
+			],
+		});
+
+		if (!result.canceled && result.filePath) {
+			// 将内容转换为 ArrayBuffer
+			const encoder = new TextEncoder();
+			const buffer = encoder.encode(content);
+
+			// 写入文件
+			const writeResult = await (
+				window as any
+			).electronAPI?.fileSystem?.writeFile(result.filePath, buffer);
+
+			if (writeResult?.success) {
+				console.log(`✅ ${type.toUpperCase()} 导出成功:`, result.filePath);
+			} else {
+				console.error(`❌ ${type.toUpperCase()} 导出失败:`, writeResult);
+			}
+		}
+	} catch (error) {
+		console.error(`🔧 [DEBUG] 自定义 ${type.toUpperCase()} 导出出错:`, error);
 	}
 }
 
-// 导出选中数据
-function exportSelectedData(type: "xlsx" | "csv" = "xlsx", filename?: string) {
+// 生成 TXT 内容
+function generateTXTContent(data: FileItem[]): string {
+	console.log("🔧 [DEBUG] 开始生成TXT内容");
+
+	// 获取当前表格的实时列配置
 	const $grid = gridRef.value;
-	if ($grid) {
-		const mode = type === "xlsx" ? "selectedXlsx" : "selectedCsv";
-		$grid.exportData({
-			mode,
-			filename,
-		});
+	if (!$grid) {
+		console.error("🔧 [DEBUG] Grid引用为空");
+		return "";
 	}
+
+	// 获取当前显示的列配置（考虑拖拽排序）
+	const tableColumns = $grid.getColumns();
+	console.log(
+		"🔧 [DEBUG] TXT导出-当前表格列配置:",
+		tableColumns.map((col) => ({
+			field: col.field,
+			title: col.title,
+			type: col.type,
+			visible: col.visible,
+		}))
+	);
+
+	// 根据实时列配置生成表头
+	const headers: string[] = [];
+	const validColumns = tableColumns.filter(
+		(col) => col.visible !== false && col.type !== "checkbox" && col.title
+	);
+
+	validColumns.forEach((col) => {
+		headers.push(col.title || col.field || "");
+	});
+
+	console.log("🔧 [DEBUG] TXT导出-实时生成的表头:", headers);
+
+	let txt = headers.join("\t") + "\n";
+	txt += headers.map(() => "---").join("\t") + "\n";
+
+	data.forEach((file, index) => {
+		console.log("🔧 [DEBUG] TXT导出-处理文件:", file.name, "索引:", index);
+
+		// 根据实时列配置生成数据行
+		const cells: string[] = [];
+
+		validColumns.forEach((col) => {
+			let cellValue = "";
+
+			switch (col.field) {
+				case "index":
+					cellValue = (index + 1).toString();
+					break;
+				case "name":
+					cellValue = file.name;
+					break;
+				case "size":
+					cellValue = formatFileSize(file.size);
+					break;
+				case "lastModified":
+					cellValue = formatDate(file.lastModified);
+					break;
+				case "matchInfo":
+					cellValue = getMatchStatusText(file);
+					break;
+				case "previewName":
+					cellValue = file.previewName || "";
+					break;
+				default:
+					cellValue = "";
+					console.warn("🔧 [DEBUG] TXT导出-未知列字段:", col.field);
+			}
+
+			cells.push(cellValue);
+		});
+
+		console.log("🔧 [DEBUG] TXT导出-生成的数据行:", cells);
+		txt += cells.join("\t") + "\n";
+	});
+
+	return txt;
 }
 
 // 暴露方法给父组件
@@ -585,44 +574,11 @@ defineExpose({
 	unselectAll,
 	getSelectedFiles,
 	setSearchQuery,
-	executeBatchOperation,
-	exportAllData,
-	exportSelectedData,
-	openExport,
+	exportCSV,
+	exportData,
 });
 
-// 监听文件选择变化
-watch(
-	() => fileStore.selectedFiles,
-	(newSelected) => {
-		nextTick(() => {
-			// 更新表格选中状态
-			if (gridRef.value) {
-				// 清除当前选中状态
-				gridRef.value.setAllCheckboxRow(false);
-				// 重新设置选中状态
-				const selectedIds = Array.from(newSelected);
-				const selectedFiles = sortedFiles.value.filter((file) =>
-					selectedIds.includes(file.id)
-				);
-				gridRef.value.setCheckboxRow(selectedFiles, true);
-			}
-		});
-	},
-	{ deep: true }
-);
-
-// 监听文件列表变化
-watch(
-	() => sortedFiles.value,
-	() => {
-		nextTick(() => {
-			// 更新表格数据
-			gridRef.value?.reloadData(sortedFiles.value);
-		});
-	},
-	{ deep: true }
-);
+// VXE Table 通过配置自动处理数据响应，无需手动监听
 </script>
 
 <template>
@@ -659,13 +615,12 @@ watch(
 
 		<!-- 文件表格 -->
 		<div
-			v-if="sortedFiles.length > 0"
+			v-if="filteredFiles.length > 0"
 			class="table-container flex-1 overflow-hidden"
 		>
 			<vxe-grid
 				ref="gridRef"
 				v-bind="gridOptions"
-				@sort-change="handleSortChange"
 				@checkbox-change="handleSelectChange"
 				@checkbox-all="handleSelectChange"
 				@current-change="handleCurrentChange"

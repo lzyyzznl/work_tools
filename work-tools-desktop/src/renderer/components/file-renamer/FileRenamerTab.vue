@@ -148,7 +148,7 @@ function openHelp() {
 // 添加导出方法
 function handleExport() {
 	if (fileTableRef.value) {
-		fileTableRef.value.openExport();
+		fileTableRef.value.exportCSV();
 	}
 }
 
