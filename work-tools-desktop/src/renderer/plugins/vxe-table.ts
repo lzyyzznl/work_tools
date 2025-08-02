@@ -4,11 +4,11 @@ import "vxe-table/lib/style.css";
 import "vxe-pc-ui/lib/style.css";
 
 // 导入 vxe-pc-ui 组件
-import VXEModal from "vxe-pc-ui/lib/modal";
-import VXEButton from "vxe-pc-ui/lib/button";
-import VXEInput from "vxe-pc-ui/lib/input";
-import VXECheckbox from "vxe-pc-ui/lib/checkbox";
-import VXESelect from "vxe-pc-ui/lib/select";
+import { VxeModal as VXEModal } from "vxe-pc-ui";
+import { VxeButton as VXEButton } from "vxe-pc-ui";
+import { VxeInput as VXEInput } from "vxe-pc-ui";
+import { VxeCheckbox as VXECheckbox } from "vxe-pc-ui";
+import { VxeSelect as VXESelect } from "vxe-pc-ui";
 
 export function setupVxeTable(app: App) {
 	app.use(VXETable);

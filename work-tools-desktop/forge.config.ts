@@ -24,17 +24,12 @@ const config: ForgeConfig = {
 			name: "work-tools",
 			authors: "Work Tools Team",
 			description: "批量文件处理工具 - 文件匹配和重命名助手",
-			// setupIcon: "./assets/icon.ico",
-			// iconUrl: "./assets/icon.ico",
 		}),
 	],
 	plugins: [
 		new VitePlugin({
-			// `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
-			// If you are familiar with Vite configuration, it will look really familiar.
 			build: [
 				{
-					// `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
 					entry: "src/main/main.ts",
 					config: "vite.main.config.ts",
 					target: "main",
@@ -52,8 +47,6 @@ const config: ForgeConfig = {
 				},
 			],
 		}),
-		// Fuses are used to enable/disable various Electron functionality
-		// at package time, before code signing the application
 		new FusesPlugin({
 			version: FuseVersion.V1,
 			[FuseV1Options.RunAsNode]: false,

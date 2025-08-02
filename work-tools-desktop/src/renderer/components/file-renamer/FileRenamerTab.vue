@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { onMounted, ref } from "vue";
+import { useDataManager } from "../../composables/useDataManager";
+import { useErrorHandler } from "../../composables/useErrorHandler";
+import { useFileSystem } from "../../composables/useFileSystem";
+import { useKeyboardShortcuts } from "../../composables/useKeyboardShortcuts";
+import { useRenameEngine } from "../../composables/useRenameEngine";
 import { useFileStore } from "../../stores/fileStore";
 import { useRenameStore } from "../../stores/renameStore";
-import { useFileSystem } from "../../composables/useFileSystem";
-import { useRenameEngine } from "../../composables/useRenameEngine";
-import { useErrorHandler } from "../../composables/useErrorHandler";
-import { useKeyboardShortcuts } from "../../composables/useKeyboardShortcuts";
-import { useDataManager } from "../../composables/useDataManager";
 import FileTable from "../common/FileTable.vue";
-import RenameOperationTabs from "./RenameOperationTabs.vue";
-import NotificationContainer from "../common/NotificationContainer.vue";
-import SettingsModal from "../common/SettingsModal.vue";
 import HelpModal from "../common/HelpModal.vue";
 import ImportPreviewModal from "../common/ImportPreviewModal.vue";
+import NotificationContainer from "../common/NotificationContainer.vue";
+import SettingsModal from "../common/SettingsModal.vue";
+import RenameOperationTabs from "./RenameOperationTabs.vue";
 
 // 添加对 FileTable 组件的引用类型
 import type { ComponentExposed } from "vue-component-type-helpers";
@@ -21,19 +21,10 @@ const fileStore = useFileStore();
 const renameStore = useRenameStore();
 const { selectFiles, selectDirectory, handleDrop } = useFileSystem();
 const { generatePreview, executeRename, undoLastOperation } = useRenameEngine();
-const { handleError, handleSuccess, handleWarning } = useErrorHandler();
-const { registerShortcut, commonShortcuts, getShortcutDisplayText } =
-	useKeyboardShortcuts();
-const {
-	exportFileList,
-	exportFullData,
-	fullImport,
-	confirmImport,
-	cancelImport,
-	showImportPreview,
-	importPreview,
-	isExporting,
-} = useDataManager();
+const { handleError, handleSuccess } = useErrorHandler();
+const { registerShortcut, commonShortcuts } = useKeyboardShortcuts();
+const { confirmImport, cancelImport, showImportPreview, importPreview } =
+	useDataManager();
 
 const isDragOver = ref(false);
 const isExecuting = ref(false);

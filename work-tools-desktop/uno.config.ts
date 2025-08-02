@@ -1,7 +1,7 @@
-import { defineConfig, presetUno, presetTypography } from "unocss";
+import { defineConfig, presetWind3, presetTypography } from "unocss";
 
 export default defineConfig({
-	presets: [presetUno(), presetTypography()],
+	presets: [presetWind3(), presetTypography()],
 	theme: {
 		colors: {
 			// 苹果风格主色调
