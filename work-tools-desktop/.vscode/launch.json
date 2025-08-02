@@ -25,6 +25,20 @@
         "${workspaceFolder}/.vite/build/**/*.js",
         "${workspaceFolder}/src/**/*.ts"
       ]
+    },
+    {
+      "name": "Debug Renderer Process",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/src/renderer",
+      "url": "http://localhost:5173",
+      "timeout": 30000,
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/src/renderer/**/*",
+        "${workspaceFolder}/.vite/build/**/*"
+      ]
     }
   ]
 }

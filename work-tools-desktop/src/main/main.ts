@@ -8,6 +8,11 @@ if (started) {
 	app.quit();
 }
 
+// Enable remote debugging for VS Code in development
+if (process.env.NODE_ENV === "development") {
+	app.commandLine.appendSwitch('remote-debugging-port', '9222');
+}
+
 const createWindow = () => {
 	// Create the browser window.
 	const mainWindow = new BrowserWindow({
