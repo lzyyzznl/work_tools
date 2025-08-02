@@ -73,16 +73,20 @@ function handleDragLeave(e: DragEvent) {
 	isDragOver.value = false;
 }
 
-function handleDropFiles(e: DragEvent) {
+async function handleDropFiles(e: DragEvent) {
 	e.preventDefault();
 	isDragOver.value = false;
 
-	const files = handleDrop(e);
-	if (files.length > 0) {
-		fileStore.addFiles(files);
-		if (renameStore.isAutoPreview) {
-			generatePreview();
+	try {
+		const files = await handleDrop(e);
+		if (files.length > 0) {
+			fileStore.addFiles(files);
+			if (renameStore.isAutoPreview) {
+				generatePreview();
+			}
 		}
+	} catch (error) {
+		handleError(error, "拖拽文件");
 	}
 }
 

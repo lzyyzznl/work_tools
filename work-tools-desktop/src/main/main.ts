@@ -75,9 +75,6 @@ app.on("activate", () => {
 	}
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
-
 // 文件系统 IPC 处理器
 ipcMain.handle("file-system:select-files", async (event, options) => {
 	return await fileSystem.selectFiles(options);
@@ -101,6 +98,10 @@ ipcMain.handle("file-system:rename-file", async (event, oldPath, newPath) => {
 
 ipcMain.handle("file-system:check-file-exists", async (event, filePath) => {
 	return await fileSystem.checkFileExists(filePath);
+});
+
+ipcMain.handle("file-system:get-files-from-path", async (event, filePath) => {
+	return await fileSystem.getFilesFromPath(filePath);
 });
 
 // 对话框 IPC 处理器

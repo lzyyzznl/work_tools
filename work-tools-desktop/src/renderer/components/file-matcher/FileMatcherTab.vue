@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
+import { useErrorHandler } from "../../composables/useErrorHandler";
+import { useFileSystem } from "../../composables/useFileSystem";
 import { useFileStore } from "../../stores/fileStore";
 import { useRuleStore } from "../../stores/ruleStore";
-import { useFileSystem } from "../../composables/useFileSystem";
-import { useErrorHandler } from "../../composables/useErrorHandler";
 import FileTable from "../common/FileTable.vue";
 import RuleManager from "./RuleManager.vue";
-import type { VxeGridInstance } from "vxe-table";
-import type { FileItem } from "../../types/file";
 
 const fileStore = useFileStore();
 const ruleStore = useRuleStore();
-const { selectFiles, selectDirectory, handleDrop } = useFileSystem();
+const { handleDrop } = useFileSystem();
 const { handleError, handleSuccess } = useErrorHandler();
 
 const isDragOver = ref(false);
@@ -81,12 +79,12 @@ function handleDragLeave(e: DragEvent) {
 	isDragOver.value = false;
 }
 
-function handleDropFiles(e: DragEvent) {
+async function handleDropFiles(e: DragEvent) {
 	e.preventDefault();
 	isDragOver.value = false;
 
 	try {
-		const files = handleDrop(e);
+		const files = await handleDrop(e);
 		if (files.length > 0) {
 			fileStore.addFiles(files);
 			handleSuccess(`成功添加 ${files.length} 个文件`);

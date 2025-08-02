@@ -91,6 +91,52 @@ export async function selectFiles(
 	}
 }
 
+export async function isDirectory(path: string): Promise<boolean> {
+	try {
+		const stat = await fs.stat(path);
+		return stat.isDirectory();
+	} catch (err) {
+		console.error("无法访问路径：", path, err);
+		return false;
+	}
+}
+
+// 递归读取目录中的所有文件
+async function readDirectoryRecursive(dirPath: string, files: FileData[] = []): Promise<FileData[]> {
+	const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+	for (const entry of entries) {
+		const fullPath = path.join(dirPath, entry.name);
+
+		if (entry.isFile()) {
+			try {
+				const stats = await fs.stat(fullPath);
+				const fileBuffer = await fs.readFile(fullPath);
+
+				const fileData: FileData = {
+					name: entry.name,
+					path: fullPath,
+					size: stats.size,
+					lastModified: stats.mtime.getTime(),
+					type: getFileType(fullPath),
+					arrayBuffer: fileBuffer.buffer.slice(
+						fileBuffer.byteOffset,
+						fileBuffer.byteOffset + fileBuffer.byteLength
+					) as ArrayBuffer,
+				};
+
+				files.push(fileData);
+			} catch (error) {
+				console.error(`Error reading file ${fullPath}:`, error);
+			}
+		} else if (entry.isDirectory()) {
+			await readDirectoryRecursive(fullPath, files);
+		}
+	}
+
+	return files;
+}
+
 // 选择目录
 export async function selectDirectory(): Promise<FileData[]> {
 	try {
@@ -102,44 +148,8 @@ export async function selectDirectory(): Promise<FileData[]> {
 			return [];
 		}
 
-		const files: FileData[] = [];
 		const directoryPath = result.filePaths[0];
-
-		async function readDirectory(dirPath: string) {
-			const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-			for (const entry of entries) {
-				const fullPath = path.join(dirPath, entry.name);
-
-				if (entry.isFile()) {
-					try {
-						const stats = await fs.stat(fullPath);
-						const fileBuffer = await fs.readFile(fullPath);
-
-						const fileData: FileData = {
-							name: entry.name,
-							path: fullPath,
-							size: stats.size,
-							lastModified: stats.mtime.getTime(),
-							type: getFileType(fullPath),
-							arrayBuffer: fileBuffer.buffer.slice(
-								fileBuffer.byteOffset,
-								fileBuffer.byteOffset + fileBuffer.byteLength
-							) as ArrayBuffer,
-						};
-
-						files.push(fileData);
-					} catch (error) {
-						console.error(`Error reading file ${fullPath}:`, error);
-					}
-				} else if (entry.isDirectory()) {
-					await readDirectory(fullPath);
-				}
-			}
-		}
-
-		await readDirectory(directoryPath);
-		return files;
+		return await readDirectoryRecursive(directoryPath);
 	} catch (error) {
 		console.error("Error selecting directory:", error);
 		throw error;
@@ -220,5 +230,38 @@ export async function renameFile(
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
 		};
+	}
+}
+
+// 根据路径获取文件列表
+export async function getFilesFromPath(filePath: string): Promise<FileData[]> {
+	try {
+		const isDir = await isDirectory(filePath);
+		
+		if (isDir) {
+			// 如果是目录，递归获取所有文件
+			return await readDirectoryRecursive(filePath);
+		} else {
+			// 如果是文件，直接读取并返回单文件数组
+			const stats = await fs.stat(filePath);
+			const fileBuffer = await fs.readFile(filePath);
+
+			const fileData: FileData = {
+				name: path.basename(filePath),
+				path: filePath,
+				size: stats.size,
+				lastModified: stats.mtime.getTime(),
+				type: getFileType(filePath),
+				arrayBuffer: fileBuffer.buffer.slice(
+					fileBuffer.byteOffset,
+					fileBuffer.byteOffset + fileBuffer.byteLength
+				) as ArrayBuffer,
+			};
+
+			return [fileData];
+		}
+	} catch (error) {
+		console.error("Error getting files from path:", error);
+		throw error;
 	}
 }

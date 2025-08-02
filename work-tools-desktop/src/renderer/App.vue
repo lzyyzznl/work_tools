@@ -152,12 +152,12 @@ function handleGlobalDragLeave(e: DragEvent) {
 	}
 }
 
-function handleGlobalDrop(e: DragEvent) {
+async function handleGlobalDrop(e: DragEvent) {
 	e.preventDefault();
 	isDragOver.value = false;
 
 	try {
-		const files = handleDrop(e);
+		const files = await handleDrop(e);
 		if (files.length > 0) {
 			fileStore.addFiles(files);
 			handleSuccess(`成功添加 ${files.length} 个文件`);

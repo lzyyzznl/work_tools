@@ -1,9 +1,8 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type { FileData } from "../renderer/types/fileSystem";
-import type { ElectronAPI } from "../renderer/types/common";
 
 // 文件系统 API 接口定义
 interface FileSelectOptions {
@@ -94,6 +93,22 @@ contextBridge.exposeInMainWorld("electronAPI", {
 				console.error("Error checking file existence:", error);
 				throw error;
 			}
+		},
+
+		getFilesFromPath: async (filePath: string): Promise<FileData[]> => {
+			try {
+				return await ipcRenderer.invoke(
+					"file-system:get-files-from-path",
+					filePath
+				);
+			} catch (error) {
+				console.error("Error getting files from path:", error);
+				throw error;
+			}
+		},
+
+		getPathForFile: async (file: File): Promise<string> => {
+			return webUtils.getPathForFile(file);
 		},
 	},
 

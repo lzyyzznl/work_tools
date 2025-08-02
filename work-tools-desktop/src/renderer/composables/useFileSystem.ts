@@ -102,11 +102,10 @@ export function useFileSystem() {
 		}
 	}
 
-	// 处理拖拽文件 (在 Electron 中仍然可用)
-	function handleDrop(event: DragEvent): File[] {
+	// 处理拖拽文件并转换为 FileData[] (用于 Electron 环境)
+	async function handleDrop(event: DragEvent): Promise<FileData[]> {
 		event.preventDefault();
 		const files: File[] = [];
-
 		if (event.dataTransfer?.items) {
 			// 使用 DataTransferItemList 接口
 			for (let i = 0; i < event.dataTransfer.items.length; i++) {
@@ -123,7 +122,23 @@ export function useFileSystem() {
 			files.push(...Array.from(event.dataTransfer.files));
 		}
 
-		return files;
+		const fileDataArray: FileData[] = [];
+
+		for (const file of files) {
+			try {
+				// 获取文件路径
+				const filePath = await getPathForFile(file as File);
+				console.log(filePath);
+
+				// 使用新的 getFilesFromPath 方法获取文件数据
+				const filesFromPath = await getFilesFromPath(filePath);
+				fileDataArray.push(...filesFromPath);
+			} catch (error) {
+				console.error(`Error processing file ${file.name}:`, error);
+			}
+		}
+
+		return fileDataArray;
 	}
 
 	// 格式化文件大小
@@ -162,6 +177,14 @@ export function useFileSystem() {
 		} catch {
 			return false;
 		}
+	}
+
+	async function getPathForFile(file: File): Promise<string> {
+		return await window.electronAPI.fileSystem.getPathForFile(file);
+	}
+
+	async function getFilesFromPath(path: string): Promise<FileData[]> {
+		return await window.electronAPI.fileSystem.getFilesFromPath(path);
 	}
 
 	// 获取文件信息
@@ -238,5 +261,6 @@ export function useFileSystem() {
 		fileExists,
 		getFileInfo,
 		processFiles,
+		getPathForFile,
 	};
 }

@@ -48,6 +48,8 @@ export interface ElectronAPI {
 			newPath: string
 		) => Promise<{ success: boolean; error?: string }>;
 		checkFileExists: (filePath: string) => Promise<boolean>;
+		getPathForFile: (filePath: File) => Promise<string>;
+		getFilesFromPath: (filePath: string) => Promise<FileData[]>;
 	};
 }
 
