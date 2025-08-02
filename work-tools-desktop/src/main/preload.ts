@@ -2,20 +2,13 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from "electron";
+import type { FileData } from "../renderer/types/fileSystem";
+import type { ElectronAPI } from "../renderer/types/common";
 
 // 文件系统 API 接口定义
 interface FileSelectOptions {
 	multiple?: boolean;
 	filters?: Array<{ name: string; extensions: string[] }>;
-}
-
-interface FileData {
-	name: string;
-	path: string;
-	size: number;
-	lastModified: number;
-	type: string;
-	arrayBuffer: ArrayBuffer;
 }
 
 interface FileOperationResult {
@@ -27,69 +20,27 @@ interface FileOperationResult {
 // 暴露安全的 API 到渲染进程
 contextBridge.exposeInMainWorld("electronAPI", {
 	fileSystem: {
-		selectFiles: async (options: FileSelectOptions = {}): Promise<File[]> => {
+		selectFiles: async (
+			options: FileSelectOptions = {}
+		): Promise<FileData[]> => {
 			try {
 				const fileDataArray: FileData[] = await ipcRenderer.invoke(
 					"file-system:select-files",
 					options
 				);
-
-				// 将文件数据转换为 File 对象
-				const files: File[] = [];
-				for (const fileData of fileDataArray) {
-					const blob = new Blob([fileData.arrayBuffer], {
-						type: fileData.type,
-					});
-					const file = new File([blob], fileData.name, {
-						type: fileData.type,
-						lastModified: fileData.lastModified,
-					});
-
-					// 添加路径信息（非标准属性，但在 Electron 环境中有用）
-					Object.defineProperty(file, "path", {
-						value: fileData.path,
-						writable: false,
-						enumerable: false,
-					});
-
-					files.push(file);
-				}
-
-				return files;
+				return fileDataArray;
 			} catch (error) {
 				console.error("Error selecting files:", error);
 				throw error;
 			}
 		},
 
-		selectDirectory: async (): Promise<File[]> => {
+		selectDirectory: async (): Promise<FileData[]> => {
 			try {
 				const fileDataArray: FileData[] = await ipcRenderer.invoke(
 					"file-system:select-directory"
 				);
-
-				// 将文件数据转换为 File 对象
-				const files: File[] = [];
-				for (const fileData of fileDataArray) {
-					const blob = new Blob([fileData.arrayBuffer], {
-						type: fileData.type,
-					});
-					const file = new File([blob], fileData.name, {
-						type: fileData.type,
-						lastModified: fileData.lastModified,
-					});
-
-					// 添加路径信息
-					Object.defineProperty(file, "path", {
-						value: fileData.path,
-						writable: false,
-						enumerable: false,
-					});
-
-					files.push(file);
-				}
-
-				return files;
+				return fileDataArray;
 			} catch (error) {
 				console.error("Error selecting directory:", error);
 				throw error;
@@ -113,6 +64,34 @@ contextBridge.exposeInMainWorld("electronAPI", {
 				return await ipcRenderer.invoke("file-system:write-file", path, data);
 			} catch (error) {
 				console.error("Error writing file:", error);
+				throw error;
+			}
+		},
+
+		renameFile: async (
+			oldPath: string,
+			newPath: string
+		): Promise<FileOperationResult> => {
+			try {
+				return await ipcRenderer.invoke(
+					"file-system:rename-file",
+					oldPath,
+					newPath
+				);
+			} catch (error) {
+				console.error("Error renaming file:", error);
+				throw error;
+			}
+		},
+
+		checkFileExists: async (filePath: string): Promise<boolean> => {
+			try {
+				return await ipcRenderer.invoke(
+					"file-system:check-file-exists",
+					filePath
+				);
+			} catch (error) {
+				console.error("Error checking file existence:", error);
 				throw error;
 			}
 		},

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { FileItem, FileStats } from "../types/file";
+import type { FileData } from "../types/fileSystem";
 
 export const useFileStore = defineStore("file", () => {
 	// 状态
@@ -25,15 +26,15 @@ export const useFileStore = defineStore("file", () => {
 	const hasFiles = computed(() => files.value.length > 0);
 
 	// 操作方法
-	function addFile(file: File): string {
-		const id = `${file.name}-${file.lastModified}-${Math.random()}`;
+	function addFile(fileData: FileData): string {
+		const id = `${fileData.name}-${fileData.lastModified}-${Math.random()}`;
 
 		// 检查是否已存在相同文件
 		const exists = files.value.some(
 			(f) =>
-				f.name === file.name &&
-				f.size === file.size &&
-				f.lastModified === file.lastModified
+				f.name === fileData.name &&
+				f.size === fileData.size &&
+				f.lastModified === fileData.lastModified
 		);
 
 		if (exists) {
@@ -42,12 +43,11 @@ export const useFileStore = defineStore("file", () => {
 
 		const fileItem: FileItem = {
 			id,
-			name: file.name,
-			// 在 Electron 环境中，优先使用 file.path 属性（如果存在）
-			path: (file as any).path || file.webkitRelativePath || file.name,
-			size: file.size,
-			lastModified: file.lastModified,
-			file,
+			name: fileData.name,
+			path: fileData.path,
+			size: fileData.size,
+			lastModified: fileData.lastModified,
+			fileData,
 			selected: false,
 			matched: false,
 		};
@@ -56,12 +56,11 @@ export const useFileStore = defineStore("file", () => {
 		return id;
 	}
 
-	function addFiles(fileList: FileList | File[]) {
-		const fileArray = Array.from(fileList);
+	function addFiles(fileDataArray: FileData[]) {
 		const addedIds: string[] = [];
 
-		fileArray.forEach((file) => {
-			const id = addFile(file);
+		fileDataArray.forEach((fileData) => {
+			const id = addFile(fileData);
 			addedIds.push(id);
 		});
 
@@ -142,7 +141,7 @@ export const useFileStore = defineStore("file", () => {
 			// 在 Electron 环境中，更新完整路径
 			const pathParts = file.path.split(/[/\\]/);
 			pathParts[pathParts.length - 1] = newName;
-			file.path = pathParts.join(process.platform === 'win32' ? '\\' : '/');
+			file.path = pathParts.join(process.platform === "win32" ? "\\" : "/");
 		}
 	}
 
@@ -159,11 +158,13 @@ export const useFileStore = defineStore("file", () => {
 	async function selectFilesFromSystem(options: { multiple?: boolean } = {}) {
 		try {
 			isLoading.value = true;
-			const selectedFiles = await window.electronAPI.fileSystem.selectFiles(options);
-			const addedIds = addFiles(selectedFiles);
+			const selectedFileData = await window.electronAPI.fileSystem.selectFiles(
+				options
+			);
+			const addedIds = addFiles(selectedFileData);
 			return addedIds;
 		} catch (error) {
-			console.error('Error selecting files from system:', error);
+			console.error("Error selecting files from system:", error);
 			throw error;
 		} finally {
 			isLoading.value = false;
@@ -173,11 +174,12 @@ export const useFileStore = defineStore("file", () => {
 	async function selectDirectoryFromSystem() {
 		try {
 			isLoading.value = true;
-			const directoryFiles = await window.electronAPI.fileSystem.selectDirectory();
-			const addedIds = addFiles(directoryFiles);
+			const directoryFileData =
+				await window.electronAPI.fileSystem.selectDirectory();
+			const addedIds = addFiles(directoryFileData);
 			return addedIds;
 		} catch (error) {
-			console.error('Error selecting directory from system:', error);
+			console.error("Error selecting directory from system:", error);
 			throw error;
 		} finally {
 			isLoading.value = false;

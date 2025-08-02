@@ -1,6 +1,7 @@
 import { watch } from "vue";
 import { useFileStore } from "../stores/fileStore";
 import { useRenameStore } from "../stores/renameStore";
+import { useFileSystem } from "./useFileSystem";
 import type {
 	AddParams,
 	DeleteParams,
@@ -256,17 +257,36 @@ export function useRenameEngine() {
 				);
 
 				if (newName !== file.name) {
-					// 这里应该调用实际的文件系统重命名API
-					// 由于是浏览器环境，这里只是模拟
-					console.log(`重命名: ${file.name} -> ${newName}`);
+					const { renameFile, fileExists } = useFileSystem();
+					const newPath = file.path.replace(file.name, newName);
 
-					operations.push({
-						oldPath: file.path,
-						newPath: file.path.replace(file.name, newName),
-					});
+					// 检查源文件是否存在
+					const oldFileExists = await fileExists(file.path);
+					if (!oldFileExists) {
+						errors.push(`源文件不存在: ${file.name}`);
+						continue;
+					}
 
-					// 更新文件store中的文件信息
-					fileStore.updateFileName(file.id, newName);
+					// 检查目标文件是否已存在
+					const newFileExists = await fileExists(newPath);
+					if (newFileExists) {
+						errors.push(`目标文件已存在: ${newName}`);
+						continue;
+					}
+
+					try {
+						await renameFile(file.path, newPath);
+
+						operations.push({
+							oldPath: file.path,
+							newPath,
+						});
+
+						// 更新文件store中的文件信息
+						fileStore.updateFileName(file.id, newName);
+					} catch (error) {
+						errors.push(`重命名文件失败 ${file.name}: ${error}`);
+					}
 				}
 
 				// 更新进度
@@ -306,17 +326,20 @@ export function useRenameEngine() {
 		const errors: string[] = [];
 
 		try {
-			// 这里应该调用实际的文件系统重命名API来撤回操作
-			// 由于是浏览器环境，这里只是模拟
+			const { renameFile } = useFileSystem();
 			for (const op of lastOperation.operations) {
-				console.log(`撤回重命名: ${op.newPath} -> ${op.oldPath}`);
+				try {
+					await renameFile(op.newPath, op.oldPath);
 
-				// 在文件store中找到对应文件并恢复名称
-				const fileName = op.oldPath.split("/").pop() || "";
-				const newFileName = op.newPath.split("/").pop() || "";
-				const file = fileStore.files.find((f) => f.name === newFileName);
-				if (file) {
-					fileStore.updateFileName(file.id, fileName);
+					// 在文件store中找到对应文件并恢复名称
+					const fileName = op.oldPath.split("/").pop() || "";
+					const newFileName = op.newPath.split("/").pop() || "";
+					const file = fileStore.files.find((f) => f.name === newFileName);
+					if (file) {
+						fileStore.updateFileName(file.id, fileName);
+					}
+				} catch (error) {
+					errors.push(`撤回操作失败 ${op.newPath}: ${error}`);
 				}
 			}
 

@@ -1,4 +1,5 @@
 // 通用类型定义
+import type { FileData } from "./fileSystem";
 
 export interface AppSettings {
 	shortcuts: Record<string, string>;
@@ -35,10 +36,18 @@ export interface ExportOptions {
 // Electron 特定的类型定义
 export interface ElectronAPI {
 	fileSystem: {
-		selectFiles: (options: FileSelectOptions) => Promise<File[]>;
-		selectDirectory: () => Promise<File[]>;
+		selectFiles: (options: FileSelectOptions) => Promise<FileData[]>;
+		selectDirectory: () => Promise<FileData[]>;
 		readFile: (path: string) => Promise<ArrayBuffer>;
-		writeFile: (path: string, data: ArrayBuffer) => Promise<void>;
+		writeFile: (
+			path: string,
+			data: ArrayBuffer
+		) => Promise<{ success: boolean; error?: string }>;
+		renameFile: (
+			oldPath: string,
+			newPath: string
+		) => Promise<{ success: boolean; error?: string }>;
+		checkFileExists: (filePath: string) => Promise<boolean>;
 	};
 }
 

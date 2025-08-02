@@ -10,7 +10,7 @@ if (started) {
 
 // Enable remote debugging for VS Code in development
 if (process.env.NODE_ENV === "development") {
-	app.commandLine.appendSwitch('remote-debugging-port', '9222');
+	app.commandLine.appendSwitch("remote-debugging-port", "9222");
 }
 
 const createWindow = () => {
@@ -93,6 +93,14 @@ ipcMain.handle("file-system:read-file", async (event, filePath) => {
 
 ipcMain.handle("file-system:write-file", async (event, filePath, data) => {
 	return await fileSystem.writeFile(filePath, data);
+});
+
+ipcMain.handle("file-system:rename-file", async (event, oldPath, newPath) => {
+	return await fileSystem.renameFile(oldPath, newPath);
+});
+
+ipcMain.handle("file-system:check-file-exists", async (event, filePath) => {
+	return await fileSystem.checkFileExists(filePath);
 });
 
 // 对话框 IPC 处理器

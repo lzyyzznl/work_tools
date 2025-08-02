@@ -1,22 +1,14 @@
 import { dialog } from "electron";
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { FileData } from "../renderer/types/fileSystem";
 
-export interface FileSelectOptions {
+interface FileSelectOptions {
 	multiple?: boolean;
 	filters?: Array<{ name: string; extensions: string[] }>;
 }
 
-export interface FileData {
-	name: string;
-	path: string;
-	size: number;
-	lastModified: number;
-	type: string;
-	arrayBuffer: ArrayBuffer;
-}
-
-export interface FileOperationResult {
+interface FileOperationResult {
 	success: boolean;
 	message?: string;
 	error?: string;
@@ -179,6 +171,51 @@ export async function writeFile(
 		return { success: true, message: "File written successfully" };
 	} catch (error) {
 		console.error("Error writing file:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Unknown error",
+		};
+	}
+}
+
+// 检查文件是否存在
+export async function checkFileExists(filePath: string): Promise<boolean> {
+	try {
+		await fs.access(filePath);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+// 重命名文件
+export async function renameFile(
+	oldPath: string,
+	newPath: string
+): Promise<FileOperationResult> {
+	try {
+		// 检查源文件是否存在
+		const oldFileExists = await checkFileExists(oldPath);
+		if (!oldFileExists) {
+			return {
+				success: false,
+				error: `源文件不存在: ${oldPath}`,
+			};
+		}
+
+		// 检查目标文件是否已存在
+		const newFileExists = await checkFileExists(newPath);
+		if (newFileExists) {
+			return {
+				success: false,
+				error: `目标文件已存在: ${newPath}`,
+			};
+		}
+
+		await fs.rename(oldPath, newPath);
+		return { success: true, message: "File renamed successfully" };
+	} catch (error) {
+		console.error("Error renaming file:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
