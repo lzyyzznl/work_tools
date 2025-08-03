@@ -4,9 +4,78 @@ import { type VxeGridInstance, type VxeGridProps } from "vxe-table";
 import { useRuleStore } from "../../stores/ruleStore";
 import { useErrorHandler } from "../../composables/useErrorHandler";
 import type { Rule, RuleColumn } from "../../types/rule";
+import * as XLSX from "xlsx";
 
 const ruleStore = useRuleStore();
 const { handleError, handleSuccess } = useErrorHandler();
+
+// 数据转换工具函数
+function normalizeBooleanValue(value: any): string {
+	if (value === null || value === undefined || value === "") {
+		return "";
+	}
+	
+	const stringValue = String(value).toLowerCase().trim();
+	
+	// 支持多种布尔值格式，统一转换为"是/否"
+	if (stringValue === "true" || stringValue === "y" || stringValue === "yes" || stringValue === "1" || stringValue === "是") {
+		return "是";
+	}
+	if (stringValue === "false" || stringValue === "n" || stringValue === "no" || stringValue === "0" || stringValue === "否") {
+		return "否";
+	}
+	
+	// 无法识别的格式，返回空字符串
+	return "";
+}
+
+function parseValueForImport(value: any, column: RuleColumn): string {
+	if (value === null || value === undefined || value === "") {
+		return "";
+	}
+	
+	const stringValue = String(value).trim();
+	
+	switch (column.type) {
+		case "boolean":
+			return normalizeBooleanValue(stringValue);
+		
+		case "select":
+			// 检查是否在选项中
+			if (column.options && column.options.includes(stringValue)) {
+				return stringValue;
+			}
+			return "";
+		
+		case "text":
+		default:
+			return stringValue;
+	}
+}
+
+function formatValueForExport(value: any, column: RuleColumn): string {
+	if (value === null || value === undefined || value === "") {
+		return "";
+	}
+	
+	const stringValue = String(value).trim();
+	
+	switch (column.type) {
+		case "boolean":
+			return normalizeBooleanValue(stringValue);
+		
+		case "select":
+			// 检查是否在选项中
+			if (column.options && column.options.includes(stringValue)) {
+				return stringValue;
+			}
+			return "";
+		
+		case "text":
+		default:
+			return stringValue;
+	}
+}
 
 // 表格引用
 const gridRef = ref<VxeGridInstance<Rule>>();
@@ -138,8 +207,8 @@ function getColumnsConfig() {
 			columnConfig.editRender = {
 				name: "select",
 				options: [
-					{ label: "是", value: "Y" },
-					{ label: "否", value: "N" },
+					{ label: "是", value: "是" },
+					{ label: "否", value: "否" },
 				],
 			};
 		} else if (column.type === "select" && column.options) {
@@ -339,8 +408,9 @@ async function deleteSelectedRules() {
 	}
 }
 
-// 自定义导出 CSV 文件
-async function exportCSV() {
+
+// 导出 Excel 文件
+async function exportExcel() {
 	const $grid = gridRef.value;
 	if (!$grid) {
 		console.error("Grid 引用为空，无法导出");
@@ -348,7 +418,7 @@ async function exportCSV() {
 	}
 
 	try {
-		console.log("开始自定义 CSV 导出");
+		console.log("开始 Excel 导出");
 
 		// 获取表格数据
 		const tableData = $grid.getTableData();
@@ -361,15 +431,25 @@ async function exportCSV() {
 			return;
 		}
 
-		// 生成 CSV 内容
-		const csvContent = generateCSVContent(fullData);
-		console.log("CSV 内容生成完成，长度:", csvContent.length);
+		// 生成 Excel 工作表数据
+		const worksheetData = generateExcelWorksheetData(fullData);
+		console.log("Excel 工作表数据生成完成");
+
+		// 创建工作簿
+		const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+		const wb = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(wb, ws, "规则数据");
+
+		// 生成 Excel 文件内容
+		const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
 
 		// 调用 Electron 文件保存对话框
 		const result = await (window as any).electronAPI?.dialog?.showSaveDialog({
-			defaultPath: `rules-export-${new Date().toISOString().split("T")[0]}.csv`,
+			defaultPath: `rules-export-${
+				new Date().toISOString().split("T")[0]
+			}.xlsx`,
 			filters: [
-				{ name: "CSV Files", extensions: ["csv"] },
+				{ name: "Excel Files", extensions: ["xlsx"] },
 				{ name: "All Files", extensions: ["*"] },
 			],
 		});
@@ -377,40 +457,37 @@ async function exportCSV() {
 		console.log("文件保存对话框结果:", result);
 
 		if (!result.canceled && result.filePath) {
-			// 将 CSV 内容转换为 ArrayBuffer
-			const encoder = new TextEncoder();
-			const csvBuffer = encoder.encode(csvContent);
-
 			// 写入文件
 			const writeResult = await (
 				window as any
-			).electronAPI?.fileSystem?.writeFile(result.filePath, csvBuffer);
+			).electronAPI?.fileSystem?.writeFile(result.filePath, excelBuffer);
 
 			console.log("文件写入结果:", writeResult);
 
 			if (writeResult?.success) {
-				console.log("✅ CSV 导出成功:", result.filePath);
+				console.log("✅ Excel 导出成功:", result.filePath);
 				handleSuccess("规则导出成功");
 			} else {
-				console.error("❌ CSV 导出失败:", writeResult);
+				console.error("❌ Excel 导出失败:", writeResult);
 				handleError(new Error("导出失败"), "导出规则");
 			}
 		}
 	} catch (error) {
-		console.error("自定义 CSV 导出出错:", error);
+		console.error("Excel 导出出错:", error);
 		handleError(error, "导出规则");
 	}
 }
 
-// 生成 CSV 内容
-function generateCSVContent(data: Rule[]): string {
-	console.log("开始生成CSV内容");
+
+// 生成 Excel 工作表数据
+function generateExcelWorksheetData(data: Rule[]): any[][] {
+	console.log("开始生成Excel工作表数据");
 
 	// 获取当前表格的实时列配置
 	const $grid = gridRef.value;
 	if (!$grid) {
 		console.error("Grid引用为空");
-		return "";
+		return [];
 	}
 
 	// 获取当前显示的列配置
@@ -428,7 +505,12 @@ function generateCSVContent(data: Rule[]): string {
 	// 根据实时列配置生成表头
 	const headers: string[] = [];
 	const validColumns = tableColumns.filter(
-		(col) => col.visible !== false && col.type !== "checkbox" && col.title
+		(col) => 
+			col.visible !== false && 
+			col.type !== "checkbox" && 
+			col.title && 
+			col.field !== "index" &&
+			col.title !== "操作"
 	);
 
 	console.log(
@@ -445,41 +527,42 @@ function generateCSVContent(data: Rule[]): string {
 
 	console.log("实时生成的表头:", headers);
 
-	// 转义 CSV 字段
-	const escapeCSVField = (field: string): string => {
-		if (field.includes(",") || field.includes('"') || field.includes("\n")) {
-			return `"${field.replace(/"/g, '""')}"`;
-		}
-		return field;
-	};
-
-	// 生成 CSV 行
-	const csvRows = [headers.map(escapeCSVField).join(",")];
+	// 生成 Excel 工作表数据
+	const worksheetData = [headers];
 
 	data.forEach((rule, index) => {
 		console.log("处理规则:", rule.code, "索引:", index);
 
 		// 根据实时列配置生成数据行
-		const row: string[] = [];
+		const row: any[] = [];
 
 		validColumns.forEach((col) => {
 			let cellValue = "";
 
 			switch (col.field) {
 				case "index":
-					cellValue = (index + 1).toString();
+					cellValue = index + 1;
 					break;
 				case "code":
-					cellValue = escapeCSVField(rule.code);
+					cellValue = rule.code;
 					break;
 				case "matchRules":
-					cellValue = escapeCSVField(formatMatchRules(rule.matchRules));
+					cellValue = formatMatchRules(rule.matchRules);
 					break;
 				default:
 					// 处理动态列
-					if (col.field.startsWith("columnValues.")) {
+					if (col.field?.startsWith("columnValues.")) {
 						const field = col.field.replace("columnValues.", "");
-						cellValue = escapeCSVField(rule.columnValues?.[field] || "");
+						const rawValue = rule.columnValues?.[field] || "";
+						
+						// 查找对应的列配置
+						const columnConfig = ruleStore.columns.find(c => c.field === field);
+						if (columnConfig) {
+							// 使用格式化函数处理导出值
+							cellValue = formatValueForExport(rawValue, columnConfig);
+						} else {
+							cellValue = rawValue;
+						}
 					} else {
 						cellValue = "";
 					}
@@ -489,22 +572,33 @@ function generateCSVContent(data: Rule[]): string {
 		});
 
 		console.log("生成的数据行:", row);
-		csvRows.push(row.join(","));
+		worksheetData.push(row);
 	});
 
-	return csvRows.join("\n");
+	return worksheetData;
 }
 
-// 导入CSV文件
-async function importCSV(event: Event) {
+// 导入Excel文件
+async function importExcel(event: Event) {
 	const input = event.target as HTMLInputElement;
 	const file = input.files?.[0];
 	if (!file) return;
 
 	try {
-		const text = await file.text();
-		await parseCSVAndImport(text);
-		handleSuccess("规则导入成功");
+		// 检查文件类型
+		const fileName = file.name.toLowerCase();
+
+		if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+			// 处理 Excel 文件
+			const arrayBuffer = await file.arrayBuffer();
+			if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+				throw new Error("Excel 文件内容为空");
+			}
+			await parseExcelAndImport(arrayBuffer);
+			handleSuccess("规则导入成功！系统已自动忽略操作列、序号列等特殊列。");
+		} else {
+			throw new Error("不支持的文件格式，请选择 .xlsx 或 .xls 文件");
+		}
 	} catch (error) {
 		handleError(error, "导入规则");
 	} finally {
@@ -512,130 +606,168 @@ async function importCSV(event: Event) {
 	}
 }
 
-// 解析CSV并导入
-async function parseCSVAndImport(csvContent: string) {
-	const lines = csvContent.split("\n");
-	if (lines.length < 2) {
-		throw new Error("CSV文件格式不正确");
-	}
 
-	// 解析表头
-	const headers = lines[0]
-		.split(",")
-		.map((h) => h.trim().replace(/^"(.*)"$/, "$1"));
-	console.log("CSV表头:", headers);
+// 判断是否为特殊列（需要忽略的列）
+function isSpecialColumn(columnTitle: string): boolean {
+	const specialColumns = ["操作", "序号", "选择", "checkbox", "action", "index", "select"];
+	const title = columnTitle.toLowerCase().trim();
+	return specialColumns.some(col => title.includes(col.toLowerCase()));
+}
 
-	// 获取现有的列配置
-	const existingColumns = [...ruleStore.columns];
+// 解析 Excel 并导入
+async function parseExcelAndImport(excelData: ArrayBuffer) {
+	try {
+		// 读取 Excel 文件
+		const workbook = XLSX.read(excelData, { type: "array" });
+		const firstSheetName = workbook.SheetNames[0];
+		const worksheet = workbook.Sheets[firstSheetName];
 
-	// 固定列映射
-	const codeIndex = headers.findIndex(
-		(h) => h === "规则编码" || h === "规则编码" || h === "code" || h === "Code"
-	);
-	const matchRulesIndex = headers.findIndex(
-		(h) =>
-			h === "匹配规则" ||
-			h === "matchRules" ||
-			h === "Match Rules" ||
-			h === "规则"
-	);
+		// 转换为 JSON 数据
+		const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-	if (codeIndex === -1) {
-		throw new Error(
-			"CSV文件中未找到规则编码列，请确保包含'规则编码'、'规则编码'或'code'列"
-		);
-	}
-	if (matchRulesIndex === -1) {
-		throw new Error(
-			"CSV文件中未找到匹配规则列，请确保包含'匹配规则'、'matchRules'或'规则'列"
-		);
-	}
-
-	// 查找动态列并添加新列
-	const newColumnsToAdd: Array<Omit<RuleColumn, "id">> = [];
-	headers.forEach((header, index) => {
-		// 跳过固定列
-		if (index === codeIndex || index === matchRulesIndex) {
-			return;
+		if (!Array.isArray(jsonData) || jsonData.length < 2) {
+			throw new Error("Excel 文件格式不正确，至少需要包含表头和一行数据");
 		}
 
-		// 检查是否已存在该列（按名称匹配）
-		const existingColumn = existingColumns.find(
-			(col) => col.name === header || col.field === header
+		// 获取表头
+		const headers = jsonData[0] as string[];
+		console.log("Excel 表头:", headers);
+
+		// 过滤掉特殊列，获取有效列
+		const validHeaders = headers.filter(header => !isSpecialColumn(header));
+		console.log("过滤后的有效表头:", validHeaders);
+
+		// 获取现有的列配置
+		const existingColumns = [...ruleStore.columns];
+
+		// 固定列映射
+		const codeIndex = headers.findIndex(
+			(h) =>
+				(h === "规则编码" || h === "规则编码" || h === "code" || h === "Code") &&
+				!isSpecialColumn(h)
 		);
-		if (!existingColumn) {
-			// 添加新列到待添加列表，直接使用表头作为字段名
-			const newColumn: Omit<RuleColumn, "id"> = {
-				name: header,
-				field: header, // 直接使用表头作为字段名
-				type: "text", // 默认为文本类型
-				visible: true,
-				order: existingColumns.length + newColumnsToAdd.length,
-			};
-			newColumnsToAdd.push(newColumn);
+		const matchRulesIndex = headers.findIndex(
+			(h) =>
+				(h === "匹配规则" ||
+				h === "matchRules" ||
+				h === "Match Rules" ||
+				h === "规则") &&
+				!isSpecialColumn(h)
+		);
+
+		if (codeIndex === -1) {
+			throw new Error(
+				"Excel 文件中未找到规则编码列，请确保包含'规则编码'、'规则编码'或'code'列。\n" +
+				"注意：系统会自动忽略操作列、序号列等特殊列，请确保这些列不影响必需列的识别。"
+			);
 		}
-	});
-
-	// 批量添加新列
-	for (const newColumn of newColumnsToAdd) {
-		ruleStore.addColumn(newColumn);
-	}
-
-	// 解析数据行并导入规则
-	for (let i = 1; i < lines.length; i++) {
-		const line = lines[i].trim();
-		if (!line) continue;
-
-		const values = line
-			.split(",")
-			.map((v) => v.trim().replace(/^"(.*)"$/, "$1"));
-		if (values.length !== headers.length) {
-			console.warn(`第${i + 1}行数据列数不匹配，跳过`);
-			continue;
+		if (matchRulesIndex === -1) {
+			throw new Error(
+				"Excel 文件中未找到匹配规则列，请确保包含'匹配规则'、'matchRules'或'规则'列。\n" +
+				"注意：系统会自动忽略操作列、序号列等特殊列，请确保这些列不影响必需列的识别。"
+			);
 		}
 
-		// 构造规则对象
-		const ruleData: any = {
-			code: values[codeIndex] || "",
-			matchRules: values[matchRulesIndex]
-				? values[matchRulesIndex]
-						.split(",")
-						.map((r) => r.trim())
-						.filter((r) => r)
-				: [],
-			columnValues: {},
-		};
+		// 检查是否有被忽略的特殊列，并提示用户
+		const ignoredSpecialColumns = headers.filter(header => isSpecialColumn(header));
+		if (ignoredSpecialColumns.length > 0) {
+			console.log(`已忽略以下特殊列: ${ignoredSpecialColumns.join(', ')}`);
+		}
 
-		// 处理动态列值 - 直接使用表头作为字段名
+		// 查找动态列并添加新列
+		const newColumnsToAdd: Array<Omit<RuleColumn, "id">> = [];
 		headers.forEach((header, index) => {
-			// 跳过固定列
-			if (index === codeIndex || index === matchRulesIndex) {
+			// 跳过固定列和特殊列
+			if (index === codeIndex || index === matchRulesIndex || isSpecialColumn(header)) {
 				return;
 			}
 
-			// 直接使用表头作为字段名映射
-			ruleData.columnValues[header] = values[index] || "";
+			// 检查是否已存在该列（按名称匹配）
+			const existingColumn = existingColumns.find(
+				(col) => col.name === header || col.field === header
+			);
+			if (!existingColumn) {
+				// 添加新列到待添加列表，直接使用表头作为字段名
+				const newColumn: Omit<RuleColumn, "id"> = {
+					name: header,
+					field: header, // 直接使用表头作为字段名
+					type: "text", // 默认为文本类型
+					visible: true,
+					order: existingColumns.length + newColumnsToAdd.length,
+				};
+				newColumnsToAdd.push(newColumn);
+			}
 		});
 
-		// 检查是否已存在相同代码的规则
-		if (ruleStore.isCodeDuplicate(ruleData.code)) {
-			// 更新现有规则
-			const existingRule = ruleStore.rules.find(
-				(r) => r.code === ruleData.code
-			);
-			if (existingRule) {
-				await ruleStore.updateRule(existingRule.id, ruleData);
-			}
-		} else {
-			// 添加新规则
-			await ruleStore.addRule(ruleData);
+		// 批量添加新列
+		for (const newColumn of newColumnsToAdd) {
+			ruleStore.addColumn(newColumn);
 		}
+
+		// 解析数据行并导入规则
+		for (let i = 1; i < jsonData.length; i++) {
+			const row = jsonData[i] as any[];
+			if (!row || row.length !== headers.length) {
+				console.warn(`第${i + 1}行数据列数不匹配，跳过`);
+				continue;
+			}
+
+			// 构造规则对象
+			const ruleData: any = {
+				code: row[codeIndex] || "",
+				matchRules: row[matchRulesIndex]
+					? (row[matchRulesIndex] as string)
+							.split(",")
+							.map((r) => r.trim())
+							.filter((r) => r)
+					: [],
+				columnValues: {},
+			};
+
+			// 处理动态列值 - 使用类型转换
+			headers.forEach((header, index) => {
+				// 跳过固定列和特殊列
+				if (index === codeIndex || index === matchRulesIndex || isSpecialColumn(header)) {
+					return;
+				}
+
+				const rawValue = row[index] || "";
+				
+				// 查找对应的列配置
+				const columnConfig = ruleStore.columns.find(c => c.field === header);
+				if (columnConfig) {
+					// 使用类型转换函数处理导入值
+					ruleData.columnValues[header] = parseValueForImport(rawValue, columnConfig);
+				} else {
+					// 如果没有找到列配置，直接存储原始值
+					ruleData.columnValues[header] = rawValue;
+				}
+			});
+
+			// 检查是否已存在相同代码的规则
+			if (ruleStore.isCodeDuplicate(ruleData.code)) {
+				// 更新现有规则
+				const existingRule = ruleStore.rules.find(
+					(r) => r.code === ruleData.code
+				);
+				if (existingRule) {
+					await ruleStore.updateRule(existingRule.id, ruleData);
+				}
+			} else {
+				// 添加新规则
+				await ruleStore.addRule(ruleData);
+			}
+		}
+	} catch (error) {
+		console.error("Excel 解析出错:", error);
+		throw error;
 	}
 }
 
 // 暴露方法给父组件
 defineExpose({
-	exportCSV,
+	exportExcel,
+	importExcel,
 });
 
 // 组件挂载时加载规则
@@ -812,8 +944,8 @@ onMounted(async () => {
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 							>
 								<option value="">请选择</option>
-								<option value="Y">是</option>
-								<option value="N">否</option>
+								<option value="是">是</option>
+								<option value="否">否</option>
 							</select>
 							<!-- 枚举类型 -->
 							<select

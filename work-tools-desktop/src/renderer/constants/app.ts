@@ -27,7 +27,6 @@ export const FILE_SIZE_LIMITS = {
 
 export const EXPORT_FORMATS = {
 	xlsx: "Excel 文件 (.xlsx)",
-	csv: "CSV 文件 (.csv)",
 } as const;
 
 export const NOTIFICATION_DURATION = {

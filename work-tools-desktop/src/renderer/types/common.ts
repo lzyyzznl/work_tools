@@ -28,7 +28,7 @@ export interface ToastMessage {
 }
 
 export interface ExportOptions {
-	format: "xlsx" | "csv";
+	format: "xlsx";
 	filename: string;
 	includeHeaders: boolean;
 }

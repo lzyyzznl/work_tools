@@ -10,7 +10,7 @@ const { handleError, handleSuccess } = useErrorHandler();
 // 本地状态
 const newColumn = ref({
 	name: "",
-	type: "text" as "text" | "number" | "date" | "boolean" | "select",
+	type: "text" as "text" | "boolean" | "select",
 	visible: true,
 	options: "",
 });
@@ -200,8 +200,6 @@ function moveColumnDown(index: number) {
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
 						<option value="text">文本</option>
-						<option value="number">数字</option>
-						<option value="date">日期</option>
 						<option value="boolean">布尔值</option>
 						<option value="select">枚举</option>
 					</select>
@@ -295,8 +293,6 @@ function moveColumnDown(index: number) {
 								class="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
 							>
 								<option value="text">文本</option>
-								<option value="number">数字</option>
-								<option value="date">日期</option>
 								<option value="boolean">布尔值</option>
 								<option value="select">枚举</option>
 							</select>

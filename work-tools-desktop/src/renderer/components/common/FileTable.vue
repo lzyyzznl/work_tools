@@ -4,6 +4,7 @@ import { type VxeGridInstance, type VxeGridProps } from "vxe-table";
 import { useFileSystem } from "../../composables/useFileSystem";
 import { useFileStore } from "../../stores/fileStore";
 import type { FileItem } from "../../types/file";
+import * as XLSX from "xlsx";
 
 // Props
 interface ColumnConfig {
@@ -284,8 +285,10 @@ function setSearchQuery(query: string) {
 	searchQuery.value = query;
 }
 
-// 自定义导出 CSV 文件 - 适配 Electron 环境
-async function exportCSV() {
+
+
+// 导出 Excel 文件
+async function exportExcel() {
 	const $grid = gridRef.value;
 	if (!$grid) {
 		console.error("🔧 [DEBUG] Grid 引用为空，无法导出");
@@ -293,7 +296,7 @@ async function exportCSV() {
 	}
 
 	try {
-		console.log("🔧 [DEBUG] 开始自定义 CSV 导出");
+		console.log("🔧 [DEBUG] 开始 Excel 导出");
 
 		// 获取表格数据
 		const tableData = $grid.getTableData();
@@ -306,15 +309,28 @@ async function exportCSV() {
 			return;
 		}
 
-		// 生成 CSV 内容
-		const csvContent = generateCSVContent(fullData);
-		console.log("🔧 [DEBUG] CSV 内容生成完成，长度:", csvContent.length);
+		// 生成 Excel 工作表数据
+		const worksheetData = generateExcelWorksheetData(fullData);
+		console.log("🔧 [DEBUG] Excel 工作表数据生成完成");
+
+		// 创建工作簿
+		const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+		const wb = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(wb, ws, "文件列表");
+
+		// 设置列宽
+		ws["!cols"] = worksheetData[0].map(() => ({ width: 15 }));
+
+		// 生成 Excel 文件内容
+		const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
 
 		// 调用 Electron 文件保存对话框
 		const result = await (window as any).electronAPI?.dialog?.showSaveDialog({
-			defaultPath: "file_table_export.csv",
+			defaultPath: `file-table-export-${
+				new Date().toISOString().split("T")[0]
+			}.xlsx`,
 			filters: [
-				{ name: "CSV Files", extensions: ["csv"] },
+				{ name: "Excel Files", extensions: ["xlsx"] },
 				{ name: "All Files", extensions: ["*"] },
 			],
 		});
@@ -322,37 +338,33 @@ async function exportCSV() {
 		console.log("🔧 [DEBUG] 文件保存对话框结果:", result);
 
 		if (!result.canceled && result.filePath) {
-			// 将 CSV 内容转换为 ArrayBuffer
-			const encoder = new TextEncoder();
-			const csvBuffer = encoder.encode(csvContent);
-
 			// 写入文件
 			const writeResult = await (
 				window as any
-			).electronAPI?.fileSystem?.writeFile(result.filePath, csvBuffer);
+			).electronAPI?.fileSystem?.writeFile(result.filePath, excelBuffer);
 
 			console.log("🔧 [DEBUG] 文件写入结果:", writeResult);
 
 			if (writeResult?.success) {
-				console.log("✅ CSV 导出成功:", result.filePath);
+				console.log("✅ Excel 导出成功:", result.filePath);
 			} else {
-				console.error("❌ CSV 导出失败:", writeResult);
+				console.error("❌ Excel 导出失败:", writeResult);
 			}
 		}
 	} catch (error) {
-		console.error("🔧 [DEBUG] 自定义 CSV 导出出错:", error);
+		console.error("🔧 [DEBUG] Excel 导出出错:", error);
 	}
 }
 
-// 生成 CSV 内容
-function generateCSVContent(data: FileItem[]): string {
-	console.log("🔧 [DEBUG] 开始生成CSV内容");
+// 生成 Excel 工作表数据
+function generateExcelWorksheetData(data: FileItem[]): any[][] {
+	console.log("🔧 [DEBUG] 开始生成Excel工作表数据");
 
 	// 获取当前表格的实时列配置
 	const $grid = gridRef.value;
 	if (!$grid) {
 		console.error("🔧 [DEBUG] Grid引用为空");
-		return "";
+		return [];
 	}
 
 	// 获取当前显示的列配置（考虑拖拽排序）
@@ -387,187 +399,21 @@ function generateCSVContent(data: FileItem[]): string {
 
 	console.log("🔧 [DEBUG] 实时生成的表头:", headers);
 
-	// 转义 CSV 字段
-	const escapeCSVField = (field: string): string => {
-		if (field.includes(",") || field.includes('"') || field.includes("\n")) {
-			return `"${field.replace(/"/g, '""')}"`;
-		}
-		return field;
-	};
-
-	// 生成 CSV 行
-	const csvRows = [headers.map(escapeCSVField).join(",")];
+	// 生成 Excel 工作表数据
+	const worksheetData = [headers];
 
 	data.forEach((file, index) => {
 		console.log("🔧 [DEBUG] 处理文件:", file.name, "索引:", index);
 
 		// 根据实时列配置生成数据行
-		const row: string[] = [];
+		const row: any[] = [];
 
 		validColumns.forEach((col) => {
 			let cellValue = "";
 
 			switch (col.field) {
 				case "index":
-					cellValue = (index + 1).toString();
-					break;
-				case "name":
-					cellValue = escapeCSVField(file.name);
-					break;
-				case "size":
-					cellValue = formatFileSize(file.size);
-					break;
-				case "lastModified":
-					cellValue = formatDate(file.lastModified);
-					break;
-				case "matchInfo":
-					cellValue = escapeCSVField(getMatchStatusText(file));
-					break;
-				case "previewName":
-					cellValue = escapeCSVField(file.previewName || "");
-					break;
-				default:
-					// 处理动态列 - 从 matchInfo.columnValues 中获取值
-					if (file.matched && file.matchInfo?.columnValues?.[col.field]) {
-						cellValue = escapeCSVField(file.matchInfo.columnValues[col.field]);
-					} else {
-						cellValue = "-";
-					}
-					break;
-			}
-
-			row.push(cellValue);
-		});
-
-		console.log("🔧 [DEBUG] 生成的数据行:", row);
-		csvRows.push(row.join(","));
-	});
-
-	return csvRows.join("\n");
-}
-
-// 自定义导出功能 - 适配 Electron 环境，支持CSV和TXT格式
-async function exportData(type: "csv" | "txt" = "csv") {
-	const $grid = gridRef.value;
-	if (!$grid) {
-		console.error("🔧 [DEBUG] Grid 引用为空，无法导出");
-		return;
-	}
-
-	try {
-		console.log(`🔧 [DEBUG] 开始自定义 ${type.toUpperCase()} 导出`);
-
-		// 获取表格数据
-		const tableData = $grid.getTableData();
-		const { fullData } = tableData;
-
-		if (fullData.length === 0) {
-			console.warn("🔧 [DEBUG] 没有数据可导出");
-			return;
-		}
-
-		// 根据类型生成不同格式的内容
-		let content: string;
-		let extension: string;
-		let filterName: string;
-
-		switch (type) {
-			case "csv":
-				content = generateCSVContent(fullData);
-				extension = "csv";
-				filterName = "CSV Files";
-				break;
-			case "txt":
-				content = generateTXTContent(fullData);
-				extension = "txt";
-				filterName = "Text Files";
-				break;
-			default:
-				content = generateCSVContent(fullData);
-				extension = "csv";
-				filterName = "CSV Files";
-		}
-
-		// 调用 Electron 文件保存对话框
-		const result = await (window as any).electronAPI?.dialog?.showSaveDialog({
-			defaultPath: `file_table_export.${extension}`,
-			filters: [
-				{ name: filterName, extensions: [extension] },
-				{ name: "All Files", extensions: ["*"] },
-			],
-		});
-
-		if (!result.canceled && result.filePath) {
-			// 将内容转换为 ArrayBuffer
-			const encoder = new TextEncoder();
-			const buffer = encoder.encode(content);
-
-			// 写入文件
-			const writeResult = await (
-				window as any
-			).electronAPI?.fileSystem?.writeFile(result.filePath, buffer);
-
-			if (writeResult?.success) {
-				console.log(`✅ ${type.toUpperCase()} 导出成功:`, result.filePath);
-			} else {
-				console.error(`❌ ${type.toUpperCase()} 导出失败:`, writeResult);
-			}
-		}
-	} catch (error) {
-		console.error(`🔧 [DEBUG] 自定义 ${type.toUpperCase()} 导出出错:`, error);
-	}
-}
-
-// 生成 TXT 内容
-function generateTXTContent(data: FileItem[]): string {
-	console.log("🔧 [DEBUG] 开始生成TXT内容");
-
-	// 获取当前表格的实时列配置
-	const $grid = gridRef.value;
-	if (!$grid) {
-		console.error("🔧 [DEBUG] Grid引用为空");
-		return "";
-	}
-
-	// 获取当前显示的列配置（考虑拖拽排序）
-	const tableColumns = $grid.getColumns();
-	console.log(
-		"🔧 [DEBUG] TXT导出-当前表格列配置:",
-		tableColumns.map((col) => ({
-			field: col.field,
-			title: col.title,
-			type: col.type,
-			visible: col.visible,
-		}))
-	);
-
-	// 根据实时列配置生成表头
-	const headers: string[] = [];
-	const validColumns = tableColumns.filter(
-		(col) => col.visible !== false && col.type !== "checkbox" && col.title
-	);
-
-	validColumns.forEach((col) => {
-		headers.push(col.title || col.field || "");
-	});
-
-	console.log("🔧 [DEBUG] TXT导出-实时生成的表头:", headers);
-
-	let txt = headers.join("\t") + "\n";
-	txt += headers.map(() => "---").join("\t") + "\n";
-
-	data.forEach((file, index) => {
-		console.log("🔧 [DEBUG] TXT导出-处理文件:", file.name, "索引:", index);
-
-		// 根据实时列配置生成数据行
-		const cells: string[] = [];
-
-		validColumns.forEach((col) => {
-			let cellValue = "";
-
-			switch (col.field) {
-				case "index":
-					cellValue = (index + 1).toString();
+					cellValue = index + 1;
 					break;
 				case "name":
 					cellValue = file.name;
@@ -594,14 +440,19 @@ function generateTXTContent(data: FileItem[]): string {
 					break;
 			}
 
-			cells.push(cellValue);
+			row.push(cellValue);
 		});
 
-		console.log("🔧 [DEBUG] TXT导出-生成的数据行:", cells);
-		txt += cells.join("\t") + "\n";
+		console.log("🔧 [DEBUG] 生成的数据行:", row);
+		worksheetData.push(row);
 	});
 
-	return txt;
+	return worksheetData;
+}
+
+// 导出数据 - 统一使用Excel格式
+async function exportData() {
+	await exportExcel();
 }
 
 // 暴露方法给父组件
@@ -610,7 +461,7 @@ defineExpose({
 	unselectAll,
 	getSelectedFiles,
 	setSearchQuery,
-	exportCSV,
+	exportExcel,
 	exportData,
 });
 

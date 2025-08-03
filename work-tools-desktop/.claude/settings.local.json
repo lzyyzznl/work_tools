@@ -6,7 +6,10 @@
       "Bash(npm run build:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "Bash(npm run test:run:*)"
+      "Bash(npm run test:run:*)",
+      "Bash(pnpm add:*)",
+      "Bash(mkdir:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": []
   }

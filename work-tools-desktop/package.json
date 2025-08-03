@@ -62,9 +62,11 @@
 		"vue": "^3.5.18"
 	},
 	"dependencies": {
+		"@types/xlsx": "^0.0.35",
 		"electron-squirrel-startup": "^1.0.1",
 		"vxe-pc-ui": "^4.8.4",
 		"vxe-table": "^4.15.0",
-		"xe-utils": "^3.7.8"
+		"xe-utils": "^3.7.8",
+		"xlsx": "^0.18.5"
 	}
 }

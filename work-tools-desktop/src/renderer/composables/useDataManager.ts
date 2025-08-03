@@ -45,7 +45,7 @@ export function useDataManager() {
   }
 
   // 快速导出文件列表
-  async function exportFileList(format: 'json' | 'csv' = 'csv', description?: string) {
+  async function exportFileList(format: 'json' | 'xlsx' = 'xlsx', description?: string) {
     const options: ExportOptions = {
       includeFiles: true,
       includeHistory: false,

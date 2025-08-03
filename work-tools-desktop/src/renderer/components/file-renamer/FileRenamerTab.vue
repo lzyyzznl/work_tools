@@ -143,7 +143,7 @@ function openHelp() {
 // 添加导出方法
 function handleExport() {
 	if (fileTableRef.value) {
-		fileTableRef.value.exportCSV();
+		fileTableRef.value.exportExcel();
 	}
 }
 

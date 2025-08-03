@@ -395,7 +395,7 @@ function handleKeydown(e: KeyboardEvent) {
 									}}</label>
 									<input
 										v-model="formData.columnValues[column.field]"
-										:type="column.type === 'number' ? 'number' : 'text'"
+										type="text"
 										class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										:placeholder="`输入${column.name}的值`"
 									/>

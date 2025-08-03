@@ -196,7 +196,7 @@ function closeRuleManager() {
 // 导出功能
 function handleExport() {
 	if (!fileTableRef.value) return;
-	fileTableRef.value.exportCSV();
+	fileTableRef.value.exportExcel();
 	handleSuccess("已触发导出功能");
 }
 </script>

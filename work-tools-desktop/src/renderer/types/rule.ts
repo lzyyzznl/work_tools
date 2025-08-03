@@ -5,7 +5,7 @@ export interface RuleColumn {
 	id: string;
 	name: string; // 列名（用于显示）
 	field: string; // 字段名（用于数据映射）
-	type: "text" | "number" | "date" | "boolean" | "select"; // 列类型，新增select类型用于枚举值
+	type: "text" | "boolean" | "select"; // 列类型，仅包含文本、布尔和枚举类型
 	visible: boolean; // 是否可见
 	order: number; // 显示顺序
 	options?: string[]; // 枚举选项，仅在type为select时使用

@@ -48,44 +48,44 @@ work-tools-desktop/
 ### Development
 
 ```bash
-# Start development server with hot reload
-npm start
+# Install dependencies (using pnpm)
+pnpm install
 
-# Install dependencies
-npm install
+# Start development server with hot reload
+pnpm start
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-npm run test:run
+pnpm test:run
 
 # Interactive test mode
-npm test
+pnpm test
 
 # Test UI
-npm run test:ui
+pnpm test:ui
 
 # Run specific test file
-npm test -- tests/components/FileTable.test.ts
+pnpm test -- tests/components/FileTable.test.ts
 ```
 
 ### Linting
 
 ```bash
 # Lint code
-npm run lint
+pnpm lint
 ```
 
 ### Building
 
 ```bash
 # Package the application
-npm run package
+pnpm package
 
 # Create installer
-npm run make
+pnpm make
 ```
 
 ## Key Files
@@ -99,6 +99,9 @@ npm run make
 - `forge.config.ts`: Electron Forge configuration
 - `vitest.config.ts`: Test configuration
 - `uno.config.ts`: UnoCSS styling configuration
+- `vite.main.config.ts`: Vite main process configuration
+- `vite.renderer.config.ts`: Vite renderer process configuration
+- `vite.preload.config.ts`: Vite preload script configuration
 
 ## Development Guidelines
 
@@ -110,6 +113,35 @@ npm run make
 6. Write tests for new functionality
 7. Follow commit message conventions (feat, fix, docs, etc.)
 
+## Path Aliases
+
+The project uses the following path aliases in `vite.renderer.config.ts`:
+- `@`: `src` - Root source directory
+- `@/types`: `src/renderer/types` - TypeScript type definitions
+- `@/components`: `src/renderer/components` - Vue components
+- `@/composables`: `src/renderer/composables` - Composition functions
+- `@/stores`: `src/renderer/stores` - Pinia stores
+- `@/utils`: `src/renderer/utils` - Utility functions
+
+## Build Configuration
+
+The project uses multiple Vite configurations for different Electron processes:
+- **Main Process**: `vite.main.config.ts` - Electron main process
+- **Renderer Process**: `vite.renderer.config.ts` - Vue frontend with UnoCSS
+- **Preload Script**: `vite.preload.config.ts` - Security preload script
+
+## Security Features
+
+The Electron app is configured with security fuses in `forge.config.ts`:
+- RunAsNode: false
+- EnableCookieEncryption: true
+- EnableNodeOptionsEnvironmentVariable: false
+- EnableNodeCliInspectArguments: false
+- EnableEmbeddedAsarIntegrityValidation: true
+- OnlyLoadAppFromAsar: true
+
 # 必须要遵守的约束
 
 1. 不允许自己启动测试程序和启动程序，只要完成功能即可，测试功能由用户自己来完成
+2. 规划 todolist 的时候不需要规划测试相关的任务
+3. 使用 pnpm 管理包，禁止使用原生的 npm
