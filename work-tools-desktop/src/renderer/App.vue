@@ -9,24 +9,6 @@
 		<!-- 导航标签 -->
 		<div class="nav-tabs flex bg-white border-b border-gray-200">
 			<button
-				@click="switchTab('matcher')"
-				class="tab-button flex-1 px-6 py-4 text-center font-medium transition-colors relative after:content-empty after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2px after:bg-transparent after:transition-bg-color after:duration-200 hover:after:bg-blue-500/30"
-				:class="
-					activeTab === 'matcher'
-						? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600 after:bg-blue-600'
-						: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-				"
-			>
-				<div class="flex items-center justify-center gap-2">
-					<span>🎯</span>
-					<span>文件匹配器</span>
-					<kbd class="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded"
-						>Ctrl+1</kbd
-					>
-				</div>
-			</button>
-
-			<button
 				@click="switchTab('renamer')"
 				class="tab-button flex-1 px-6 py-4 text-center font-medium transition-colors relative after:content-empty after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2px after:bg-transparent after:transition-bg-color after:duration-200 hover:after:bg-blue-500/30"
 				:class="
@@ -39,6 +21,24 @@
 					<span>✏️</span>
 					<span>文件重命名器</span>
 					<kbd class="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded"
+						>Ctrl+1</kbd
+					>
+				</div>
+			</button>
+
+			<button
+				@click="switchTab('matcher')"
+				class="tab-button flex-1 px-6 py-4 text-center font-medium transition-colors relative after:content-empty after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2px after:bg-transparent after:transition-bg-color after:duration-200 hover:after:bg-blue-500/30"
+				:class="
+					activeTab === 'matcher'
+						? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600 after:bg-blue-600'
+						: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+				"
+			>
+				<div class="flex items-center justify-center gap-2">
+					<span>🎯</span>
+					<span>文件匹配器</span>
+					<kbd class="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded"
 						>Ctrl+2</kbd
 					>
 				</div>
@@ -47,13 +47,11 @@
 
 		<!-- 主要内容区域 -->
 		<div class="main-content flex-1 overflow-hidden">
-			<FileRenamerTab v-if="activeTab === 'renamer'" />
 			<FileMatcherTab v-if="activeTab === 'matcher'" />
+			<FileRenamerTab v-if="activeTab === 'renamer'" />
 		</div>
 
-		<!-- 通知容器 -->
-		<NotificationContainer />
-
+	
 		<!-- 全局拖拽覆盖层 -->
 		<div
 			v-if="isDragOver"
@@ -79,7 +77,6 @@ import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 import { useFileSystem } from "./composables/useFileSystem";
 import FileMatcherTab from "./components/file-matcher/FileMatcherTab.vue";
 import FileRenamerTab from "./components/file-renamer/FileRenamerTab.vue";
-import NotificationContainer from "./components/common/NotificationContainer.vue";
 
 const fileStore = useFileStore();
 const ruleStore = useRuleStore();
@@ -87,7 +84,7 @@ const { handleError, handleSuccess } = useErrorHandler();
 const { registerShortcut, commonShortcuts } = useKeyboardShortcuts();
 const { handleDrop } = useFileSystem();
 
-const activeTab = ref<"matcher" | "renamer">("matcher");
+const activeTab = ref<"matcher" | "renamer">("renamer");
 const isDragOver = ref(false);
 
 // 注册全局快捷键
@@ -96,18 +93,18 @@ onMounted(() => {
 	registerShortcut({
 		key: "1",
 		ctrl: true,
-		description: "切换到文件匹配器",
+		description: "切换到文件重命名器",
 		action: () => {
-			activeTab.value = "matcher";
+			activeTab.value = "renamer";
 		},
 	});
 
 	registerShortcut({
 		key: "2",
 		ctrl: true,
-		description: "切换到文件重命名器",
+		description: "切换到文件匹配器",
 		action: () => {
-			activeTab.value = "renamer";
+			activeTab.value = "matcher";
 		},
 	});
 

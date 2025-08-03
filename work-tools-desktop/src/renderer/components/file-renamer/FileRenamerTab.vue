@@ -10,7 +10,6 @@ import { useRenameStore } from "../../stores/renameStore";
 import FileTable from "../common/FileTable.vue";
 import HelpModal from "../common/HelpModal.vue";
 import ImportPreviewModal from "../common/ImportPreviewModal.vue";
-import NotificationContainer from "../common/NotificationContainer.vue";
 import SettingsModal from "../common/SettingsModal.vue";
 import RenameOperationTabs from "./RenameOperationTabs.vue";
 
@@ -370,9 +369,6 @@ onMounted(() => {
 				</div>
 			</div>
 		</div>
-
-		<!-- 通知容器 -->
-		<NotificationContainer />
 
 		<!-- 设置模态框 -->
 		<SettingsModal v-model="showSettings" />

@@ -13,6 +13,34 @@ export function useErrorHandler() {
   const errors = ref<ErrorInfo[]>([])
   const maxErrors = ref(10)
 
+  function showNativeNotification(type: 'error' | 'warning' | 'info' | 'success', title: string, message: string) {
+    // 使用浏览器的Notification API显示原生通知
+    if ('Notification' in window) {
+      // 请求通知权限
+      if (Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+
+      // 创建通知
+      if (Notification.permission === 'granted') {
+        const icon = type === 'error' ? '❌' : 
+                    type === 'warning' ? '⚠️' : 
+                    type === 'success' ? '✅' : 'ℹ️'
+        
+        new Notification(`${icon} ${title}`, {
+          body: message,
+          icon: '/favicon.ico', // 如果有图标的话
+          silent: false,
+          requireInteraction: type === 'error' // 错误通知需要用户手动关闭
+        })
+      }
+    }
+
+    // 同时在控制台输出，方便调试
+    const logMethod = type === 'error' ? 'error' : type === 'warning' ? 'warn' : 'log'
+    console[logMethod](`[${title}] ${message}`)
+  }
+
   function addError(error: Omit<ErrorInfo, 'id' | 'timestamp'>) {
     const errorInfo: ErrorInfo = {
       ...error,
@@ -22,6 +50,9 @@ export function useErrorHandler() {
     }
 
     errors.value.unshift(errorInfo)
+
+    // 显示原生通知
+    showNativeNotification(error.type, error.title, error.message)
 
     // 限制错误数量
     if (errors.value.length > maxErrors.value) {
