@@ -6,7 +6,6 @@ import { useFileMatcherStore } from "../../stores/fileMatcherStore";
 import { useRuleStore } from "../../stores/ruleStore";
 import FileTable from "../common/FileTable.vue";
 import RuleManager from "./RuleManager.vue";
-import NotificationContainer from "../common/NotificationContainer.vue";
 const fileStore = useFileMatcherStore();
 const ruleStore = useRuleStore();
 const { handleDrop } = useFileSystem();
@@ -363,7 +362,6 @@ function handleExport() {
 						ruleStore.ruleCount
 					}}</span>
 				</div>
-				<NotificationContainer />
 			</div>
 		</div>
 
