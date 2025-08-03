@@ -1,11 +1,22 @@
 // 规则相关类型定义
 
+// 规则列定义
+export interface RuleColumn {
+	id: string;
+	name: string; // 列名（用于显示）
+	field: string; // 字段名（用于数据映射）
+	type: "text" | "number" | "date" | "boolean" | "select"; // 列类型，新增select类型用于枚举值
+	visible: boolean; // 是否可见
+	order: number; // 显示顺序
+	options?: string[]; // 枚举选项，仅在type为select时使用
+}
+
 export interface Rule {
 	id: string;
 	code: string;
-	thirtyD: string;
 	matchRules: string[];
-	source: "default" | "user";
+	// 规则列值映射，key为列字段名，value为该规则在该列的值
+	columnValues?: Record<string, string>;
 }
 
 export interface RuleConfig {
@@ -14,18 +25,17 @@ export interface RuleConfig {
 		autoSave: boolean;
 		defaultExportFormat: string;
 	};
-	rules: {
-		default: Rule[];
-		user: Rule[];
-	};
+	rules: Rule[];
+	columns?: RuleColumn[]; // 规则列配置
 }
 
 export interface MatchResult {
 	matched: boolean;
 	matchInfo?: {
+		index: number;
 		code: string;
-		thirtyD: string;
 		matchedRule: string;
+		columnValues?: Record<string, string>;
 	};
 }
 
@@ -50,6 +60,5 @@ export interface RuleExportResult {
 
 export interface RuleFormData {
 	code: string;
-	thirtyD: string;
 	matchRules: string[];
 }

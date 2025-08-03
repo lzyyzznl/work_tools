@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, watch, ref } from "vue";
 import { useRenameStore } from "../../../stores/renameStore";
-import { useRenameEngine } from "../../../composables/useRenameEngine";
-import { useFileStore } from "../../../stores/fileStore";
+import { useIndependentRenameEngine } from "../../../composables/useIndependentRenameEngine";
+import { useFileRenamerStore } from "../../../stores/fileRenamerStore";
 
 const renameStore = useRenameStore();
-const fileStore = useFileStore();
-const { generatePreview } = useRenameEngine();
+const fileStore = useFileRenamerStore();
+const { generatePreview } = useIndependentRenameEngine(fileStore, renameStore);
 
 const start = computed({
 	get: () => renameStore.numberParams.start,

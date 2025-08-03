@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useFileStore } from "../../stores/fileStore";
+import { useFileRenamerStore } from "../../stores/fileRenamerStore";
 import { useRenameStore } from "../../stores/renameStore";
 import { useRenameEngine } from "../../composables/useRenameEngine";
 
-const fileStore = useFileStore();
+const fileStore = useFileRenamerStore();
 const renameStore = useRenameStore();
 const { checkConflicts, validateParams } = useRenameEngine();
 

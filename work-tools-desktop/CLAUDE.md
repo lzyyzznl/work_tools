@@ -46,6 +46,7 @@ work-tools-desktop/
 ## Common Commands
 
 ### Development
+
 ```bash
 # Start development server with hot reload
 npm start
@@ -55,6 +56,7 @@ npm install
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 npm run test:run
@@ -70,12 +72,14 @@ npm test -- tests/components/FileTable.test.ts
 ```
 
 ### Linting
+
 ```bash
 # Lint code
 npm run lint
 ```
 
 ### Building
+
 ```bash
 # Package the application
 npm run package
@@ -105,3 +109,7 @@ npm run make
 5. Use Pinia for state management
 6. Write tests for new functionality
 7. Follow commit message conventions (feat, fix, docs, etc.)
+
+# 必须要遵守的约束
+
+1. 不允许自己启动测试程序和启动程序，只要完成功能即可，测试功能由用户自己来完成

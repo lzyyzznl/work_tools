@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useRenameStore } from "../../stores/renameStore";
-import { useRenameEngine } from "../../composables/useRenameEngine";
+import { useIndependentRenameEngine } from "../../composables/useIndependentRenameEngine";
+import { useFileRenamerStore } from "../../stores/fileRenamerStore";
 import ReplaceOperation from "./operations/ReplaceOperation.vue";
 import AddOperation from "./operations/AddOperation.vue";
 import NumberOperation from "./operations/NumberOperation.vue";
 import DeleteOperation from "./operations/DeleteOperation.vue";
 
 const renameStore = useRenameStore();
-const { generatePreview } = useRenameEngine();
+const fileStore = useFileRenamerStore();
+const { generatePreview } = useIndependentRenameEngine(fileStore, renameStore);
 
 // 帮助模态框控制
 const showHelp = ref({

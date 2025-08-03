@@ -4,8 +4,8 @@ import { useDataManager } from "../../composables/useDataManager";
 import { useErrorHandler } from "../../composables/useErrorHandler";
 import { useFileSystem } from "../../composables/useFileSystem";
 import { useKeyboardShortcuts } from "../../composables/useKeyboardShortcuts";
-import { useRenameEngine } from "../../composables/useRenameEngine";
-import { useFileStore } from "../../stores/fileStore";
+import { useIndependentRenameEngine } from "../../composables/useIndependentRenameEngine";
+import { useFileRenamerStore } from "../../stores/fileRenamerStore";
 import { useRenameStore } from "../../stores/renameStore";
 import FileTable from "../common/FileTable.vue";
 import HelpModal from "../common/HelpModal.vue";
@@ -17,10 +17,10 @@ import RenameOperationTabs from "./RenameOperationTabs.vue";
 // 添加对 FileTable 组件的引用类型
 import type { ComponentExposed } from "vue-component-type-helpers";
 
-const fileStore = useFileStore();
+const fileStore = useFileRenamerStore();
 const renameStore = useRenameStore();
 const { selectFiles, selectDirectory, handleDrop } = useFileSystem();
-const { generatePreview, executeRename, undoLastOperation } = useRenameEngine();
+const { generatePreview, executeRename, undoLastOperation } = useIndependentRenameEngine(fileStore, renameStore);
 const { handleError, handleSuccess } = useErrorHandler();
 const { registerShortcut, commonShortcuts } = useKeyboardShortcuts();
 const { confirmImport, cancelImport, showImportPreview, importPreview } =
@@ -355,6 +355,7 @@ onMounted(() => {
 				ref="fileTableRef"
 				:show-preview="true"
 				:show-selection="true"
+				:file-store="fileStore"
 			/>
 
 			<!-- 拖拽提示 -->

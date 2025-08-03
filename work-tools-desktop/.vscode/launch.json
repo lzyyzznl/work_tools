@@ -1,5 +1,11 @@
 {
   "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Debug All Processes",
+      "configurations": ["Debug Main Process", "Debug Renderer Process"]
+    }
+  ],
   "configurations": [
     {
       "name": "Debug Main Process",

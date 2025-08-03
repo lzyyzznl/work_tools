@@ -1,5 +1,7 @@
 import { ref } from 'vue'
 import { useFileStore } from '../stores/fileStore'
+import { useFileMatcherStore } from '../stores/fileMatcherStore'
+import { useFileRenamerStore } from '../stores/fileRenamerStore'
 import { useRenameStore } from '../stores/renameStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useErrorHandler } from './useErrorHandler'
@@ -8,6 +10,7 @@ import { useErrorHandler } from './useErrorHandler'
 // import { importData, selectImportFile, previewImportData, type ImportOptions } from '../utils/importUtils'
 
 export function useDataManager() {
+  // 使用默认的fileStore以保持向后兼容性
   const fileStore = useFileStore()
   const renameStore = useRenameStore()
   const settingsStore = useSettingsStore()

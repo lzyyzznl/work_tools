@@ -18,8 +18,8 @@ export interface FileItem {
 export interface MatchInfo {
 	index: number;
 	code: string;
-	thirtyD: string;
 	matchedRule: string;
+	columnValues?: Record<string, string>;
 }
 
 export interface FileStats {

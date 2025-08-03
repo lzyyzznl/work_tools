@@ -21,8 +21,9 @@ const ruleStore = useRuleStore();
 // 表单数据
 const formData = ref({
 	code: "",
-	thirtyD: "N",
 	matchRules: [""],
+	// 规则列值映射
+	columnValues: {} as Record<string, string>,
 });
 
 // 验证状态
@@ -39,10 +40,8 @@ const testResult = ref<{ matched: boolean; matchedRule?: string } | null>(null);
 
 // 计算属性
 const isEditing = computed(() => !!props.rule);
-const isEditingDefault = computed(
-	() => isEditing.value && props.rule?.source === "default"
-);
 const title = computed(() => (isEditing.value ? "编辑规则" : "添加规则"));
+const visibleColumns = computed(() => ruleStore.visibleColumns);
 
 // 组件挂载时初始化
 onMounted(() => {
@@ -73,10 +72,10 @@ function initializeForm() {
 	if (props.rule) {
 		formData.value = {
 			code: props.rule.code || "",
-			thirtyD: props.rule.thirtyD || "N",
 			matchRules: Array.isArray(props.rule.matchRules)
 				? [...props.rule.matchRules]
 				: [""],
+			columnValues: props.rule.columnValues || {},
 		};
 	} else {
 		resetForm();
@@ -87,8 +86,8 @@ function initializeForm() {
 function resetForm() {
 	formData.value = {
 		code: "",
-		thirtyD: "N",
 		matchRules: [""],
+		columnValues: {},
 	};
 	errors.value = {};
 	saveError.value = "";
@@ -126,21 +125,11 @@ function validateForm(): boolean {
 		let hasConflict = false;
 
 		if (isEditing.value && props.rule) {
-			// 编辑模式：检查是否与其他规则冲突
-			if (props.rule.source === "default") {
-				// 编辑默认规则：检查是否与其他规则冲突（排除同代码的默认规则）
-				hasConflict = ruleStore.rules.some(
-					(rule) =>
-						rule.code === formData.value.code &&
-						!(rule.code === props.rule!.code && rule.source === "default")
-				);
-			} else {
-				// 编辑用户规则：检查是否与其他规则冲突（排除自己）
-				hasConflict = ruleStore.rules.some(
-					(rule) =>
-						rule.code === formData.value.code && rule.id !== props.rule!.id
-				);
-			}
+			// 编辑模式：检查是否与其他规则冲突（排除自己）
+			hasConflict = ruleStore.rules.some(
+				(rule) =>
+					rule.code === formData.value.code && rule.id !== props.rule!.id
+			);
 		} else {
 			// 新增模式：检查是否与任何现有规则冲突
 			hasConflict = ruleStore.rules.some(
@@ -174,15 +163,15 @@ async function handleSave() {
 			// 更新现有规则
 			ruleStore.updateRule(props.rule.id, {
 				code: formData.value.code.trim(),
-				thirtyD: formData.value.thirtyD,
 				matchRules: cleanMatchRules,
+				columnValues: formData.value.columnValues,
 			});
 		} else {
 			// 添加新规则
 			ruleStore.addRule({
 				code: formData.value.code.trim(),
-				thirtyD: formData.value.thirtyD,
 				matchRules: cleanMatchRules,
+				columnValues: formData.value.columnValues,
 			});
 		}
 
@@ -273,18 +262,6 @@ function handleKeydown(e: KeyboardEvent) {
 
 				<!-- 表单内容 -->
 				<div class="flex-1 p-6 overflow-y-auto">
-					<!-- 默认规则编辑提示 -->
-					<div v-if="isEditingDefault" class="mb-6">
-						<div
-							class="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800"
-						>
-							<span class="text-lg">ℹ️</span>
-							<span class="flex-1 text-sm font-medium">
-								您正在编辑默认规则，保存后将创建用户规则来覆盖此默认规则。
-							</span>
-						</div>
-					</div>
-
 					<form @submit.prevent="handleSave">
 						<!-- 代码字段 -->
 						<div class="mb-6">
@@ -301,23 +278,6 @@ function handleKeydown(e: KeyboardEvent) {
 							/>
 							<div v-if="errors.code" class="text-xs text-red-600 mt-1">
 								{{ errors.code }}
-							</div>
-						</div>
-
-						<!-- 30D字段 -->
-						<div class="mb-6">
-							<label class="block text-sm font-semibold text-gray-700 mb-2"
-								>30D标记</label
-							>
-							<select
-								v-model="formData.thirtyD"
-								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							>
-								<option value="N">N - 否</option>
-								<option value="Y">Y - 是</option>
-							</select>
-							<div class="text-xs text-gray-500 mt-1">
-								标记文件是否需要在30天内处理
 							</div>
 						</div>
 
@@ -416,6 +376,33 @@ function handleKeydown(e: KeyboardEvent) {
 							</div>
 							<div class="text-xs text-gray-500 mt-1">
 								文件名包含任一规则即可匹配
+							</div>
+						</div>
+
+						<!-- 规则列值配置 -->
+						<div v-if="visibleColumns.length > 0" class="mb-6">
+							<label class="block text-sm font-semibold text-gray-700 mb-2"
+								>列值配置</label
+							>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div
+									v-for="column in visibleColumns"
+									:key="column.id"
+									class="flex flex-col"
+								>
+									<label class="block text-sm font-medium text-gray-700 mb-1">{{
+										column.name
+									}}</label>
+									<input
+										v-model="formData.columnValues[column.field]"
+										:type="column.type === 'number' ? 'number' : 'text'"
+										class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+										:placeholder="`输入${column.name}的值`"
+									/>
+								</div>
+							</div>
+							<div class="text-xs text-gray-500 mt-1">
+								为规则配置在各列中显示的值
 							</div>
 						</div>
 					</form>

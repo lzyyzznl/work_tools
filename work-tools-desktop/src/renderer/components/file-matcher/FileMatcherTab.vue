@@ -2,12 +2,13 @@
 import { computed, ref, watch } from "vue";
 import { useErrorHandler } from "../../composables/useErrorHandler";
 import { useFileSystem } from "../../composables/useFileSystem";
-import { useFileStore } from "../../stores/fileStore";
+import { useFileMatcherStore } from "../../stores/fileMatcherStore";
 import { useRuleStore } from "../../stores/ruleStore";
 import FileTable from "../common/FileTable.vue";
 import RuleManager from "./RuleManager.vue";
+import type { Rule } from "../../types/rule";
 
-const fileStore = useFileStore();
+const fileStore = useFileMatcherStore();
 const ruleStore = useRuleStore();
 const { handleDrop } = useFileSystem();
 const { handleError, handleSuccess } = useErrorHandler();
@@ -22,6 +23,18 @@ const fileTableRef = ref<InstanceType<typeof FileTable> | null>(null);
 const hasFiles = computed(() => fileStore.files.length > 0);
 const hasRules = computed(() => ruleStore.rules.length > 0);
 const canMatch = computed(() => hasFiles.value && hasRules.value);
+
+// 动态列配置 - 从规则模块读取列配置
+const dynamicColumns = computed(() => {
+	// 使用规则模块的可见列配置
+	return ruleStore.visibleColumns.map((column) => ({
+		field: column.field,
+		title: column.name,
+		width: 120,
+		align: "center",
+		// 使用默认插槽，具体渲染在FileTable中处理
+	}));
+});
 
 // 监听文件变化，自动匹配
 watch(
@@ -276,6 +289,8 @@ function handleExport() {
 				:show-match-info="true"
 				:show-selection="true"
 				:show-preview="false"
+				:file-store="fileStore"
+				:columns="dynamicColumns"
 			/>
 
 			<!-- 拖拽提示 -->

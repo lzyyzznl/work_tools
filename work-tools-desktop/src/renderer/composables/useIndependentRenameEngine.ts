@@ -1,6 +1,4 @@
 import { watch } from "vue";
-import { useFileStore } from "../stores/fileStore";
-import { useRenameStore } from "../stores/renameStore";
 import { useFileSystem } from "./useFileSystem";
 import type {
 	AddParams,
@@ -11,14 +9,8 @@ import type {
 	ReplaceParams,
 } from "../types/rename";
 
-// 重载函数签名：支持传入自定义store实例
-export function useRenameEngine();
-export function useRenameEngine(fileStoreInstance: any, renameStoreInstance: any);
-export function useRenameEngine(fileStoreInstance?: any, renameStoreInstance?: any) {
-	// 如果传入了自定义store实例，则使用它们，否则使用默认的
-	const fileStore = fileStoreInstance || useFileStore();
-	const renameStore = renameStoreInstance || useRenameStore();
-
+// 为独立store创建的rename engine
+export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 	// 生成新文件名的核心函数
 	function generateNewName(
 		originalName: string,
@@ -359,7 +351,7 @@ export function useRenameEngine(fileStoreInstance?: any, renameStoreInstance?: a
 	}
 
 	// 自动预览监听 (只在使用默认store时启用)
-	if (renameStore.isAutoPreview && !fileStoreInstance && !renameStoreInstance) {
+	if (renameStore.isAutoPreview) {
 		watch(
 			[
 				() => renameStore.currentMode,

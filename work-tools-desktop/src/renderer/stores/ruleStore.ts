@@ -1,12 +1,13 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import type { Rule, RuleConfig } from "@/types/rule";
+import type { Rule, RuleConfig, RuleColumn } from "../types/rule";
 import { defaultRules } from "../constants/defaultRules";
 import { STORAGE_KEYS } from "../constants/app";
 
 export const useRuleStore = defineStore("rule", () => {
 	// 状态
 	const rules = ref<Rule[]>([]);
+	const columns = ref<RuleColumn[]>([]); // 规则列配置
 	const isLoading = ref(false);
 
 	// 数据验证函数
@@ -29,68 +30,24 @@ export const useRuleStore = defineStore("rule", () => {
 			}
 		}
 
-		if (rule.thirtyD && !["Y", "N", ""].includes(rule.thirtyD)) {
-			errors.push("30D标记只能是Y、N或空");
-		}
-
 		return {
 			isValid: errors.length === 0,
 			errors,
 		};
 	}
 
-	// 检查规则代码是否重复
-	function isCodeDuplicate(
-		code: string,
-		excludeOptions?: {
-			excludeId?: string; // 排除特定ID的规则
-			excludeCode?: string; // 排除特定代码的所有规则
-			excludeDefaultWithCode?: string; // 排除特定代码的默认规则
-		}
-	): boolean {
-		if (!excludeOptions) {
-			// 简单检查：代码是否存在
-			return rules.value.some((rule) => rule.code === code);
-		}
-
-		return rules.value.some((rule) => {
-			// 基本匹配：代码相同
-			if (rule.code !== code) return false;
-
-			// 排除特定ID
-			if (excludeOptions.excludeId && rule.id === excludeOptions.excludeId) {
-				return false;
-			}
-
-			// 排除特定代码的所有规则
-			if (
-				excludeOptions.excludeCode &&
-				rule.code === excludeOptions.excludeCode
-			) {
-				return false;
-			}
-
-			// 排除特定代码的默认规则
-			if (
-				excludeOptions.excludeDefaultWithCode &&
-				rule.code === excludeOptions.excludeDefaultWithCode &&
-				rule.source === "default"
-			) {
-				return false;
-			}
-
-			return true;
-		});
+	// 检查规则编码是否重复
+	function isCodeDuplicate(code: string, excludeId?: string): boolean {
+		return rules.value.some(
+			(rule) => rule.code === code && rule.id !== excludeId
+		);
 	}
 
 	// 计算属性
-	const userRules = computed(() =>
-		rules.value.filter((r) => r.source === "user")
-	);
-	const systemRules = computed(() =>
-		rules.value.filter((r) => r.source === "default")
-	);
 	const ruleCount = computed(() => rules.value.length);
+	const visibleColumns = computed(() =>
+		columns.value.filter((col) => col.visible).sort((a, b) => a.order - b.order)
+	);
 
 	// Electron 环境下的存储操作
 	async function loadRules() {
@@ -106,15 +63,20 @@ export const useRuleStore = defineStore("rule", () => {
 							autoSave: true,
 							defaultExportFormat: "xlsx",
 						},
-						rules: {
-							default: defaultRules,
-							user: [],
-						},
+						rules: defaultRules,
+						columns: [], // 默认空的列配置
 				  };
 
-			// 合并默认规则和用户规则
-			const mergedRules = [...config.rules.default, ...config.rules.user];
-			rules.value = mergedRules;
+			// 直接使用规则
+			rules.value = config.rules;
+
+			// 加载列配置
+			if (config.columns && config.columns.length > 0) {
+				columns.value = config.columns;
+			} else {
+				// 如果没有列配置，初始化默认列配置
+				initializeDefaultColumns();
+			}
 
 			// 如果是首次加载，保存默认配置
 			if (!storedConfig) {
@@ -124,9 +86,78 @@ export const useRuleStore = defineStore("rule", () => {
 			console.error("Failed to load rules:", error);
 			// 使用默认规则
 			rules.value = [...defaultRules];
+			// 初始化默认列配置
+			initializeDefaultColumns();
 		} finally {
 			isLoading.value = false;
 		}
+	}
+
+	// 初始化默认列配置
+	function initializeDefaultColumns() {
+		// 默认创建一个基于规则编码的列
+		const defaultColumn: RuleColumn = {
+			id: `col-${Date.now()}`,
+			name: "规则编码",
+			field: "code",
+			type: "text",
+			visible: true,
+			order: 0,
+		};
+		columns.value = [defaultColumn];
+	}
+
+	// 列管理方法
+	function addColumn(columnData: Omit<RuleColumn, "id">) {
+		const newColumn: RuleColumn = {
+			id: `col-${Date.now()}-${Math.random()}`,
+			...columnData,
+		};
+		columns.value.push(newColumn);
+		saveRules();
+		return newColumn.id;
+	}
+
+	function updateColumn(
+		id: string,
+		columnData: Partial<Omit<RuleColumn, "id">>
+	) {
+		const index = columns.value.findIndex((col) => col.id === id);
+		if (index === -1) {
+			throw new Error("列不存在");
+		}
+
+		Object.assign(columns.value[index], columnData);
+		saveRules();
+	}
+
+	function deleteColumn(id: string) {
+		const index = columns.value.findIndex((col) => col.id === id);
+		if (index > -1) {
+			columns.value.splice(index, 1);
+			saveRules();
+		}
+	}
+
+	function getColumnById(id: string) {
+		return columns.value.find((col) => col.id === id);
+	}
+
+	function moveColumn(id: string, newIndex: number) {
+		const index = columns.value.findIndex((col) => col.id === id);
+		if (index === -1) {
+			throw new Error("列不存在");
+		}
+
+		const [movedColumn] = columns.value.splice(index, 1);
+		columns.value.splice(newIndex, 0, movedColumn);
+
+		// 更新所有列的order属性
+		columns.value.forEach((col, i) => {
+			col.order = i;
+		});
+
+		saveRules();
 	}
 
 	async function saveRules() {
@@ -137,10 +168,8 @@ export const useRuleStore = defineStore("rule", () => {
 					autoSave: true,
 					defaultExportFormat: "xlsx",
 				},
-				rules: {
-					default: systemRules.value,
-					user: userRules.value,
-				},
+				rules: rules.value,
+				columns: columns.value, // 保存列配置
 			};
 
 			// 保存到 localStorage（Electron 环境）
@@ -151,7 +180,7 @@ export const useRuleStore = defineStore("rule", () => {
 		}
 	}
 
-	function addRule(ruleData: Omit<Rule, "id" | "source">) {
+	function addRule(ruleData: Omit<Rule, "id">) {
 		// 验证规则数据
 		const validation = validateRule(ruleData);
 		if (!validation.isValid) {
@@ -170,7 +199,6 @@ export const useRuleStore = defineStore("rule", () => {
 			matchRules: ruleData.matchRules
 				.filter((r) => r.trim())
 				.map((r) => r.trim()),
-			source: "user",
 		};
 
 		rules.value.push(newRule);
@@ -178,17 +206,29 @@ export const useRuleStore = defineStore("rule", () => {
 		return newRule.id;
 	}
 
-	function updateRule(
-		id: string,
-		ruleData: Partial<Omit<Rule, "id" | "source">>
-	) {
+	function updateRule(id: string, ruleData: Partial<Omit<Rule, "id">>) {
 		const index = rules.value.findIndex((r) => r.id === id);
 		if (index === -1) {
 			throw new Error("规则不存在");
 		}
 
 		const rule = rules.value[index];
-		const updatedData = { ...rule, ...ruleData };
+		
+		// 处理 columnValues 的合并
+		let finalRuleData = { ...ruleData };
+		if (ruleData.columnValues) {
+			// 确保 columnValues 对象存在
+			if (!rule.columnValues) {
+				rule.columnValues = {};
+			}
+			// 合并 columnValues
+			finalRuleData.columnValues = {
+				...rule.columnValues,
+				...ruleData.columnValues
+			};
+		}
+
+		const updatedData = { ...rule, ...finalRuleData };
 
 		// 验证更新后的规则数据
 		const validation = validateRule(updatedData);
@@ -197,43 +237,22 @@ export const useRuleStore = defineStore("rule", () => {
 		}
 
 		// 检查代码重复（排除当前规则）
-		if (ruleData.code) {
-			const excludeOptions =
-				rule.source === "default"
-					? { excludeDefaultWithCode: rule.code } // 编辑默认规则时，排除同代码的默认规则
-					: { excludeId: id }; // 编辑用户规则时，排除当前规则ID
-
-			if (isCodeDuplicate(ruleData.code, excludeOptions)) {
-				throw new Error(`代码 "${ruleData.code}" 已存在`);
-			}
+		if (ruleData.code && isCodeDuplicate(ruleData.code, id)) {
+			throw new Error(`代码 "${ruleData.code}" 已存在`);
 		}
 
 		// 清理数据
 		if (ruleData.code) {
-			ruleData.code = ruleData.code.trim();
+			finalRuleData.code = ruleData.code.trim();
 		}
 		if (ruleData.matchRules) {
-			ruleData.matchRules = ruleData.matchRules
+			finalRuleData.matchRules = ruleData.matchRules
 				.filter((r) => r.trim())
 				.map((r) => r.trim());
 		}
 
-		// 如果是默认规则，创建用户规则覆盖
-		if (rule.source === "default") {
-			const newRule: Rule = {
-				...rule,
-				...ruleData,
-				id: `user-${Date.now()}-${Math.random()}`,
-				source: "user",
-			};
-			rules.value.push(newRule);
-
-			// 移除原默认规则
-			rules.value.splice(index, 1);
-		} else {
-			// 直接更新用户规则
-			Object.assign(rule, ruleData);
-		}
+		// 直接更新规则
+		Object.assign(rule, finalRuleData);
 
 		saveRules();
 	}
@@ -241,16 +260,8 @@ export const useRuleStore = defineStore("rule", () => {
 	function deleteRule(id: string) {
 		const index = rules.value.findIndex((r) => r.id === id);
 		if (index > -1) {
-			const rule = rules.value[index];
-
-			if (rule.source === "default") {
-				// 对于默认规则，标记为删除而不是真正删除
-				rule.matchRules = [];
-			} else {
-				// 直接删除用户规则
-				rules.value.splice(index, 1);
-			}
-
+			// 直接删除规则
+			rules.value.splice(index, 1);
 			saveRules();
 		}
 	}
@@ -276,8 +287,9 @@ export const useRuleStore = defineStore("rule", () => {
 						matchInfo: {
 							index: i,
 							code: rule.code,
-							thirtyD: rule.thirtyD,
 							matchedRule: matchRule,
+							// 添加规则的列值信息
+							columnValues: rule.columnValues || {},
 						},
 					};
 				}
@@ -303,15 +315,8 @@ export const useRuleStore = defineStore("rule", () => {
 
 	function importRules(data: any) {
 		if (data.rules && Array.isArray(data.rules)) {
-			// 保留默认规则，只导入用户规则
-			const importedUserRules = data.rules.filter(
-				(r: Rule) => r.source === "user"
-			);
-			const currentDefaultRules = rules.value.filter(
-				(r) => r.source === "default"
-			);
-
-			rules.value = [...currentDefaultRules, ...importedUserRules];
+			// 直接导入所有规则
+			rules.value = [...data.rules];
 			saveRules();
 		}
 	}
@@ -319,12 +324,12 @@ export const useRuleStore = defineStore("rule", () => {
 	return {
 		// 状态
 		rules,
+		columns,
 		isLoading,
 
 		// 计算属性
-		userRules,
-		systemRules,
 		ruleCount,
+		visibleColumns,
 
 		// 方法
 		loadRules,
@@ -335,6 +340,13 @@ export const useRuleStore = defineStore("rule", () => {
 		getRuleById,
 		matchFilename,
 		resetToDefault,
+
+		// 列管理方法
+		addColumn,
+		updateColumn,
+		deleteColumn,
+		getColumnById,
+		moveColumn,
 
 		// JSON导入导出方法
 		exportRules,

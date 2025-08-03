@@ -1,21 +1,37 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { type VxeGridInstance, type VxeGridProps } from "vxe-table";
 import { useFileSystem } from "../../composables/useFileSystem";
 import { useFileStore } from "../../stores/fileStore";
 import type { FileItem } from "../../types/file";
 
 // Props
+interface ColumnConfig {
+	field: string;
+	title: string;
+	width?: number | string;
+	minWidth?: number | string;
+	sortable?: boolean;
+	align?: string;
+	editRender?: any;
+	slots?: any;
+	visible?: boolean;
+	[key: string]: any; // 允许其他 vxe-table 列配置属性
+}
+
 interface Props {
 	showMatchInfo?: boolean;
 	showPreview?: boolean;
 	showSelection?: boolean;
+	fileStore?: any; // 可选的外部store实例
+	columns?: ColumnConfig[]; // 动态列配置
 }
 
 const props = withDefaults(defineProps<Props>(), {
 	showMatchInfo: false,
 	showPreview: false,
 	showSelection: true,
+	fileStore: undefined,
 });
 
 // Emits
@@ -25,7 +41,8 @@ const emit = defineEmits<{
 }>();
 
 // 状态管理
-const fileStore = useFileStore();
+const internalFileStore = useFileStore();
+const fileStore = computed(() => props.fileStore || internalFileStore);
 const { formatFileSize } = useFileSystem();
 
 // 表格引用
@@ -36,7 +53,7 @@ const searchQuery = ref("");
 
 // 计算属性
 const filteredFiles = computed(() => {
-	let files = [...fileStore.files];
+	let files = [...fileStore.value.files];
 
 	// 搜索过滤
 	if (searchQuery.value.trim()) {
@@ -45,8 +62,6 @@ const filteredFiles = computed(() => {
 			(file) =>
 				file.name.toLowerCase().includes(query) ||
 				file.path.toLowerCase().includes(query) ||
-				(file.matchInfo?.code &&
-					file.matchInfo.code.toLowerCase().includes(query)) ||
 				(file.matchInfo?.matchedRule &&
 					file.matchInfo.matchedRule.toLowerCase().includes(query))
 		);
@@ -60,7 +75,7 @@ const gridOptions = computed<VxeGridProps<FileItem>>(() => {
 	return {
 		border: true,
 		height: "auto",
-		loading: fileStore.isLoading,
+		loading: fileStore.value.isLoading,
 		keepSource: true, // 添加 keep-source 配置
 		rowConfig: {
 			keyField: "id", // 添加唯一键字段，解决 row-config.keyField 警告
@@ -88,9 +103,7 @@ const gridOptions = computed<VxeGridProps<FileItem>>(() => {
 		editConfig: {
 			trigger: "click",
 			mode: "cell",
-			showStatus: true,
 		},
-		exportConfig: {},
 		scrollX: {
 			enabled: true,
 			gt: 0,
@@ -107,11 +120,11 @@ const gridOptions = computed<VxeGridProps<FileItem>>(() => {
 
 // 列配置函数
 function getColumnsConfig() {
-	const cols: any[] = [];
-
+	// 如果传入了动态列配置，则使用动态配置
+	const finalConls: any[] = [];
 	// 选择列
 	if (props.showSelection) {
-		cols.push({
+		finalConls.push({
 			type: "checkbox",
 			width: 50,
 			fixed: "left",
@@ -119,7 +132,7 @@ function getColumnsConfig() {
 	}
 
 	// 序号列 - 作为第一列，添加拖拽排序配置
-	cols.push({
+	finalConls.push({
 		field: "index",
 		title: "序号",
 		width: 80,
@@ -129,7 +142,7 @@ function getColumnsConfig() {
 	});
 
 	// 文件名列
-	cols.push({
+	finalConls.push({
 		field: "name",
 		title: "文件名",
 		minWidth: 200,
@@ -139,7 +152,7 @@ function getColumnsConfig() {
 	});
 
 	// 文件大小列
-	cols.push({
+	finalConls.push({
 		field: "size",
 		title: "大小",
 		width: 120,
@@ -149,7 +162,7 @@ function getColumnsConfig() {
 	});
 
 	// 最后修改时间列
-	cols.push({
+	finalConls.push({
 		field: "lastModified",
 		title: "修改时间",
 		width: 180,
@@ -159,9 +172,9 @@ function getColumnsConfig() {
 
 	// 匹配信息列
 	if (props.showMatchInfo) {
-		cols.push({
+		finalConls.push({
 			field: "matchInfo",
-			title: "匹配状态",
+			title: "匹配结果",
 			width: 150,
 			sortable: true,
 			slots: { default: "match-slot" },
@@ -170,7 +183,7 @@ function getColumnsConfig() {
 
 	// 预览名称列
 	if (props.showPreview) {
-		cols.push({
+		finalConls.push({
 			field: "previewName",
 			title: "预览名称",
 			minWidth: 200,
@@ -178,7 +191,18 @@ function getColumnsConfig() {
 		});
 	}
 
-	return cols;
+	if (props.columns && props.columns.length > 0) {
+		// 添加动态列配置
+		props.columns.forEach((col) => {
+			// 为规则动态列添加插槽配置
+			const columnConfig = {
+				...col,
+				slots: { default: `${col.field}-slot` },
+			};
+			finalConls.push(columnConfig);
+		});
+	}
+	return finalConls;
 }
 
 function handleSelectChange() {
@@ -199,7 +223,7 @@ function formatDate(timestamp: number): string {
 
 function getMatchStatusText(file: FileItem): string {
 	if (!file.matched) return "未匹配";
-	return file.matchInfo?.code || "已匹配";
+	return file.matchInfo?.matchedRule || "已匹配";
 }
 
 function getMatchStatusClass(file: FileItem): string {
@@ -212,12 +236,14 @@ function handleNameEditComplete(row: FileItem) {
 	gridRef.value?.clearEdit();
 
 	// 更新文件存储中的数据
-	const fileIndex = fileStore.files.findIndex((file) => file.id === row.id);
+	const fileIndex = fileStore.value.files.findIndex(
+		(file: FileItem) => file.id === row.id
+	);
 	if (fileIndex !== -1) {
 		// 创建新的文件数组以触发响应式更新
-		const newFiles = [...fileStore.files];
+		const newFiles = [...fileStore.value.files];
 		newFiles[fileIndex] = { ...row };
-		fileStore.files = newFiles;
+		fileStore.value.files = newFiles;
 	}
 }
 
@@ -230,7 +256,7 @@ function handleRowDragEnd(params: any) {
 	console.log("🔧 [DEBUG] VXE Table 拖拽结束:", params);
 	// VXE Table 会自动更新数据顺序，我们需要同步到 fileStore
 	const newData = gridRef.value?.getTableData().fullData || [];
-	fileStore.files = [...newData];
+	fileStore.value.files = [...newData];
 	console.log(
 		"🔧 [DEBUG] 同步拖拽结果到 fileStore，前5个文件:",
 		newData.slice(0, 5).map((f: any) => f.name)
@@ -401,8 +427,13 @@ function generateCSVContent(data: FileItem[]): string {
 					cellValue = escapeCSVField(file.previewName || "");
 					break;
 				default:
-					cellValue = "";
-					console.warn("🔧 [DEBUG] 未知列字段:", col.field);
+					// 处理动态列 - 从 matchInfo.columnValues 中获取值
+					if (file.matched && file.matchInfo?.columnValues?.[col.field]) {
+						cellValue = escapeCSVField(file.matchInfo.columnValues[col.field]);
+					} else {
+						cellValue = "-";
+					}
+					break;
 			}
 
 			row.push(cellValue);
@@ -554,8 +585,13 @@ function generateTXTContent(data: FileItem[]): string {
 					cellValue = file.previewName || "";
 					break;
 				default:
-					cellValue = "";
-					console.warn("🔧 [DEBUG] TXT导出-未知列字段:", col.field);
+					// 处理动态列 - 从 matchInfo.columnValues 中获取值
+					if (file.matched && file.matchInfo?.columnValues?.[col.field]) {
+						cellValue = file.matchInfo.columnValues[col.field];
+					} else {
+						cellValue = "-";
+					}
+					break;
 			}
 
 			cells.push(cellValue);
@@ -683,6 +719,20 @@ defineExpose({
 						{{ row.previewName }}
 					</span>
 					<span v-else class="text-text-tertiary italic"> 无预览 </span>
+				</template>
+
+				<!-- 动态生成的规则列插槽 -->
+				<template
+					v-for="column in props.columns"
+					:key="column.field"
+					#[`${column.field}-slot`]="{ row }"
+				>
+					<span
+						v-if="row.matched && row.matchInfo?.columnValues?.[column.field]"
+					>
+						{{ row.matchInfo.columnValues[column.field] }}
+					</span>
+					<span v-else class="text-text-tertiary">-</span>
 				</template>
 			</vxe-grid>
 		</div>

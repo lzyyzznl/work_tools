@@ -47,8 +47,8 @@
 
 		<!-- 主要内容区域 -->
 		<div class="main-content flex-1 overflow-hidden">
-			<FileMatcherTab v-if="activeTab === 'matcher'" />
 			<FileRenamerTab v-if="activeTab === 'renamer'" />
+			<FileMatcherTab v-if="activeTab === 'matcher'" />
 		</div>
 
 		<!-- 通知容器 -->
