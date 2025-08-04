@@ -3,8 +3,8 @@ import { onMounted, ref } from "vue";
 import { useDataManager } from "../../composables/useDataManager";
 import { useErrorHandler } from "../../composables/useErrorHandler";
 import { useFileSystem } from "../../composables/useFileSystem";
-import { useKeyboardShortcuts } from "../../composables/useKeyboardShortcuts";
 import { useIndependentRenameEngine } from "../../composables/useIndependentRenameEngine";
+import { useKeyboardShortcuts } from "../../composables/useKeyboardShortcuts";
 import { useFileRenamerStore } from "../../stores/fileRenamerStore";
 import { useRenameStore } from "../../stores/renameStore";
 import FileTable from "../common/FileTable.vue";
@@ -19,8 +19,13 @@ import type { ComponentExposed } from "vue-component-type-helpers";
 const fileStore = useFileRenamerStore();
 const renameStore = useRenameStore();
 const { selectFiles, selectDirectory, handleDrop } = useFileSystem();
-const { generatePreview, executeRename, undoLastOperation } = useIndependentRenameEngine(fileStore, renameStore);
-const { handleError, handleSuccess } = useErrorHandler();
+const {
+	generatePreview,
+	executeRename,
+	undoLastOperation,
+	cleanupFileHistory,
+} = useIndependentRenameEngine(fileStore, renameStore);
+const { handleError, handleSuccess, handleOperation } = useErrorHandler();
 const { registerShortcut, commonShortcuts } = useKeyboardShortcuts();
 const { confirmImport, cancelImport, showImportPreview, importPreview } =
 	useDataManager();
@@ -39,6 +44,12 @@ async function handleSelectFiles() {
 		const files = await selectFiles({ multiple: true });
 		if (files.length > 0) {
 			fileStore.addFiles(files);
+			// 提供详细的文件列表信息
+			const fileNames = files.map(file => file.name);
+			const fileListMessage = fileNames.length > 5 
+				? `成功添加 ${files.length} 个文件，前5个文件: ${fileNames.slice(0, 5).join(', ')}...` 
+				: `成功添加 ${files.length} 个文件: ${fileNames.join(', ')}`;
+			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 			if (renameStore.isAutoPreview) {
 				generatePreview();
 			}
@@ -53,6 +64,12 @@ async function handleSelectDirectory() {
 		const files = await selectDirectory();
 		if (files.length > 0) {
 			fileStore.addFiles(files);
+			// 提供详细的文件列表信息
+			const fileNames = files.map(file => file.name);
+			const fileListMessage = fileNames.length > 5 
+				? `成功添加 ${files.length} 个文件，前5个文件: ${fileNames.slice(0, 5).join(', ')}...` 
+				: `成功添加 ${files.length} 个文件: ${fileNames.join(', ')}`;
+			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 			if (renameStore.isAutoPreview) {
 				generatePreview();
 			}
@@ -80,6 +97,12 @@ async function handleDropFiles(e: DragEvent) {
 		const files = await handleDrop(e);
 		if (files.length > 0) {
 			fileStore.addFiles(files);
+			// 提供详细的文件列表信息
+			const fileNames = files.map(file => file.name);
+			const fileListMessage = fileNames.length > 5 
+				? `成功添加 ${files.length} 个文件，前5个文件: ${fileNames.slice(0, 5).join(', ')}...` 
+				: `成功添加 ${files.length} 个文件: ${fileNames.join(', ')}`;
+			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 			if (renameStore.isAutoPreview) {
 				generatePreview();
 			}
@@ -90,7 +113,10 @@ async function handleDropFiles(e: DragEvent) {
 }
 
 function clearFiles() {
+	// 清理所有文件的历史记录
+	renameStore.clearHistory();
 	fileStore.clearFiles();
+	handleOperation("文件操作", "已清空文件列表");
 }
 
 async function handleExecuteRename() {
@@ -100,7 +126,11 @@ async function handleExecuteRename() {
 	try {
 		const result = await executeRename();
 		if (result.success) {
-			handleSuccess("重命名操作完成！", "成功");
+			// 提供详细的成功信息
+			handleOperation("重命名操作", "重命名操作完成！", undefined, undefined, {
+				success: result.success,
+				errors: result.errors
+			});
 			executionMessage.value = "";
 		} else {
 			handleError(result.errors.join(", "), "重命名失败");
@@ -118,7 +148,7 @@ async function handleUndoRename() {
 	try {
 		const result = await undoLastOperation();
 		if (result.success) {
-			handleSuccess("撤回操作完成！", "成功");
+			handleOperation("撤回操作", "撤回操作完成！");
 		} else {
 			handleError(result.errors.join(", "), "撤回失败");
 		}
@@ -129,6 +159,7 @@ async function handleUndoRename() {
 
 function handlePreview() {
 	generatePreview();
+	handleOperation("预览操作", "已生成预览");
 }
 
 function openSettings() {
@@ -204,9 +235,9 @@ onMounted(() => {
 	registerShortcut(
 		commonShortcuts.toggleAutoPreview(() => {
 			renameStore.toggleAutoPreview();
-			handleSuccess(
-				`自动预览已${renameStore.isAutoPreview ? "开启" : "关闭"}`,
-				"设置更新"
+			handleOperation(
+				"设置更新",
+				`自动预览已${renameStore.isAutoPreview ? "开启" : "关闭"}`
 			);
 		})
 	);
@@ -354,6 +385,7 @@ onMounted(() => {
 				ref="fileTableRef"
 				:show-preview="true"
 				:show-selection="true"
+				:show-execution-result="true"
 				:file-store="fileStore"
 			/>
 

@@ -47,6 +47,8 @@ export const useFileRenamerStore = defineStore("file-renamer", () => {
 			lastModified: fileData.lastModified,
 			fileData,
 			selected: false,
+			originalName: fileData.name, // 记录原始名称
+			originalPath: fileData.path, // 记录原始路径
 		};
 
 		files.value.push(fileItem);
@@ -64,12 +66,15 @@ export const useFileRenamerStore = defineStore("file-renamer", () => {
 		return addedIds;
 	}
 
-	function removeFile(id: string) {
+	function removeFile(id: string): FileItem | null {
 		const index = files.value.findIndex((f) => f.id === id);
 		if (index > -1) {
+			const file = files.value[index];
 			files.value.splice(index, 1);
 			selectedFiles.value.delete(id);
+			return file;
 		}
+		return null;
 	}
 
 	function removeFiles(ids: string[]) {
@@ -126,7 +131,7 @@ export const useFileRenamerStore = defineStore("file-renamer", () => {
 			// 在 Electron 环境中，更新完整路径
 			const pathParts = file.path.split(/[/\\]/);
 			pathParts[pathParts.length - 1] = newName;
-			file.path = pathParts.join(process.platform === "win32" ? "\\" : "/");
+			file.path = pathParts.join("\\");
 		}
 	}
 

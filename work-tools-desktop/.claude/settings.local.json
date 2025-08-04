@@ -11,7 +11,10 @@
       "Bash(mkdir:*)",
       "mcp__ide__getDiagnostics",
       "Bash(pnpm start:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm run typecheck:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }

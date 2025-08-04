@@ -24,6 +24,7 @@ interface Props {
 	showMatchInfo?: boolean;
 	showPreview?: boolean;
 	showSelection?: boolean;
+	showExecutionResult?: boolean; // 是否显示执行结果列
 	fileStore?: any; // 可选的外部store实例
 	columns?: ColumnConfig[]; // 动态列配置
 }
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
 	showMatchInfo: false,
 	showPreview: false,
 	showSelection: true,
+	showExecutionResult: false, // 默认不显示执行结果列
 	fileStore: undefined,
 });
 
@@ -44,7 +46,8 @@ const emit = defineEmits<{
 // 状态管理
 const internalFileStore = useFileStore();
 const fileStore = computed(() => props.fileStore || internalFileStore);
-const { formatFileSize } = useFileSystem();
+const { formatFileSize, openFileInFolder, renameFile, writeFile } =
+	useFileSystem();
 
 // 表格引用
 const gridRef = ref<VxeGridInstance<FileItem>>();
@@ -152,15 +155,17 @@ function getColumnsConfig() {
 		slots: { default: "name-slot", edit: "name-edit-slot" },
 	});
 
-	// 文件大小列
-	finalConls.push({
-		field: "size",
-		title: "大小",
-		width: 120,
-		sortable: true,
-		align: "right",
-		slots: { default: "size-slot" },
-	});
+	// 文件大小列（仅在非重命名器和非匹配器时显示）
+	if (!props.showPreview && !props.showMatchInfo) {
+		finalConls.push({
+			field: "size",
+			title: "大小",
+			width: 120,
+			sortable: true,
+			align: "right",
+			slots: { default: "size-slot" },
+		});
+	}
 
 	// 最后修改时间列
 	finalConls.push({
@@ -169,6 +174,15 @@ function getColumnsConfig() {
 		width: 180,
 		sortable: true,
 		slots: { default: "date-slot" },
+	});
+
+	// 操作列
+	finalConls.push({
+		field: "actions",
+		title: "操作",
+		width: 100,
+		align: "center",
+		slots: { default: "actions-slot" },
 	});
 
 	// 匹配信息列
@@ -189,6 +203,16 @@ function getColumnsConfig() {
 			title: "预览名称",
 			minWidth: 200,
 			slots: { default: "preview-slot" },
+		});
+	}
+
+	// 执行结果列
+	if (props.showExecutionResult) {
+		finalConls.push({
+			field: "executionResult",
+			title: "执行结果",
+			minWidth: 150,
+			slots: { default: "result-slot" },
 		});
 	}
 
@@ -231,20 +255,65 @@ function getMatchStatusClass(file: FileItem): string {
 	return file.matched ? "text-green-600 font-medium" : "text-gray-500";
 }
 
+// 打开文件所在文件夹
+async function handleOpenFolder(file: FileItem) {
+	try {
+		const result = await openFileInFolder(file.path);
+		if (!result) {
+			console.error("无法打开文件夹:", file.path);
+		}
+	} catch (error) {
+		console.error("打开文件夹时出错:", error);
+	}
+}
+
 // 编辑相关方法
-function handleNameEditComplete(row: FileItem) {
+async function handleNameEditComplete(row: FileItem) {
 	// 触发表格退出编辑状态
 	gridRef.value?.clearEdit();
 
-	// 更新文件存储中的数据
-	const fileIndex = fileStore.value.files.findIndex(
+	// 获取原始文件名
+	const originalFile = fileStore.value.files.find(
 		(file: FileItem) => file.id === row.id
 	);
-	if (fileIndex !== -1) {
-		// 创建新的文件数组以触发响应式更新
-		const newFiles = [...fileStore.value.files];
-		newFiles[fileIndex] = { ...row };
-		fileStore.value.files = newFiles;
+
+	if (!originalFile) {
+		console.error("找不到原始文件");
+		return;
+	}
+
+	// 如果文件名没有改变，直接返回
+	if (originalFile.name === row.name) {
+		return;
+	}
+
+	// 构造新的文件路径
+	const newPath = row.path.replace(originalFile.name, row.name);
+
+	try {
+		// 调用重命名文件的API
+		const result = await renameFile(originalFile.path, newPath);
+
+		if (result?.success) {
+			// 更新文件存储中的数据
+			const fileIndex = fileStore.value.files.findIndex(
+				(file: FileItem) => file.id === row.id
+			);
+			if (fileIndex !== -1) {
+				// 创建新的文件数组以触发响应式更新
+				const newFiles = [...fileStore.value.files];
+				newFiles[fileIndex] = { ...row, path: newPath };
+				fileStore.value.files = newFiles;
+			}
+		} else {
+			// 重命名失败，恢复原始文件名
+			row.name = originalFile.name;
+			console.error("文件重命名失败:", result?.error);
+		}
+	} catch (error) {
+		// 重命名失败，恢复原始文件名
+		row.name = originalFile.name;
+		console.error("文件重命名时出错:", error);
 	}
 }
 
@@ -284,8 +353,6 @@ function getSelectedFiles(): FileItem[] {
 function setSearchQuery(query: string) {
 	searchQuery.value = query;
 }
-
-
 
 // 导出 Excel 文件
 async function exportExcel() {
@@ -339,9 +406,7 @@ async function exportExcel() {
 
 		if (!result.canceled && result.filePath) {
 			// 写入文件
-			const writeResult = await (
-				window as any
-			).electronAPI?.fileSystem?.writeFile(result.filePath, excelBuffer);
+			const writeResult = await writeFile(result.filePath, excelBuffer);
 
 			console.log("🔧 [DEBUG] 文件写入结果:", writeResult);
 
@@ -570,6 +635,34 @@ defineExpose({
 						{{ row.previewName }}
 					</span>
 					<span v-else class="text-text-tertiary italic"> 无预览 </span>
+				</template>
+
+				<template #result-slot="{ row }">
+					<span
+						v-if="row.executionResult"
+						:class="{
+							'text-green-600':
+								row.executionResult.includes('成功') ||
+								row.executionResult.includes('完成'),
+							'text-red-600':
+								row.executionResult.includes('失败') ||
+								row.executionResult.includes('错误'),
+						}"
+						:title="row.executionResult"
+					>
+						{{ row.executionResult }}
+					</span>
+					<span v-else class="text-text-tertiary"> 未执行 </span>
+				</template>
+
+				<template #actions-slot="{ row }">
+					<button
+						@click="handleOpenFolder(row)"
+						class="text-blue-600 hover:text-blue-800 hover:underline"
+						title="打开文件所在文件夹"
+					>
+						📁 打开文件夹
+					</button>
 				</template>
 
 				<!-- 动态生成的规则列插槽 -->

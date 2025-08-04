@@ -50,6 +50,11 @@
 			<FileMatcherTab v-if="activeTab === 'matcher'" />
 			<FileRenamerTab v-if="activeTab === 'renamer'" />
 		</div>
+		
+		<!-- 操作日志面板 -->
+		<div class="log-panel-container border-t border-gray-200">
+			<LogPanel />
+		</div>
 
 	
 		<!-- 全局拖拽覆盖层 -->
@@ -77,6 +82,7 @@ import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 import { useFileSystem } from "./composables/useFileSystem";
 import FileMatcherTab from "./components/file-matcher/FileMatcherTab.vue";
 import FileRenamerTab from "./components/file-renamer/FileRenamerTab.vue";
+import LogPanel from "./components/common/LogPanel.vue";
 
 const fileStore = useFileStore();
 const ruleStore = useRuleStore();

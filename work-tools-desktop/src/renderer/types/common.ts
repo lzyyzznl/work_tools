@@ -33,6 +33,24 @@ export interface ExportOptions {
 	includeHeaders: boolean;
 }
 
+// 操作日志类型定义
+export interface OperationLog {
+	id: string;
+	timestamp: number;
+	type: string;
+	message: string;
+	level: "info" | "success" | "warning" | "error";
+	details?: any;
+	// 用于存储文件列表等详细信息
+	fileList?: string[];
+	// 用于存储操作结果统计
+	stats?: {
+		total?: number;
+		success?: number;
+		failed?: number;
+	};
+}
+
 // Electron 特定的类型定义
 export interface ElectronAPI {
 	fileSystem: {
@@ -50,6 +68,7 @@ export interface ElectronAPI {
 		checkFileExists: (filePath: string) => Promise<boolean>;
 		getPathForFile: (filePath: File) => Promise<string>;
 		getFilesFromPath: (filePath: string) => Promise<FileData[]>;
+		openFileInFolder: (filePath: string) => Promise<boolean>;
 	};
 }
 

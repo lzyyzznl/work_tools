@@ -9,7 +9,7 @@ import RuleManager from "./RuleManager.vue";
 const fileStore = useFileMatcherStore();
 const ruleStore = useRuleStore();
 const { handleDrop } = useFileSystem();
-const { handleError, handleSuccess } = useErrorHandler();
+const { handleError, handleOperation } = useErrorHandler();
 
 const isDragOver = ref(false);
 const isMatching = ref(false);
@@ -60,9 +60,20 @@ watch(
 // 文件操作
 async function handleSelectFiles() {
 	try {
-		const files = await fileStore.selectFilesFromSystem({ multiple: true });
-		if (files.length > 0) {
-			handleSuccess(`成功添加 ${files.length} 个文件`);
+		const fileIds = await fileStore.selectFilesFromSystem({ multiple: true });
+		if (fileIds.length > 0) {
+			// 获取添加的文件信息
+			const addedFiles = fileStore.files.filter((file) =>
+				fileIds.includes(file.id)
+			);
+			const fileNames = addedFiles.map((file) => file.name);
+			const fileListMessage =
+				fileNames.length > 5
+					? `成功添加 ${fileIds.length} 个文件，前5个文件: ${fileNames
+							.slice(0, 5)
+							.join(", ")}...`
+					: `成功添加 ${fileIds.length} 个文件: ${fileNames.join(", ")}`;
+			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 		}
 	} catch (error) {
 		handleError(error, "选择文件失败");
@@ -71,9 +82,20 @@ async function handleSelectFiles() {
 
 async function handleSelectDirectory() {
 	try {
-		const files = await fileStore.selectDirectoryFromSystem();
-		if (files.length > 0) {
-			handleSuccess(`成功添加 ${files.length} 个文件`);
+		const fileIds = await fileStore.selectDirectoryFromSystem();
+		if (fileIds.length > 0) {
+			// 获取添加的文件信息
+			const addedFiles = fileStore.files.filter((file) =>
+				fileIds.includes(file.id)
+			);
+			const fileNames = addedFiles.map((file) => file.name);
+			const fileListMessage =
+				fileNames.length > 5
+					? `成功添加 ${fileIds.length} 个文件，前5个文件: ${fileNames
+							.slice(0, 5)
+							.join(", ")}...`
+					: `成功添加 ${fileIds.length} 个文件: ${fileNames.join(", ")}`;
+			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 		}
 	} catch (error) {
 		handleError(error, "选择目录失败");
@@ -97,8 +119,16 @@ async function handleDropFiles(e: DragEvent) {
 	try {
 		const files = await handleDrop(e);
 		if (files.length > 0) {
-			fileStore.addFiles(files);
-			handleSuccess(`成功添加 ${files.length} 个文件`);
+			const fileIds = fileStore.addFiles(files);
+			// 提供详细的文件列表信息
+			const fileNames = files.map((file) => file.name);
+			const fileListMessage =
+				fileNames.length > 5
+					? `成功添加 ${files.length} 个文件，前5个文件: ${fileNames
+							.slice(0, 5)
+							.join(", ")}...`
+					: `成功添加 ${files.length} 个文件: ${fileNames.join(", ")}`;
+			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 		}
 	} catch (error) {
 		handleError(error, "拖拽文件失败");
@@ -107,7 +137,7 @@ async function handleDropFiles(e: DragEvent) {
 
 function clearFiles() {
 	fileStore.clearFiles();
-	handleSuccess("已清空文件列表");
+	handleOperation("文件操作", "已清空文件列表");
 }
 
 // 自动匹配函数
@@ -137,7 +167,10 @@ async function autoMatch() {
 		});
 
 		if (newFiles.length > 0) {
-			handleSuccess(`自动匹配完成，共匹配 ${matchedCount} 个文件`);
+			handleOperation(
+				"匹配操作",
+				`自动匹配完成，共匹配 ${matchedCount} 个文件`
+			);
 		}
 	} catch (error) {
 		handleError(error, "文件自动匹配失败");
@@ -167,7 +200,14 @@ async function executeMatch() {
 			}
 		});
 
-		handleSuccess(`匹配完成，共匹配 ${matchedCount} 个文件`);
+		// 提供详细的统计信息
+		const stats = {
+			total: fileStore.files.length,
+			success: matchedCount,
+			failed: fileStore.files.length - matchedCount,
+		};
+		const message = `匹配完成，总共: ${stats.total}, 匹配成功: ${stats.success}, 匹配失败: ${stats.failed}`;
+		handleOperation("匹配操作", message, undefined, undefined, stats);
 	} catch (error) {
 		handleError(error, "文件匹配失败");
 	} finally {
@@ -179,7 +219,7 @@ function clearMatchResults() {
 	fileStore.files.forEach((file) => {
 		fileStore.updateFileMatchResult(file.id, false);
 	});
-	handleSuccess("已清除匹配结果");
+	handleOperation("匹配操作", "已清除匹配结果");
 }
 
 // 规则管理
@@ -195,7 +235,7 @@ function closeRuleManager() {
 function handleExport() {
 	if (!fileTableRef.value) return;
 	fileTableRef.value.exportExcel();
-	handleSuccess("已触发导出功能");
+	handleOperation("导出操作", "已触发导出功能");
 }
 </script>
 

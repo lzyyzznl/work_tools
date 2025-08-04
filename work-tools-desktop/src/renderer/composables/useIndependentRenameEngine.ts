@@ -260,14 +260,18 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 					// 检查源文件是否存在
 					const oldFileExists = await fileExists(file.path);
 					if (!oldFileExists) {
-						errors.push(`源文件不存在: ${file.name}`);
+						const errorMsg = `源文件不存在: ${file.name}`;
+						errors.push(errorMsg);
+						fileStore.updateFileExecutionResult(file.id, `失败: ${errorMsg}`);
 						continue;
 					}
 
 					// 检查目标文件是否已存在
 					const newFileExists = await fileExists(newPath);
 					if (newFileExists) {
-						errors.push(`目标文件已存在: ${newName}`);
+						const errorMsg = `目标文件已存在: ${newName}`;
+						errors.push(errorMsg);
+						fileStore.updateFileExecutionResult(file.id, `失败: ${errorMsg}`);
 						continue;
 					}
 
@@ -281,9 +285,15 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 
 						// 更新文件store中的文件信息
 						fileStore.updateFileName(file.id, newName);
+						fileStore.updateFileExecutionResult(file.id, "成功");
 					} catch (error) {
-						errors.push(`重命名文件失败 ${file.name}: ${error}`);
+						const errorMsg = `重命名文件失败 ${file.name}: ${error}`;
+						errors.push(errorMsg);
+						fileStore.updateFileExecutionResult(file.id, `失败: ${errorMsg}`);
 					}
+				} else {
+					// 文件名未改变的情况
+					fileStore.updateFileExecutionResult(file.id, "无需重命名");
 				}
 
 				// 更新进度
@@ -329,14 +339,23 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 					await renameFile(op.newPath, op.oldPath);
 
 					// 在文件store中找到对应文件并恢复名称
-					const fileName = op.oldPath.split("/").pop() || "";
-					const newFileName = op.newPath.split("/").pop() || "";
-					const file = fileStore.files.find((f) => f.name === newFileName);
+					const fileName = op.oldPath.split(/[\/\\]/).pop() || "";
+					const newFileName = op.newPath.split(/[\/\\]/).pop() || "";
+					// 使用路径来查找文件，因为文件名在撤回后会发生变化
+					const file = fileStore.files.find((f) => f.path === op.newPath);
 					if (file) {
 						fileStore.updateFileName(file.id, fileName);
+						fileStore.updateFileExecutionResult(file.id, "撤回成功");
 					}
 				} catch (error) {
-					errors.push(`撤回操作失败 ${op.newPath}: ${error}`);
+					const errorMsg = `撤回操作失败 ${op.newPath}: ${error}`;
+					errors.push(errorMsg);
+					// 尝试找到对应的文件并更新执行结果
+					const newFileName = op.newPath.split(/[\/\\]/).pop() || "";
+					const file = fileStore.files.find((f) => f.path === op.newPath);
+					if (file) {
+						fileStore.updateFileExecutionResult(file.id, `撤回失败: ${errorMsg}`);
+					}
 				}
 			}
 
@@ -345,11 +364,17 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 
 			return { success: true, errors: [] };
 		} catch (error) {
-			errors.push(`撤回操作时发生错误: ${error}`);
+			const errorMsg = `撤回操作时发生错误: ${error}`;
+			errors.push(errorMsg);
 			return { success: false, errors };
 		}
 	}
 
+	// 清理文件相关的历史记录
+	function cleanupFileHistory(filePath: string) {
+		renameStore.removeFileHistory(filePath);
+	}
+	
 	// 自动预览监听 (只在使用默认store时启用)
 	if (renameStore.isAutoPreview) {
 		watch(
@@ -374,6 +399,7 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 		checkConflicts,
 		executeRename,
 		undoLastOperation,
+		cleanupFileHistory,
 		splitFileName,
 	};
 }

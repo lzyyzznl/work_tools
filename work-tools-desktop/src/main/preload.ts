@@ -110,6 +110,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		getPathForFile: async (file: File): Promise<string> => {
 			return webUtils.getPathForFile(file);
 		},
+
+		openFileInFolder: async (filePath: string): Promise<boolean> => {
+			try {
+				return await ipcRenderer.invoke(
+					"file-system:open-file-in-folder",
+					filePath
+				);
+			} catch (error) {
+				console.error("Error opening file in folder:", error);
+				throw error;
+			}
+		},
 	},
 
 	dialog: {

@@ -187,6 +187,21 @@ export const useRenameStore = defineStore("rename", () => {
 		history.value = [];
 		saveHistory();
 	}
+	
+	function removeFileHistory(filePath: string) {
+		// 从历史记录中移除与指定文件相关的操作
+		history.value = history.value.map(historyEntry => {
+			const filteredOperations = historyEntry.operations.filter(
+				op => op.oldPath !== filePath && op.newPath !== filePath
+			);
+			return {
+				...historyEntry,
+				operations: filteredOperations
+			};
+		}).filter(historyEntry => historyEntry.operations.length > 0); // 移除空的操作记录
+		
+		saveHistory();
+	}
 
 	function setExecuting(executing: boolean) {
 		isExecuting.value = executing;

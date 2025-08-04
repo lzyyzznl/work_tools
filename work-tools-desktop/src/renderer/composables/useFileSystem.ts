@@ -244,6 +244,20 @@ export function useFileSystem() {
 		}
 	}
 
+	// 打开文件所在的文件夹
+	async function openFileInFolder(filePath: string) {
+		try {
+			isLoading.value = true;
+			const result = await window.electronAPI.fileSystem.openFileInFolder(filePath);
+			return result;
+		} catch (error) {
+			console.error("Error opening file in folder:", error);
+			throw error;
+		} finally {
+			isLoading.value = false;
+		}
+	}
+
 	return {
 		isSupported,
 		isLoading,
@@ -253,6 +267,7 @@ export function useFileSystem() {
 		readFile,
 		writeFile,
 		renameFile,
+		openFileInFolder,
 		handleDrop,
 		formatFileSize,
 		getFileExtension,

@@ -13,6 +13,8 @@ export interface FileItem {
 	previewName?: string;
 	selected: boolean;
 	executionResult?: string;
+	originalName?: string; // 记录文件的原始名称
+	originalPath?: string; // 记录文件的原始路径
 }
 
 export interface MatchInfo {

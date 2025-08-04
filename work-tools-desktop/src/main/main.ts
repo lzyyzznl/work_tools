@@ -104,6 +104,10 @@ ipcMain.handle("file-system:get-files-from-path", async (event, filePath) => {
 	return await fileSystem.getFilesFromPath(filePath);
 });
 
+ipcMain.handle("file-system:open-file-in-folder", async (event, filePath) => {
+	return await fileSystem.openFileInFolder(filePath);
+});
+
 // 对话框 IPC 处理器
 ipcMain.handle("dialog:show-save-dialog", async (event, options) => {
 	const result = await dialog.showSaveDialog(options);

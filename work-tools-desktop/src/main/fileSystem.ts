@@ -1,4 +1,4 @@
-import { dialog } from "electron";
+import { dialog, shell } from "electron";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { FileData } from "../renderer/types/fileSystem";
@@ -263,5 +263,17 @@ export async function getFilesFromPath(filePath: string): Promise<FileData[]> {
 	} catch (error) {
 		console.error("Error getting files from path:", error);
 		throw error;
+	}
+}
+
+// 打开文件所在的文件夹
+export async function openFileInFolder(filePath: string): Promise<boolean> {
+	try {
+		const dirPath = path.dirname(filePath);
+		await shell.openPath(dirPath);
+		return true;
+	} catch (error) {
+		console.error("Error opening file in folder:", error);
+		return false;
 	}
 }
