@@ -165,6 +165,17 @@ function moveColumnDown(index: number) {
 		ruleStore.moveColumn(column.id, index + 1);
 	}
 }
+
+function resetColumnsToDefault() {
+	if (confirm("确定要重置列配置为默认状态吗？这将删除所有用户自定义列。")) {
+		try {
+			ruleStore.resetColumnsToDefault();
+			handleSuccess("已重置列配置为默认状态");
+		} catch (error) {
+			handleError(error, "重置列配置失败");
+		}
+	}
+}
 </script>
 
 <template>
@@ -177,7 +188,15 @@ function moveColumnDown(index: number) {
 
 		<!-- 添加新列表单 -->
 		<div class="add-column-form p-4 border-b border-gray-200">
-			<h3 class="text-md font-medium text-gray-900 mb-3">添加新列</h3>
+			<div class="flex justify-between items-center mb-3">
+				<h3 class="text-md font-medium text-gray-900">添加新列</h3>
+				<button
+					@click="resetColumnsToDefault"
+					class="px-3 py-1 bg-orange-500 text-white rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+				>
+					重置列配置
+				</button>
+			</div>
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
 				<div>
 					<label class="block text-sm font-medium text-gray-700 mb-1"

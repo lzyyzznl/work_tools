@@ -91,6 +91,12 @@ const gridOptions = computed<VxeGridProps<FileItem>>(() => {
 		columnConfig: {
 			resizable: true,
 			drag: true, // 启用列拖拽
+			fit: true,
+			autoOptions: {
+				isCalcHeader: false, // 不自适应计算列头宽度
+				isCalcBody: true,
+				isCalcFooter: true,
+			},
 		},
 		sortConfig: {
 			remote: false, // 本地排序，让 VXE Table 处理
@@ -180,7 +186,7 @@ function getColumnsConfig() {
 	finalConls.push({
 		field: "actions",
 		title: "操作",
-		width: 100,
+		width: 120,
 		align: "center",
 		slots: { default: "actions-slot" },
 	});
@@ -658,7 +664,7 @@ defineExpose({
 				<template #actions-slot="{ row }">
 					<button
 						@click="handleOpenFolder(row)"
-						class="text-blue-600 hover:text-blue-800 hover:underline"
+						class="btn-secondary px-2 py-1 text-xs"
 						title="打开文件所在文件夹"
 					>
 						📁 打开文件夹

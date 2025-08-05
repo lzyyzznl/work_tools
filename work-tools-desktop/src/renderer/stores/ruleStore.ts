@@ -95,16 +95,8 @@ export const useRuleStore = defineStore("rule", () => {
 
 	// 初始化默认列配置
 	function initializeDefaultColumns() {
-		// 默认创建一个基于规则编码的列
-		const defaultColumn: RuleColumn = {
-			id: `col-${Date.now()}`,
-			name: "规则编码",
-			field: "code",
-			type: "text",
-			visible: true,
-			order: 0,
-		};
-		columns.value = [defaultColumn];
+		// 默认创建一个空的列
+		columns.value = [];
 	}
 
 	// 列管理方法
@@ -213,7 +205,7 @@ export const useRuleStore = defineStore("rule", () => {
 		}
 
 		const rule = rules.value[index];
-		
+
 		// 处理 columnValues 的合并
 		let finalRuleData = { ...ruleData };
 		if (ruleData.columnValues) {
@@ -224,7 +216,7 @@ export const useRuleStore = defineStore("rule", () => {
 			// 合并 columnValues
 			finalRuleData.columnValues = {
 				...rule.columnValues,
-				...ruleData.columnValues
+				...ruleData.columnValues,
 			};
 		}
 
@@ -304,6 +296,11 @@ export const useRuleStore = defineStore("rule", () => {
 		saveRules();
 	}
 
+	function resetColumnsToDefault() {
+		initializeDefaultColumns();
+		saveRules();
+	}
+
 	// 保留原有的JSON导入导出功能
 	function exportRules() {
 		return {
@@ -347,6 +344,7 @@ export const useRuleStore = defineStore("rule", () => {
 		deleteColumn,
 		getColumnById,
 		moveColumn,
+		resetColumnsToDefault,
 
 		// JSON导入导出方法
 		exportRules,

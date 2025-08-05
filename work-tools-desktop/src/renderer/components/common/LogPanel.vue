@@ -1,7 +1,7 @@
 <template>
 	<div class="log-panel flex flex-col h-full">
 		<!-- 面板标题和控制按钮 -->
-		<div class="log-header flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
+		<div class="log-header flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
 			<h3 class="text-sm font-medium text-gray-900">操作日志</h3>
 			<div class="flex items-center gap-2">
 				<input
@@ -31,7 +31,7 @@
 		<div
 			v-if="isExpanded"
 			class="log-content flex-1 overflow-y-auto bg-white"
-			style="max-height: 300px"
+			:class="isExpanded ? 'max-h-48' : 'max-h-6'"
 		>
 			<div
 				v-for="log in filteredLogs"
@@ -101,7 +101,7 @@
 		<!-- 收起状态下的简要信息 -->
 		<div
 			v-else
-			class="log-summary px-3 py-2 text-xs bg-white border-b border-gray-200"
+			class="log-summary px-3 py-2 text-xs bg-white border-b border-gray-200 flex-shrink-0"
 		>
 			<span class="text-gray-600">
 				{{ operationLogs.length }} 条日志

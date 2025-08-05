@@ -14,7 +14,8 @@
       "Bash(rm:*)",
       "Bash(cat:*)",
       "Bash(pnpm run typecheck:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "WebFetch(domain:vxetable.cn)"
     ],
     "deny": []
   }

@@ -243,7 +243,7 @@ function handleExport() {
 	<div class="file-matcher-tab flex flex-col h-full bg-white">
 		<!-- 工具栏 -->
 		<div
-			class="toolbar flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50"
+			class="toolbar flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0"
 		>
 			<div class="toolbar-left flex items-center gap-3">
 				<button
@@ -312,34 +312,39 @@ function handleExport() {
 			</div>
 		</div>
 
-		<!-- 拖拽区域 -->
-		<div
-			class="drop-zone flex-1 flex flex-col relative overflow-hidden border-2 border-dashed border-gray-300 m-4 rounded-lg transition-colors"
-			:class="{ 'border-blue-500 bg-blue-50': isDragOver }"
-			@dragenter="handleDragEnter"
-			@dragover.prevent
-			@dragleave="handleDragLeave"
-			@drop="handleDropFiles"
-		>
-			<!-- 文件表格 -->
-			<FileTable
-				ref="fileTableRef"
-				:show-match-info="true"
-				:show-selection="true"
-				:show-preview="false"
-				:file-store="fileStore"
-				:columns="dynamicColumns"
-			/>
-
-			<!-- 拖拽提示 -->
+		<!-- 拖拽区域和文件表格容器 -->
+		<div class="flex-1 flex flex-col min-h-0">
+			<!-- 拖拽区域 -->
 			<div
-				v-if="isDragOver"
-				class="absolute inset-0 flex items-center justify-center pointer-events-none"
+				class="drop-zone flex-1 flex flex-col relative overflow-hidden border-2 border-dashed border-gray-300 m-4 rounded-lg transition-colors"
+				:class="{ 'border-blue-500 bg-blue-50': isDragOver }"
+				@dragenter="handleDragEnter"
+				@dragover.prevent
+				@dragleave="handleDragLeave"
+				@drop="handleDropFiles"
 			>
+				<!-- 文件表格 -->
+				<div class="file-table-wrapper flex-1 min-h-0">
+					<FileTable
+						ref="fileTableRef"
+						:show-match-info="true"
+						:show-selection="true"
+						:show-preview="false"
+						:file-store="fileStore"
+						:columns="dynamicColumns"
+					/>
+				</div>
+
+				<!-- 拖拽提示 -->
 				<div
-					class="text-2xl font-semibold text-blue-600 bg-white px-6 py-4 rounded-lg border-2 border-blue-500"
+					v-if="isDragOver"
+					class="absolute inset-0 flex items-center justify-center pointer-events-none"
 				>
-					拖拽文件到此处
+					<div
+						class="text-2xl font-semibold text-blue-600 bg-white px-6 py-4 rounded-lg border-2 border-blue-500"
+					>
+						拖拽文件到此处
+					</div>
 				</div>
 			</div>
 		</div>

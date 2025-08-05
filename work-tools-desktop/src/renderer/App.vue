@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="app h-screen flex flex-col bg-gray-100 relative"
+		class="app h-screen grid grid-rows-[auto_1fr_auto] bg-gray-100 relative"
 		@dragenter="handleGlobalDragEnter"
 		@dragover.prevent
 		@dragleave="handleGlobalDragLeave"
@@ -46,7 +46,7 @@
 		</div>
 
 		<!-- 主要内容区域 -->
-		<div class="main-content flex-1 overflow-hidden">
+		<div class="main-content overflow-hidden">
 			<FileMatcherTab v-if="activeTab === 'matcher'" />
 			<FileRenamerTab v-if="activeTab === 'renamer'" />
 		</div>

@@ -121,6 +121,7 @@ const gridOptions = computed<VxeGridProps<Rule>>(() => {
 		},
 		columnConfig: {
 			resizable: true,
+			fit: true, // 启用列宽自适应
 		},
 		sortConfig: {
 			remote: false,
@@ -232,7 +233,7 @@ function getColumnsConfig() {
 	// 操作列（固定在右侧）
 	columns.push({
 		title: "操作",
-		width: 100,
+		width: 120,
 		fixed: "right",
 		align: "center",
 		slots: { default: "action-slot" },
@@ -849,7 +850,7 @@ onMounted(async () => {
 				<template #action-slot="{ row }">
 					<button
 						@click="deleteRow(row)"
-						class="text-red-500 hover:text-red-700 focus:outline-none"
+						class="btn-secondary px-2 py-1 text-xs"
 						title="删除"
 					>
 						删除
