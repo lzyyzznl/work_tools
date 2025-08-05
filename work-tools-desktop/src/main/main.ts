@@ -16,10 +16,10 @@ if (process.env.NODE_ENV === "development") {
 const createWindow = () => {
 	// Create the browser window.
 	const mainWindow = new BrowserWindow({
-		width: 1200,
-		height: 800,
-		minWidth: 1200,
-		minHeight: 800,
+		width: 1600,
+		height: 1200,
+		minWidth: 1600,
+		minHeight: 1200,
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 			contextIsolation: true,
