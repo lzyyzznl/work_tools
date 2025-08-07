@@ -6,6 +6,11 @@ import { useFileMatcherStore } from "../../stores/fileMatcherStore";
 import { useRuleStore } from "../../stores/ruleStore";
 import FileTable from "../common/FileTable.vue";
 import RuleManager from "./RuleManager.vue";
+
+// 为keep-alive添加组件名称
+defineOptions({
+	name: "FileMatcherTab"
+});
 const fileStore = useFileMatcherStore();
 const ruleStore = useRuleStore();
 const { handleDrop } = useFileSystem();

@@ -16,16 +16,17 @@ import RenameOperationTabs from "./RenameOperationTabs.vue";
 // 添加对 FileTable 组件的引用类型
 import type { ComponentExposed } from "vue-component-type-helpers";
 
+// 为keep-alive添加组件名称
+defineOptions({
+	name: "FileRenamerTab",
+});
+
 const fileStore = useFileRenamerStore();
 const renameStore = useRenameStore();
 const { selectFiles, selectDirectory, handleDrop } = useFileSystem();
-const {
-	generatePreview,
-	executeRename,
-	undoLastOperation,
-	cleanupFileHistory,
-} = useIndependentRenameEngine(fileStore, renameStore);
-const { handleError, handleSuccess, handleOperation } = useErrorHandler();
+const { generatePreview, executeRename, undoLastOperation } =
+	useIndependentRenameEngine(fileStore, renameStore);
+const { handleError, handleOperation } = useErrorHandler();
 const { registerShortcut, commonShortcuts } = useKeyboardShortcuts();
 const { confirmImport, cancelImport, showImportPreview, importPreview } =
 	useDataManager();
@@ -212,6 +213,17 @@ function onExport(event: {
 		filePath: event.filePath,
 		fileNames: event.fileNames,
 		error: event.error,
+	});
+}
+
+// 监听选择变化事件
+function onSelectionChanged(selectedFiles: any[]) {
+	// 重置选中状态
+	fileStore.unselectAllFiles();
+
+	// 更新选中状态
+	selectedFiles.forEach((file) => {
+		fileStore.selectFile(file.id);
 	});
 }
 
@@ -482,6 +494,7 @@ onMounted(() => {
 							:show-execution-result="true"
 							:file-store="fileStore"
 							@export="onExport"
+							@selection-changed="onSelectionChanged"
 						/>
 					</div>
 

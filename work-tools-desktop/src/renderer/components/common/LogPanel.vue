@@ -159,6 +159,11 @@ import { ref, computed } from "vue";
 import { useErrorHandlerStore } from "../../stores/errorHandlerStore";
 import type { OperationLog } from "../../types/common";
 
+// 为keep-alive添加组件名称
+defineOptions({
+	name: "LogPanel"
+});
+
 const store = useErrorHandlerStore();
 const { clearOperationLogs, searchOperationLogs, operationLogs } = store;
 

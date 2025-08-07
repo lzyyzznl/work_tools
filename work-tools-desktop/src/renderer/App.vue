@@ -78,9 +78,9 @@
 
 		<!-- 主要内容区域 - 最大化空间 -->
 		<div class="main-content flex-1 min-h-0 overflow-hidden">
-			<FileMatcherTab v-if="activeTab === 'matcher'" />
-			<FileRenamerTab v-if="activeTab === 'renamer'" />
-			<LogPanel v-if="activeTab === 'log'" />
+			<keep-alive>
+				<component :is="activeTabComponent" />
+			</keep-alive>
 		</div>
 
 		<!-- 全局拖拽覆盖层 -->
@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useFileStore } from "./stores/fileStore";
 import { useRuleStore } from "./stores/ruleStore";
 import { useErrorHandler } from "./composables/useErrorHandler";
@@ -129,6 +129,20 @@ const { handleDrop } = useFileSystem();
 
 const activeTab = ref<"matcher" | "renamer" | "log">("renamer");
 const isDragOver = ref(false);
+
+// 计算属性，返回当前应该渲染的组件
+const activeTabComponent = computed(() => {
+	switch (activeTab.value) {
+		case "matcher":
+			return FileMatcherTab;
+		case "renamer":
+			return FileRenamerTab;
+		case "log":
+			return LogPanel;
+		default:
+			return FileRenamerTab;
+	}
+});
 
 // 注册全局快捷键
 onMounted(() => {
