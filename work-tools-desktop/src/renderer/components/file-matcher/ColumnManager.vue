@@ -5,7 +5,7 @@ import { useErrorHandler } from "../../composables/useErrorHandler";
 import type { RuleColumn } from "../../types/rule";
 
 const ruleStore = useRuleStore();
-const { handleError, handleSuccess } = useErrorHandler();
+const { handleError, handleSuccess, handleOperation } = useErrorHandler();
 
 // 本地状态
 const newColumn = ref({
@@ -48,13 +48,34 @@ function addColumn() {
 				.filter((opt) => opt);
 		}
 
-		ruleStore.addColumn({
+		// 保存添加前的列信息
+		const oldColumns = [...ruleStore.columns];
+
+		const newColumnData = {
 			name: newColumn.value.name.trim(),
 			field: newColumn.value.name.trim(), // 使用列名作为字段名
 			type: newColumn.value.type,
 			visible: newColumn.value.visible,
 			order: ruleStore.columns.length,
 			options: options,
+		};
+
+		ruleStore.addColumn(newColumnData);
+
+		// 记录日志
+		handleOperation("列管理", `添加列: ${newColumnData.name}`, {
+			action: "add",
+			column: newColumnData,
+			oldColumns: oldColumns.map((col) => ({
+				id: col.id,
+				name: col.name,
+				field: col.field,
+			})),
+			newColumns: ruleStore.columns.map((col) => ({
+				id: col.id,
+				name: col.name,
+				field: col.field,
+			})),
 		});
 
 		// 重置表单
@@ -109,12 +130,37 @@ function saveEditColumn() {
 				.filter((opt) => opt);
 		}
 
-		ruleStore.updateColumn(editingColumnId.value, {
+		// 保存更新前的列信息
+		const oldColumn = ruleStore.getColumnById(editingColumnId.value);
+
+		const updatedColumnData = {
 			name: editingColumn.value.name.trim(),
 			field: editingColumn.value.name.trim(), // 使用列名作为字段名
 			type: editingColumn.value.type,
 			visible: editingColumn.value.visible,
 			options: options,
+		};
+
+		ruleStore.updateColumn(editingColumnId.value, updatedColumnData);
+
+		// 记录日志
+		handleOperation("列管理", `更新列: ${updatedColumnData.name}`, {
+			action: "update",
+			oldColumn: oldColumn
+				? {
+						id: oldColumn.id,
+						name: oldColumn.name,
+						field: oldColumn.field,
+						type: oldColumn.type,
+				  }
+				: null,
+			newColumn: updatedColumnData,
+			allColumns: ruleStore.columns.map((col) => ({
+				id: col.id,
+				name: col.name,
+				field: col.field,
+				type: col.type,
+			})),
 		});
 
 		cancelEditColumn();
@@ -137,7 +183,35 @@ function deleteColumn(id: string) {
 
 	if (confirm(`确定要删除列 "${column.name}" 吗？`)) {
 		try {
+			// 保存删除前的列信息
+			const columnToDelete = {
+				id: column.id,
+				name: column.name,
+				field: column.field,
+				type: column.type,
+			};
+			const oldColumns = [...ruleStore.columns];
+
 			ruleStore.deleteColumn(id);
+
+			// 记录日志
+			handleOperation("列管理", `删除列: ${column.name}`, {
+				action: "delete",
+				deletedColumn: columnToDelete,
+				oldColumns: oldColumns.map((col) => ({
+					id: col.id,
+					name: col.name,
+					field: col.field,
+					type: col.type,
+				})),
+				newColumns: ruleStore.columns.map((col) => ({
+					id: col.id,
+					name: col.name,
+					field: col.field,
+					type: col.type,
+				})),
+			});
+
 			handleSuccess("列删除成功");
 		} catch (error) {
 			handleError(error, "删除列");

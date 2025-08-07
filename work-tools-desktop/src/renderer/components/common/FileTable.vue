@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { type VxeGridInstance, type VxeGridProps } from "vxe-table";
+import {
+	type VxeGridInstance,
+	type VxeGridProps,
+	type VxeGridListeners,
+} from "vxe-table";
 import { useFileSystem } from "../../composables/useFileSystem";
 import { useFileStore } from "../../stores/fileStore";
+import { useErrorHandler } from "../../composables/useErrorHandler";
 import type { FileItem } from "../../types/file";
 import * as XLSX from "xlsx";
 
@@ -43,6 +48,9 @@ const emit = defineEmits<{
 	(e: "selection-changed", selectedFiles: FileItem[]): void;
 }>();
 
+// 错误处理和日志记录
+const { handleSuccess, handleError, logOperation } = useErrorHandler();
+
 // 状态管理
 const internalFileStore = useFileStore();
 const fileStore = computed(() => props.fileStore || internalFileStore);
@@ -78,7 +86,7 @@ const filteredFiles = computed(() => {
 const gridOptions = computed<VxeGridProps<FileItem>>(() => {
 	return {
 		border: true,
-		height: "auto",
+		height: "100%",
 		loading: fileStore.value.isLoading,
 		keepSource: true, // 添加 keep-source 配置
 		rowConfig: {
@@ -200,6 +208,15 @@ function getColumnsConfig() {
 			sortable: true,
 			slots: { default: "match-slot" },
 		});
+
+		// 匹配规则列
+		finalConls.push({
+			field: "matchedRule",
+			title: "匹配规则",
+			width: 150,
+			sortable: true,
+			slots: { default: "matched-rule-slot" },
+		});
 	}
 
 	// 预览名称列
@@ -254,7 +271,7 @@ function formatDate(timestamp: number): string {
 
 function getMatchStatusText(file: FileItem): string {
 	if (!file.matched) return "未匹配";
-	return file.matchInfo?.matchedRule || "已匹配";
+	return file.matchInfo?.code || "已匹配";
 }
 
 function getMatchStatusClass(file: FileItem): string {
@@ -273,8 +290,37 @@ async function handleOpenFolder(file: FileItem) {
 	}
 }
 
+// 移除单个文件
+function handleRemoveFile(file: FileItem) {
+	// 确认对话框防止误操作
+	if (confirm(`确定要移除文件 "${file.name}" 吗？`)) {
+		fileStore.value.removeFile(file.id);
+	}
+}
+
+// 批量移除文件
+function handleRemoveSelectedFiles() {
+	const selectedFiles = getSelectedFiles();
+	if (selectedFiles.length === 0) return;
+
+	// 确认对话框防止误操作
+	if (confirm(`确定要移除选中的 ${selectedFiles.length} 个文件吗？`)) {
+		const fileIds = selectedFiles.map((file) => file.id);
+		fileStore.value.removeFiles(fileIds);
+		unselectAll();
+	}
+}
+
+const gridEvents: VxeGridListeners<FileItem> = {
+	editClosed({ row }) {
+		handleNameEditComplete(row);
+	},
+};
+
 // 编辑相关方法
-async function handleNameEditComplete(row: FileItem) {
+async function handleNameEditComplete(row: any) {
+	// 从事件参数中获取行数据
+
 	// 触发表格退出编辑状态
 	gridRef.value?.clearEdit();
 
@@ -285,16 +331,18 @@ async function handleNameEditComplete(row: FileItem) {
 
 	if (!originalFile) {
 		console.error("找不到原始文件");
+		handleError(new Error("找不到原始文件"), "文件重命名");
 		return;
 	}
 
 	// 如果文件名没有改变，直接返回
-	if (originalFile.name === row.name) {
+	const originalName = originalFile.previewName;
+	if (originalName === row.name) {
 		return;
 	}
 
 	// 构造新的文件路径
-	const newPath = row.path.replace(originalFile.name, row.name);
+	const newPath = row.path.replace(originalName, row.name);
 
 	try {
 		// 调用重命名文件的API
@@ -311,32 +359,69 @@ async function handleNameEditComplete(row: FileItem) {
 				newFiles[fileIndex] = { ...row, path: newPath };
 				fileStore.value.files = newFiles;
 			}
+
+			// 显示成功提示
+			handleSuccess(
+				`文件 "${originalName}" 已成功重命名为 "${row.name}"`,
+				"重命名成功"
+			);
+
+			// 记录操作日志
+			logOperation(
+				"文件重命名",
+				`文件 "${originalName}" 已成功重命名为 "${row.name}"`,
+				{
+					renameDetails: [{ oldName: originalName, newName: row.name }],
+				}
+			);
 		} else {
 			// 重命名失败，恢复原始文件名
 			row.name = originalFile.name;
 			console.error("文件重命名失败:", result?.error);
+
+			// 显示错误提示
+			handleError(new Error(result?.error || "文件重命名失败"), "文件重命名");
+
+			// 记录操作日志
+			logOperation(
+				"文件重命名",
+				`文件 "${originalName}" 重命名为 "${row.name}" 失败: ${
+					result?.error || "未知错误"
+				}`,
+				null,
+				null,
+				{
+					level: "error",
+				}
+			);
 		}
 	} catch (error) {
 		// 重命名失败，恢复原始文件名
 		row.name = originalFile.name;
 		console.error("文件重命名时出错:", error);
+
+		// 显示错误提示
+		handleError(error, "文件重命名");
+
+		// 记录操作日志
+		logOperation(
+			"文件重命名",
+			`文件 "${originalName}" 重命名为 "${row.name}" 时发生异常: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+			null,
+			null,
+			{
+				level: "error",
+			}
+		);
 	}
 }
 
-// 拖拽排序相关方法 - 让 VXE Table 自己处理拖拽排序
-function handleRowDragStart(params: any) {
-	console.log("🔧 [DEBUG] VXE Table 拖拽开始:", params);
-}
-
 function handleRowDragEnd(params: any) {
-	console.log("🔧 [DEBUG] VXE Table 拖拽结束:", params);
 	// VXE Table 会自动更新数据顺序，我们需要同步到 fileStore
 	const newData = gridRef.value?.getTableData().fullData || [];
 	fileStore.value.files = [...newData];
-	console.log(
-		"🔧 [DEBUG] 同步拖拽结果到 fileStore，前5个文件:",
-		newData.slice(0, 5).map((f: any) => f.name)
-	);
 }
 
 // 公共方法
@@ -379,6 +464,7 @@ async function exportExcel() {
 
 		if (fullData.length === 0) {
 			console.warn("🔧 [DEBUG] 没有数据可导出");
+			emit("export", { success: false, message: "没有数据可导出" });
 			return;
 		}
 
@@ -418,12 +504,31 @@ async function exportExcel() {
 
 			if (writeResult?.success) {
 				console.log("✅ Excel 导出成功:", result.filePath);
+				emit("export", {
+					success: true,
+					message: `成功导出 ${fullData.length} 个文件到 ${result.filePath}`,
+					fileCount: fullData.length,
+					filePath: result.filePath,
+					fileNames: fullData.map((file: FileItem) => file.name),
+				});
 			} else {
 				console.error("❌ Excel 导出失败:", writeResult);
+				emit("export", {
+					success: false,
+					message: `导出失败: ${writeResult?.error || "未知错误"}`,
+					fileCount: fullData.length,
+				});
 			}
+		} else {
+			emit("export", { success: false, message: "用户取消了导出操作" });
 		}
 	} catch (error) {
 		console.error("🔧 [DEBUG] Excel 导出出错:", error);
+		emit("export", {
+			success: false,
+			message: `导出过程中发生错误: ${error}`,
+			error: error,
+		});
 	}
 }
 
@@ -453,7 +558,7 @@ function generateExcelWorksheetData(data: FileItem[]): any[][] {
 	// 根据实时列配置生成表头
 	const headers: string[] = [];
 	const validColumns = tableColumns.filter(
-		(col) => col.visible !== false && col.type !== "checkbox" && col.title
+		(col) => col.visible !== false && col.type !== "checkbox" && col.title && col.field !== "actions" && col.field !== "index"
 	);
 
 	console.log(
@@ -497,6 +602,12 @@ function generateExcelWorksheetData(data: FileItem[]): any[][] {
 					break;
 				case "matchInfo":
 					cellValue = getMatchStatusText(file);
+					break;
+				case "matchedRule":
+					cellValue =
+						file.matched && file.matchInfo?.matchedRule
+							? file.matchInfo.matchedRule
+							: "-";
 					break;
 				case "previewName":
 					cellValue = file.previewName || "";
@@ -543,167 +654,187 @@ defineExpose({
 	<div class="file-table-container flex flex-col h-full">
 		<!-- 搜索栏 -->
 		<div
-			class="search-bar p-lg border-b border-border-primary bg-background-secondary"
+			class="search-bar p-2 border-b border-border-primary bg-background-secondary flex-shrink-0 flex items-center gap-2"
 		>
-			<div class="relative">
+			<div class="relative flex-1">
 				<input
 					v-model="searchQuery"
 					type="text"
 					placeholder="搜索文件名、路径或匹配信息..."
-					class="input-base w-full pl-10 pr-4"
+					class="input-base w-full pl-8 pr-8 py-1.5 text-sm"
 				/>
 				<div
-					class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+					class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none"
 				>
-					<span class="text-gray-400">🔍</span>
+					<span class="text-gray-400 text-sm">🔍</span>
 				</div>
 				<div
 					v-if="searchQuery"
-					class="absolute inset-y-0 right-0 pr-3 flex items-center"
+					class="absolute inset-y-0 right-0 pr-2.5 flex items-center"
 				>
 					<button
 						@click="searchQuery = ''"
-						class="text-gray-400 hover:text-gray-600 focus:outline-none"
+						class="text-gray-400 hover:text-gray-600 focus:outline-none text-sm"
 					>
 						<span>✕</span>
 					</button>
 				</div>
 			</div>
+			<button
+				v-if="props.showSelection && fileStore?.value?.selectedFiles?.size > 0"
+				@click="handleRemoveSelectedFiles"
+				class="btn-secondary px-3 py-1.5 text-sm whitespace-nowrap"
+				title="移除选中文件"
+			>
+				移除选中 ({{ fileStore.value.selectedFiles.size }})
+			</button>
 		</div>
 
-		<!-- 文件表格 -->
+		<!-- 文件表格 - 关键修复：强制设置具体高度和滚动 -->
 		<div
 			v-if="filteredFiles.length > 0"
-			class="table-container flex-1 overflow-hidden"
+			class="table-container flex-1 min-h-0 relative"
 		>
-			<vxe-grid
-				ref="gridRef"
-				v-bind="gridOptions"
-				@checkbox-change="handleSelectChange"
-				@checkbox-all="handleSelectChange"
-				@current-change="handleCurrentChange"
-				@row-dragstart="handleRowDragStart"
-				@row-dragend="handleRowDragEnd"
-			>
-				<!-- 自定义插槽 -->
-				<template #index-slot="{ rowIndex }">
-					<span class="text-text-secondary font-medium">
-						{{ rowIndex + 1 }}
-					</span>
-				</template>
-
-				<template #name-slot="{ row }">
-					<div class="flex items-center">
-						<span class="mr-2">📄</span>
-						<span
-							class="truncate font-medium text-text-primary"
-							:title="row.name"
-						>
-							{{ row.name }}
-						</span>
-					</div>
-				</template>
-
-				<template #name-edit-slot="{ row }">
-					<input
-						v-model="row.name"
-						type="text"
-						class="input-base w-full"
-						@blur="handleNameEditComplete(row)"
-						@keydown.enter="handleNameEditComplete(row)"
-					/>
-				</template>
-
-				<template #size-slot="{ row }">
-					<span class="text-text-secondary">
-						{{ formatFileSize(row.size) }}
-					</span>
-				</template>
-
-				<template #date-slot="{ row }">
-					<span class="text-text-secondary">
-						{{ formatDate(row.lastModified) }}
-					</span>
-				</template>
-
-				<template #match-slot="{ row }">
-					<span :class="getMatchStatusClass(row)">
-						{{ getMatchStatusText(row) }}
-					</span>
-				</template>
-
-				<template #preview-slot="{ row }">
-					<span
-						v-if="row.previewName"
-						class="text-text-secondary italic"
-						:title="row.previewName"
-					>
-						{{ row.previewName }}
-					</span>
-					<span v-else class="text-text-tertiary italic"> 无预览 </span>
-				</template>
-
-				<template #result-slot="{ row }">
-					<span
-						v-if="row.executionResult"
-						:class="{
-							'text-green-600':
-								row.executionResult.includes('成功') ||
-								row.executionResult.includes('完成'),
-							'text-red-600':
-								row.executionResult.includes('失败') ||
-								row.executionResult.includes('错误'),
-						}"
-						:title="row.executionResult"
-					>
-						{{ row.executionResult }}
-					</span>
-					<span v-else class="text-text-tertiary"> 未执行 </span>
-				</template>
-
-				<template #actions-slot="{ row }">
-					<button
-						@click="handleOpenFolder(row)"
-						class="btn-secondary px-2 py-1 text-xs"
-						title="打开文件所在文件夹"
-					>
-						📁 打开文件夹
-					</button>
-				</template>
-
-				<!-- 动态生成的规则列插槽 -->
-				<template
-					v-for="column in props.columns"
-					:key="column.field"
-					#[`${column.field}-slot`]="{ row }"
+			<!-- 使用绝对定位确保表格占据剩余空间 -->
+			<div class="absolute inset-0">
+				<vxe-grid
+					ref="gridRef"
+					v-on="gridEvents"
+					v-bind="gridOptions"
+					height="100%"
+					:scroll-y="{ enabled: true }"
+					:scroll-x="{ enabled: true }"
+					@checkbox-change="handleSelectChange"
+					@checkbox-all="handleSelectChange"
+					@current-change="handleCurrentChange"
+					@row-dragend="handleRowDragEnd"
 				>
-					<span
-						v-if="row.matched && row.matchInfo?.columnValues?.[column.field]"
+					<!-- 所有插槽保持不变 -->
+					<template #index-slot="{ rowIndex }">
+						<span class="text-text-secondary font-medium text-xs">
+							{{ rowIndex + 1 }}
+						</span>
+					</template>
+					<template #name-slot="{ row }">
+						<div class="flex items-center">
+							<span class="mr-1.5 text-sm">📄</span>
+							<span
+								class="truncate font-medium text-text-primary text-sm"
+								:title="row.name"
+							>
+								{{ row.name }}
+							</span>
+						</div>
+					</template>
+					<template #name-edit-slot="{ row }">
+						<input
+							v-model="row.name"
+							type="text"
+							class="input-base w-full text-sm"
+						/>
+					</template>
+					<template #size-slot="{ row }">
+						<span class="text-text-secondary text-xs">
+							{{ formatFileSize(row.size) }}
+						</span>
+					</template>
+					<template #date-slot="{ row }">
+						<span class="text-text-secondary text-xs">
+							{{ formatDate(row.lastModified) }}
+						</span>
+					</template>
+					<template #match-slot="{ row }">
+						<span :class="getMatchStatusClass(row)" class="text-xs">
+							{{ getMatchStatusText(row) }}
+						</span>
+					</template>
+					<template #matched-rule-slot="{ row }">
+						<span
+							v-if="row.matched && row.matchInfo?.matchedRule"
+							class="text-xs"
+						>
+							{{ row.matchInfo.matchedRule }}
+						</span>
+						<span v-else class="text-text-tertiary text-xs">-</span>
+					</template>
+					<template #preview-slot="{ row }">
+						<span
+							v-if="row.previewName"
+							class="text-text-secondary italic text-xs"
+							:title="row.previewName"
+						>
+							{{ row.previewName }}
+						</span>
+						<span v-else class="text-text-tertiary italic text-xs">
+							无预览
+						</span>
+					</template>
+					<template #result-slot="{ row }">
+						<span
+							v-if="row.executionResult"
+							:class="{
+								'text-green-600':
+									row.executionResult.includes('成功') ||
+									row.executionResult.includes('完成'),
+								'text-red-600':
+									row.executionResult.includes('失败') ||
+									row.executionResult.includes('错误'),
+							}"
+							:title="row.executionResult"
+							class="text-xs"
+						>
+							{{ row.executionResult }}
+						</span>
+						<span v-else class="text-text-tertiary text-xs"> 未执行 </span>
+					</template>
+					<template #actions-slot="{ row }">
+						<div class="flex gap-1">
+							<button
+								@click="handleOpenFolder(row)"
+								class="btn-secondary px-2 py-1 text-xs flex-1"
+								title="打开文件所在文件夹"
+							>
+								📁
+							</button>
+							<button
+								@click="handleRemoveFile(row)"
+								class="btn-secondary px-2 py-1 text-xs flex-1"
+								title="移除文件"
+							>
+								❌
+							</button>
+						</div>
+					</template>
+					<template
+						v-for="column in props.columns"
+						:key="column.field"
+						#[`${column.field}-slot`]="{ row }"
 					>
-						{{ row.matchInfo.columnValues[column.field] }}
-					</span>
-					<span v-else class="text-text-tertiary">-</span>
-				</template>
-			</vxe-grid>
+						<span
+							v-if="row.matched && row.matchInfo?.columnValues?.[column.field]"
+							class="text-xs"
+						>
+							{{ row.matchInfo.columnValues[column.field] }}
+						</span>
+						<span v-else class="text-text-tertiary text-xs">-</span>
+					</template>
+				</vxe-grid>
+			</div>
 		</div>
 
 		<!-- 空状态 -->
 		<div
 			v-else
-			class="empty-state flex-1 flex flex-col items-center justify-center p-12 text-center"
+			class="empty-state flex-1 flex flex-col items-center justify-center p-8 text-center"
 		>
-			<div class="text-6xl mb-6 opacity-50">📁</div>
-			<div class="text-lg font-medium text-text-secondary mb-2">
+			<div class="text-4xl sm:text-5xl mb-4 opacity-50">📁</div>
+			<div class="text-base font-medium text-text-secondary mb-2">
 				{{ searchQuery ? "未找到匹配的文件" : "暂无文件" }}
 			</div>
-			<div class="text-sm text-text-tertiary">
+			<div class="text-xs sm:text-sm text-text-tertiary">
 				{{ searchQuery ? "尝试调整搜索条件" : "请选择文件或拖拽文件到此处" }}
 			</div>
 			<slot name="empty"></slot>
 		</div>
 	</div>
 </template>
-
-<style scoped>
-/* 使用 UnoCSS 样式，无需额外的 CSS */
-</style>

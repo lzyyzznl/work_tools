@@ -15,7 +15,11 @@
       "Bash(cat:*)",
       "Bash(pnpm run typecheck:*)",
       "Bash(sed:*)",
-      "WebFetch(domain:vxetable.cn)"
+      "WebFetch(domain:vxetable.cn)",
+      "WebFetch(domain:unocss.dev)",
+      "Bash(find:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": []
   }

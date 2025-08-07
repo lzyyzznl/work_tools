@@ -106,15 +106,14 @@ const previewNumbers = computed(() => {
 </script>
 
 <template>
-	<div class="flex flex-col gap-4">
-		<div class="flex flex-col gap-3">
-			<!-- 位置选择 -->
-			<div class="flex items-end gap-3">
-				<div class="flex-1 flex flex-col gap-1">
-					<label class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>序号位置:</label
-					>
-					<div class="flex gap-3">
+	<div class="number-operation flex flex-col gap-2">
+		<!-- 主要操作行 -->
+		<div class="flex flex-col md:flex-row md:items-end gap-2">
+			<!-- 位置选择和数字参数 -->
+			<div class="flex-1 flex flex-col md:flex-row md:items-end gap-2">
+				<!-- 位置选择 -->
+				<div class="form-group flex flex-col gap-1">
+					<div class="flex gap-2">
 						<label class="flex items-center gap-1 cursor-pointer select-none">
 							<input
 								type="radio"
@@ -136,168 +135,112 @@ const previewNumbers = computed(() => {
 					</div>
 				</div>
 
-				<div class="flex items-center pb-2">
+				<!-- 切换按钮 -->
+				<div class="form-actions flex items-center">
 					<button
-						class="w-9 h-9 flex items-center justify-center text-lg font-bold"
+						class="btn btn-sm btn-icon flex items-center justify-center text-lg font-bold px-2 py-1.5"
 						@click="togglePosition"
 						title="切换前缀/后缀"
 					>
 						⇄
 					</button>
 				</div>
-			</div>
 
-			<!-- 数字参数 -->
-			<div class="flex items-end gap-3">
-				<div class="flex-1 flex flex-col gap-1">
-					<label
-						for="start-number"
-						class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>起始数字:</label
-					>
+				<!-- 数字参数 -->
+				<div class="form-group flex-1 flex flex-col gap-1">
 					<input
 						id="start-number"
 						v-model.number="start"
 						type="number"
-						class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm transition-colors duration-150 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] dark:focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] placeholder:text-gray-400 dark:placeholder:text-gray-500"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
 						min="0"
 						max="9999"
 						step="1"
+						placeholder="起始"
 					/>
 				</div>
 
-				<div class="flex-1 flex flex-col gap-1">
-					<label
-						for="digits"
-						class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>数字位数:</label
-					>
+				<div class="form-group flex-1 flex flex-col gap-1">
 					<input
 						id="digits"
 						v-model.number="digits"
 						type="number"
-						class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm transition-colors duration-150 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] dark:focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] placeholder:text-gray-400 dark:placeholder:text-gray-500"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
 						min="1"
 						max="10"
 						step="1"
+						placeholder="位数"
 					/>
 				</div>
 
-				<div class="flex-1 flex flex-col gap-1">
-					<label
-						for="step"
-						class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>步长:</label
-					>
+				<div class="form-group flex-1 flex flex-col gap-1">
 					<input
 						id="step"
 						v-model.number="step"
 						type="number"
-						class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm transition-colors duration-150 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] dark:focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] placeholder:text-gray-400 dark:placeholder:text-gray-500"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
 						min="1"
 						max="100"
 						step="1"
+						placeholder="步长"
 					/>
 				</div>
 
-				<div class="flex-1 flex flex-col gap-1">
-					<label
-						for="separator"
-						class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>分隔符:</label
-					>
+				<div class="form-group flex-1 flex flex-col gap-1">
 					<input
 						id="separator"
 						v-model="separator"
 						type="text"
-						class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm transition-colors duration-150 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] dark:focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] placeholder:text-gray-400 dark:placeholder:text-gray-500"
-						placeholder="如: _ - ."
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+						placeholder="分隔符"
 						maxlength="3"
 					/>
 				</div>
 			</div>
 
-			<!-- 保存预设 -->
-			<div class="flex items-end gap-3 mt-3">
-				<div class="flex-1 flex flex-col gap-1">
-					<label class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>预设管理:</label
+			<!-- 预设管理 -->
+			<div class="flex flex-col gap-1 md:w-1/3">
+				<div class="flex gap-1">
+					<input
+						v-model="presetName"
+						type="text"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+						placeholder="预设名称"
+						autocomplete="off"
+						style="width: 80px"
+					/>
+					<select
+						v-if="renameStore.presets.filter((p) => p.type === 'number').length > 0"
+						class="form-input px-2 py-2 border border-border-primary rounded-md text-sm bg-white"
+						@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 					>
-					<div class="flex gap-2">
-						<input
-							v-model="presetName"
-							type="text"
-							class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm transition-colors duration-150 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] dark:focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] placeholder:text-gray-400 dark:placeholder:text-gray-500"
-							placeholder="输入预设名称"
-							autocomplete="off"
-							style="width: 120px"
-						/>
-						<select
-							v-if="
-								renameStore.presets.filter((p) => p.type === 'number').length >
-								0
-							"
-							class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white"
-							@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
+						<option value="">选择</option>
+						<option
+							v-for="preset in renameStore.presets.filter((p) => p.type === 'number')"
+							:key="preset.id"
+							:value="preset.id"
 						>
-							<option value="">选择预设</option>
-							<option
-								v-for="preset in renameStore.presets.filter(
-									(p) => p.type === 'number'
-								)"
-								:key="preset.id"
-								:value="preset.id"
-							>
-								{{ preset.name }}
-							</option>
-						</select>
-						<button
-							class="text-sm py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
-							@click="savePreset"
-							:disabled="!presetName.trim()"
-						>
-							保存
-						</button>
-					</div>
-				</div>
-			</div>
-
-			<div class="flex items-center justify-between gap-3">
-				<button class="text-sm py-1 px-2" @click="resetParams">🔄 重置</button>
-
-				<div>
-					<span class="text-xs text-gray-400 dark:text-gray-500">
-						💡 序号会按文件在列表中的顺序分配
-					</span>
+							{{ preset.name }}
+						</option>
+					</select>
+					<button
+						class="btn btn-sm px-3 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80"
+						@click="savePreset"
+						:disabled="!presetName.trim()"
+					>
+						保存
+					</button>
+					<button
+						class="btn btn-sm px-3 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
+						@click="resetParams"
+					>
+						🔄 重置
+					</button>
 				</div>
 			</div>
 		</div>
 
-		<!-- 序号预览 -->
-		<div
-			v-if="previewNumbers.length > 0"
-			class="p-3 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"
-		>
-			<h4 class="mb-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
-				序号预览:
-			</h4>
-			<div>
-				<div class="flex flex-wrap gap-1 items-center">
-					<span
-						v-for="(number, index) in previewNumbers"
-						:key="index"
-						class="py-1 px-2 bg-blue-500 text-white rounded-sm font-mono text-xs font-medium"
-					>
-						{{ isPrefix ? `${number}${separator}` : `${separator}${number}` }}
-					</span>
-					<span
-						v-if="fileStore.files.length > 5"
-						class="text-gray-400 dark:text-gray-500 text-xs italic"
-					>
-						... (共 {{ fileStore.files.length }} 个文件)
-					</span>
-				</div>
-			</div>
-		</div>
+		<!-- 操作按钮行 -->
+		<!-- 重置按钮已移至预设管理区域 -->
 	</div>
 </template>

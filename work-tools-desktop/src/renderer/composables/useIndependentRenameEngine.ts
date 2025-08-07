@@ -222,6 +222,11 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 	async function executeRename(): Promise<{
 		success: boolean;
 		errors: string[];
+		stats?: {
+			total: number;
+			success: number;
+			failed: number;
+		};
 	}> {
 		const validation = validateParams();
 		if (!validation.isValid) {
@@ -239,10 +244,13 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 		renameStore.setExecuting(true);
 		const errors: string[] = [];
 		const operations: Array<{ oldPath: string; newPath: string }> = [];
+		const renameDetails: Array<{ oldName: string; newName: string }> = [];
 
 		try {
 			const files = fileStore.files;
 			const totalFiles = files.length;
+			let successCount = 0;
+			let failedCount = 0;
 
 			for (let i = 0; i < files.length; i++) {
 				const file = files[i];
@@ -257,12 +265,19 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 					const { renameFile, fileExists } = useFileSystem();
 					const newPath = file.path.replace(file.name, newName);
 
+					// 记录重命名详情
+					renameDetails.push({
+						oldName: file.name,
+						newName: newName,
+					});
+
 					// 检查源文件是否存在
 					const oldFileExists = await fileExists(file.path);
 					if (!oldFileExists) {
 						const errorMsg = `源文件不存在: ${file.name}`;
 						errors.push(errorMsg);
 						fileStore.updateFileExecutionResult(file.id, `失败: ${errorMsg}`);
+						failedCount++;
 						continue;
 					}
 
@@ -272,6 +287,7 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 						const errorMsg = `目标文件已存在: ${newName}`;
 						errors.push(errorMsg);
 						fileStore.updateFileExecutionResult(file.id, `失败: ${errorMsg}`);
+						failedCount++;
 						continue;
 					}
 
@@ -286,14 +302,17 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 						// 更新文件store中的文件信息
 						fileStore.updateFileName(file.id, newName);
 						fileStore.updateFileExecutionResult(file.id, "成功");
+						successCount++;
 					} catch (error) {
 						const errorMsg = `重命名文件失败 ${file.name}: ${error}`;
 						errors.push(errorMsg);
 						fileStore.updateFileExecutionResult(file.id, `失败: ${errorMsg}`);
+						failedCount++;
 					}
 				} else {
 					// 文件名未改变的情况
 					fileStore.updateFileExecutionResult(file.id, "无需重命名");
+					successCount++; // 认为无需重命名也是成功的
 				}
 
 				// 更新进度
@@ -311,7 +330,16 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 			}
 
 			renameStore.setLastExecutionTime();
-			return { success: true, errors: [] };
+			return { 
+				success: true, 
+				errors: [],
+				stats: {
+					total: totalFiles,
+					success: successCount,
+					failed: failedCount,
+				},
+				renameDetails,
+			};
 		} catch (error) {
 			errors.push(`执行重命名时发生错误: ${error}`);
 			return { success: false, errors };
@@ -324,6 +352,7 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 	async function undoLastOperation(): Promise<{
 		success: boolean;
 		errors: string[];
+		undoDetails?: Array<{ oldName: string; newName: string }>;
 	}> {
 		if (!renameStore.canUndo) {
 			return { success: false, errors: ["没有可撤回的操作"] };
@@ -331,12 +360,21 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 
 		const lastOperation = renameStore.history[0];
 		const errors: string[] = [];
+		const undoDetails: Array<{ oldName: string; newName: string }> = [];
 
 		try {
 			const { renameFile } = useFileSystem();
 			for (const op of lastOperation.operations) {
 				try {
 					await renameFile(op.newPath, op.oldPath);
+
+					// 记录撤回详情
+					const oldName = op.newPath.split(/[\/\\]/).pop() || "";
+					const newName = op.oldPath.split(/[\/\\]/).pop() || "";
+					undoDetails.push({
+						oldName,
+						newName,
+					});
 
 					// 在文件store中找到对应文件并恢复名称
 					const fileName = op.oldPath.split(/[\/\\]/).pop() || "";
@@ -362,7 +400,7 @@ export function useIndependentRenameEngine(fileStore: any, renameStore: any) {
 			// 从历史记录中移除
 			renameStore.history.shift();
 
-			return { success: true, errors: [] };
+			return { success: true, errors: [], undoDetails };
 		} catch (error) {
 			const errorMsg = `撤回操作时发生错误: ${error}`;
 			errors.push(errorMsg);

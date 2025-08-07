@@ -7,24 +7,40 @@ import type { Rule, RuleColumn } from "../../types/rule";
 import * as XLSX from "xlsx";
 
 const ruleStore = useRuleStore();
-const { handleError, handleSuccess } = useErrorHandler();
+const { handleError, handleSuccess, handleOperation, handleDetailedOperation } =
+	useErrorHandler();
+
+// 添加 emit 声明
+const emit = defineEmits(['export']);
 
 // 数据转换工具函数
 function normalizeBooleanValue(value: any): string {
 	if (value === null || value === undefined || value === "") {
 		return "";
 	}
-	
+
 	const stringValue = String(value).toLowerCase().trim();
-	
+
 	// 支持多种布尔值格式，统一转换为"是/否"
-	if (stringValue === "true" || stringValue === "y" || stringValue === "yes" || stringValue === "1" || stringValue === "是") {
+	if (
+		stringValue === "true" ||
+		stringValue === "y" ||
+		stringValue === "yes" ||
+		stringValue === "1" ||
+		stringValue === "是"
+	) {
 		return "是";
 	}
-	if (stringValue === "false" || stringValue === "n" || stringValue === "no" || stringValue === "0" || stringValue === "否") {
+	if (
+		stringValue === "false" ||
+		stringValue === "n" ||
+		stringValue === "no" ||
+		stringValue === "0" ||
+		stringValue === "否"
+	) {
 		return "否";
 	}
-	
+
 	// 无法识别的格式，返回空字符串
 	return "";
 }
@@ -33,20 +49,20 @@ function parseValueForImport(value: any, column: RuleColumn): string {
 	if (value === null || value === undefined || value === "") {
 		return "";
 	}
-	
+
 	const stringValue = String(value).trim();
-	
+
 	switch (column.type) {
 		case "boolean":
 			return normalizeBooleanValue(stringValue);
-		
+
 		case "select":
 			// 检查是否在选项中
 			if (column.options && column.options.includes(stringValue)) {
 				return stringValue;
 			}
 			return "";
-		
+
 		case "text":
 		default:
 			return stringValue;
@@ -57,20 +73,20 @@ function formatValueForExport(value: any, column: RuleColumn): string {
 	if (value === null || value === undefined || value === "") {
 		return "";
 	}
-	
+
 	const stringValue = String(value).trim();
-	
+
 	switch (column.type) {
 		case "boolean":
 			return normalizeBooleanValue(stringValue);
-		
+
 		case "select":
 			// 检查是否在选项中
 			if (column.options && column.options.includes(stringValue)) {
 				return stringValue;
 			}
 			return "";
-		
+
 		case "text":
 		default:
 			return stringValue;
@@ -343,7 +359,7 @@ async function addNewRule() {
 	showAddDialog.value = true;
 }
 
-// 处理弹窗提交
+// 处理弹窗提交（编辑现有规则）
 async function handleSubmitAddRule() {
 	if (!validateAddRuleForm()) {
 		return;
@@ -361,8 +377,19 @@ async function handleSubmitAddRule() {
 			columnValues: newRuleForm.value.columnValues,
 		};
 
+		// 保存添加前的规则信息
+		const oldRules = [...ruleStore.rules];
+
 		await ruleStore.addRule(ruleData);
-		handleSuccess("规则新增成功");
+
+		// 记录日志
+		handleOperation("规则管理", `添加规则: ${ruleData.code}`, {
+			action: "add",
+			rule: ruleData,
+			oldRules: oldRules.map((r) => ({ id: r.id, code: r.code })),
+			newRules: ruleStore.rules.map((r) => ({ id: r.id, code: r.code })),
+		});
+
 		showAddDialog.value = false;
 	} catch (error) {
 		handleError(error, "新增规则");
@@ -379,12 +406,26 @@ function handleCancelAddRule() {
 async function deleteRow(row: Rule) {
 	if (confirm(`确定要删除规则 "${row.code || "未命名"}" 吗？`)) {
 		try {
+			// 保存删除前的规则信息
+			const ruleToDelete = { id: row.id, code: row.code };
+			const oldRules = [...ruleStore.rules];
+
 			await ruleStore.deleteRule(row.id);
+
 			// 从表格中移除行
 			const $grid = gridRef.value;
 			if ($grid) {
 				await $grid.remove(row);
 			}
+
+			// 记录日志
+			handleOperation("规则管理", `删除规则: ${row.code || "未命名"}`, {
+				action: "delete",
+				deletedRule: ruleToDelete,
+				oldRules: oldRules.map((r) => ({ id: r.id, code: r.code })),
+				newRules: ruleStore.rules.map((r) => ({ id: r.id, code: r.code })),
+			});
+
 			handleSuccess("规则删除成功");
 		} catch (error) {
 			handleError(error, "删除规则");
@@ -399,9 +440,25 @@ async function deleteSelectedRules() {
 
 	if (confirm(`确定要删除选中的 ${selectedRecords.length} 个规则吗？`)) {
 		try {
+			// 保存删除前的规则信息
+			const rulesToDelete = selectedRecords.map((rule) => ({
+				id: rule.id,
+				code: rule.code,
+			}));
+			const oldRules = [...ruleStore.rules];
+
 			for (const rule of selectedRecords) {
 				await ruleStore.deleteRule(rule.id);
 			}
+
+			// 记录日志
+			handleOperation("规则管理", `批量删除 ${selectedRecords.length} 个规则`, {
+				action: "batch_delete",
+				deletedRules: rulesToDelete,
+				oldRules: oldRules.map((r) => ({ id: r.id, code: r.code })),
+				newRules: ruleStore.rules.map((r) => ({ id: r.id, code: r.code })),
+			});
+
 			handleSuccess(`成功删除 ${selectedRecords.length} 个规则`);
 		} catch (error) {
 			handleError(error, "删除规则");
@@ -409,16 +466,29 @@ async function deleteSelectedRules() {
 	}
 }
 
-
 // 导出 Excel 文件
 async function exportExcel() {
 	const $grid = gridRef.value;
 	if (!$grid) {
 		console.error("Grid 引用为空，无法导出");
+		emit("export", { success: false, message: "Grid 引用为空，无法导出" });
 		return;
 	}
 
 	try {
+		interface ExportStats {
+			rules: number;
+			columns: number;
+			columnsGenerated: number;
+		}
+		
+		const startTime = Date.now();
+		const exportStats: ExportStats = {
+			rules: 0,
+			columns: 0,
+			columnsGenerated: 0,
+		};
+
 		console.log("开始 Excel 导出");
 
 		// 获取表格数据
@@ -429,12 +499,26 @@ async function exportExcel() {
 
 		if (fullData.length === 0) {
 			console.warn("没有数据可导出");
+			emit("export", { success: false, message: "没有数据可导出" });
 			return;
 		}
+
+		exportStats.rules = fullData.length;
 
 		// 生成 Excel 工作表数据
 		const worksheetData = generateExcelWorksheetData(fullData);
 		console.log("Excel 工作表数据生成完成");
+
+		// 统计导出的列信息
+		const $gridColumns = $grid.getColumns();
+		const exportableColumns = $gridColumns.filter(
+			(col) =>
+				col.visible !== false &&
+				col.type !== "checkbox" &&
+				col.title &&
+				col.field !== "index"
+		);
+		exportStats.columns = exportableColumns.length;
 
 		// 创建工作簿
 		const ws = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -467,18 +551,73 @@ async function exportExcel() {
 
 			if (writeResult?.success) {
 				console.log("✅ Excel 导出成功:", result.filePath);
+				const duration = Date.now() - startTime;
+
+				// 记录详细的导出日志
+				handleDetailedOperation(
+					"规则导出",
+					`成功导出 ${fullData.length} 个规则到 ${result.filePath}`,
+					{
+						stats: {
+							total: fullData.length,
+							columns: exportStats.columns,
+							duration: duration,
+						},
+						details: {
+							filePath: result.filePath,
+							columns: exportStats.columns,
+							generatedColumns: worksheetData[0], // 列头信息
+						},
+					}
+				);
+
+				emit("export", {
+					success: true,
+					message: `成功导出 ${fullData.length} 个规则到 ${result.filePath}`,
+					ruleCount: fullData.length,
+					filePath: result.filePath,
+				});
 				handleSuccess("规则导出成功");
 			} else {
 				console.error("❌ Excel 导出失败:", writeResult);
+				handleDetailedOperation(
+					"规则导出",
+					`导出失败: ${writeResult?.error || "未知错误"}`,
+					{
+						level: "error",
+						stats: { total: fullData.length },
+						details: { error: writeResult?.error },
+					}
+				);
+
+				emit("export", {
+					success: false,
+					message: `导出失败: ${writeResult?.error || "未知错误"}`,
+					ruleCount: fullData.length,
+				});
 				handleError(new Error("导出失败"), "导出规则");
 			}
+		} else {
+			// 记录用户取消导出日志
+			handleDetailedOperation("规则导出", "用户取消了导出操作", {
+				stats: { cancelled: true },
+			});
+			emit("export", { success: false, message: "用户取消了导出操作" });
 		}
 	} catch (error) {
 		console.error("Excel 导出出错:", error);
+		handleDetailedOperation("规则导出", `导出过程中发生错误: ${error}`, {
+			level: "error",
+			details: { error: error },
+		});
+		emit("export", {
+			success: false,
+			message: `导出过程中发生错误: ${error}`,
+			error: error,
+		});
 		handleError(error, "导出规则");
 	}
 }
-
 
 // 生成 Excel 工作表数据
 function generateExcelWorksheetData(data: Rule[]): any[][] {
@@ -506,10 +645,10 @@ function generateExcelWorksheetData(data: Rule[]): any[][] {
 	// 根据实时列配置生成表头
 	const headers: string[] = [];
 	const validColumns = tableColumns.filter(
-		(col) => 
-			col.visible !== false && 
-			col.type !== "checkbox" && 
-			col.title && 
+		(col) =>
+			col.visible !== false &&
+			col.type !== "checkbox" &&
+			col.title &&
 			col.field !== "index" &&
 			col.title !== "操作"
 	);
@@ -555,9 +694,11 @@ function generateExcelWorksheetData(data: Rule[]): any[][] {
 					if (col.field?.startsWith("columnValues.")) {
 						const field = col.field.replace("columnValues.", "");
 						const rawValue = rule.columnValues?.[field] || "";
-						
+
 						// 查找对应的列配置
-						const columnConfig = ruleStore.columns.find(c => c.field === field);
+						const columnConfig = ruleStore.columns.find(
+							(c) => c.field === field
+						);
 						if (columnConfig) {
 							// 使用格式化函数处理导出值
 							cellValue = formatValueForExport(rawValue, columnConfig);
@@ -607,16 +748,41 @@ async function importExcel(event: Event) {
 	}
 }
 
-
 // 判断是否为特殊列（需要忽略的列）
 function isSpecialColumn(columnTitle: string): boolean {
-	const specialColumns = ["操作", "序号", "选择", "checkbox", "action", "index", "select"];
+	const specialColumns = [
+		"操作",
+		"序号",
+		"选择",
+		"checkbox",
+		"action",
+		"index",
+		"select",
+	];
 	const title = columnTitle.toLowerCase().trim();
-	return specialColumns.some(col => title.includes(col.toLowerCase()));
+	return specialColumns.some((col) => title.includes(col.toLowerCase()));
 }
 
 // 解析 Excel 并导入
 async function parseExcelAndImport(excelData: ArrayBuffer) {
+	// 添加未声明的变量声明
+	interface ImportStats {
+		total: number;
+		added: number;
+		updated: number;
+		skipped: number;
+		newColumns: number;
+	}
+	
+	const importStats: ImportStats = {
+		total: 0,
+		added: 0,
+		updated: 0,
+		skipped: 0,
+		newColumns: 0
+	};
+	const startTime = Date.now();
+
 	try {
 		// 读取 Excel 文件
 		const workbook = XLSX.read(excelData, { type: "array" });
@@ -635,7 +801,7 @@ async function parseExcelAndImport(excelData: ArrayBuffer) {
 		console.log("Excel 表头:", headers);
 
 		// 过滤掉特殊列，获取有效列
-		const validHeaders = headers.filter(header => !isSpecialColumn(header));
+		const validHeaders = headers.filter((header) => !isSpecialColumn(header));
 		console.log("过滤后的有效表头:", validHeaders);
 
 		// 获取现有的列配置
@@ -644,42 +810,51 @@ async function parseExcelAndImport(excelData: ArrayBuffer) {
 		// 固定列映射
 		const codeIndex = headers.findIndex(
 			(h) =>
-				(h === "规则编码" || h === "规则编码" || h === "code" || h === "Code") &&
+				(h === "规则编码" ||
+					h === "规则编码" ||
+					h === "code" ||
+					h === "Code") &&
 				!isSpecialColumn(h)
 		);
 		const matchRulesIndex = headers.findIndex(
 			(h) =>
 				(h === "匹配规则" ||
-				h === "matchRules" ||
-				h === "Match Rules" ||
-				h === "规则") &&
+					h === "matchRules" ||
+					h === "Match Rules" ||
+					h === "规则") &&
 				!isSpecialColumn(h)
 		);
 
 		if (codeIndex === -1) {
 			throw new Error(
 				"Excel 文件中未找到规则编码列，请确保包含'规则编码'、'规则编码'或'code'列。\n" +
-				"注意：系统会自动忽略操作列、序号列等特殊列，请确保这些列不影响必需列的识别。"
+					"注意：系统会自动忽略操作列、序号列等特殊列，请确保这些列不影响必需列的识别。"
 			);
 		}
 		if (matchRulesIndex === -1) {
 			throw new Error(
 				"Excel 文件中未找到匹配规则列，请确保包含'匹配规则'、'matchRules'或'规则'列。\n" +
-				"注意：系统会自动忽略操作列、序号列等特殊列，请确保这些列不影响必需列的识别。"
+					"注意：系统会自动忽略操作列、序号列等特殊列，请确保这些列不影响必需列的识别。"
 			);
 		}
 
 		// 检查是否有被忽略的特殊列，并提示用户
-		const ignoredSpecialColumns = headers.filter(header => isSpecialColumn(header));
+		const ignoredSpecialColumns = headers.filter((header) =>
+			isSpecialColumn(header)
+		);
 		if (ignoredSpecialColumns.length > 0) {
-			console.log(`已忽略以下特殊列: ${ignoredSpecialColumns.join(', ')}`);
+			console.log(`已忽略以下特殊列: ${ignoredSpecialColumns.join(", ")}`);
 		}
 
 		// 查找动态列并添加新列
 		const newColumnsToAdd: Array<Omit<RuleColumn, "id">> = [];
 		headers.forEach((header, index) => {
 			// 跳过固定列和特殊列
-			if (index === codeIndex || index === matchRulesIndex || isSpecialColumn(header)) {
+			if (
+				index === codeIndex ||
+				index === matchRulesIndex ||
+				isSpecialColumn(header)
+			) {
 				return;
 			}
 
@@ -710,6 +885,7 @@ async function parseExcelAndImport(excelData: ArrayBuffer) {
 			const row = jsonData[i] as any[];
 			if (!row || row.length !== headers.length) {
 				console.warn(`第${i + 1}行数据列数不匹配，跳过`);
+				importStats.skipped++;
 				continue;
 			}
 
@@ -725,20 +901,35 @@ async function parseExcelAndImport(excelData: ArrayBuffer) {
 				columnValues: {},
 			};
 
+			if (!ruleData.code) {
+				console.warn(`第${i + 1}行规则编码为空，跳过`);
+				importStats.skipped++;
+				continue;
+			}
+
+			importStats.total++;
+
 			// 处理动态列值 - 使用类型转换
 			headers.forEach((header, index) => {
 				// 跳过固定列和特殊列
-				if (index === codeIndex || index === matchRulesIndex || isSpecialColumn(header)) {
+				if (
+					index === codeIndex ||
+					index === matchRulesIndex ||
+					isSpecialColumn(header)
+				) {
 					return;
 				}
 
 				const rawValue = row[index] || "";
-				
+
 				// 查找对应的列配置
-				const columnConfig = ruleStore.columns.find(c => c.field === header);
+				const columnConfig = ruleStore.columns.find((c) => c.field === header);
 				if (columnConfig) {
 					// 使用类型转换函数处理导入值
-					ruleData.columnValues[header] = parseValueForImport(rawValue, columnConfig);
+					ruleData.columnValues[header] = parseValueForImport(
+						rawValue,
+						columnConfig
+					);
 				} else {
 					// 如果没有找到列配置，直接存储原始值
 					ruleData.columnValues[header] = rawValue;
@@ -753,12 +944,39 @@ async function parseExcelAndImport(excelData: ArrayBuffer) {
 				);
 				if (existingRule) {
 					await ruleStore.updateRule(existingRule.id, ruleData);
+					importStats.updated++;
 				}
 			} else {
 				// 添加新规则
 				await ruleStore.addRule(ruleData);
+				importStats.added++;
 			}
 		}
+
+		// 导入完成，记录统计信息
+		importStats.newColumns = newColumnsToAdd.length;
+		const duration = Date.now() - startTime;
+
+		// 记录详细的导入日志
+		handleDetailedOperation(
+			"规则导入",
+			`成功导入 ${importStats.total} 个规则，新增 ${importStats.added} 个，更新 ${importStats.updated} 个，跳过 ${importStats.skipped} 个`,
+			{
+				stats: {
+					total: importStats.total,
+					added: importStats.added,
+					updated: importStats.updated,
+					skipped: importStats.skipped,
+					newColumns: importStats.newColumns,
+					duration: duration,
+				},
+				details: {
+					originalRows: jsonData.length - 1,
+					processedColumns: validHeaders.length,
+					newDynamicColumns: newColumnsToAdd.map((col) => col.name),
+				},
+			}
+		);
 	} catch (error) {
 		console.error("Excel 解析出错:", error);
 		throw error;

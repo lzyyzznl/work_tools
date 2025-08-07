@@ -105,154 +105,117 @@ function generateExample(originalName: string): string {
 }
 </script>
 <template>
-	<div class="delete-operation flex flex-col gap-lg">
-		<div class="operation-form flex flex-col gap-md">
-			<!-- 删除方向 -->
-			<div class="form-row flex items-end gap-md">
-				<div class="form-group flex-1 flex flex-col gap-xs">
-					<label class="form-label text-sm font-medium text-text-primary"
-						>删除方向:</label
-					>
-					<div class="radio-group flex gap-md">
-						<label
-							class="radio-label flex items-center gap-xs cursor-pointer select-none"
-						>
+	<div class="delete-operation flex flex-col gap-2">
+		<!-- 主要操作行 -->
+		<div class="flex flex-col md:flex-row md:items-end gap-2">
+			<!-- 删除方向和删除参数 -->
+			<div class="flex-1 flex flex-col md:flex-row md:items-end gap-2">
+				<!-- 删除方向 -->
+				<div class="form-group flex flex-col gap-1">
+					<div class="radio-group flex gap-2">
+						<label class="radio-label flex items-center gap-1 cursor-pointer select-none">
 							<input
 								type="radio"
 								:checked="fromLeft"
 								@change="fromLeft = true"
 								class="radio-input m-0"
 							/>
-							<span class="radio-text text-sm text-text-primary">从左侧</span>
+							<span class="radio-text text-sm text-text-primary">左侧</span>
 						</label>
-						<label
-							class="radio-label flex items-center gap-xs cursor-pointer select-none"
-						>
+						<label class="radio-label flex items-center gap-1 cursor-pointer select-none">
 							<input
 								type="radio"
 								:checked="!fromLeft"
 								@change="fromLeft = false"
 								class="radio-input m-0"
 							/>
-							<span class="radio-text text-sm text-text-primary">从右侧</span>
+							<span class="radio-text text-sm text-text-primary">右侧</span>
 						</label>
 					</div>
 				</div>
 
-				<div class="form-actions flex items-center pb-sm">
+				<!-- 切换按钮 -->
+				<div class="form-actions flex items-center">
 					<button
-						class="btn btn-sm btn-icon w-36px h-36px flex items-center justify-center text-lg font-bold"
+						class="btn btn-sm btn-icon flex items-center justify-center text-lg font-bold px-2 py-1.5"
 						@click="toggleDirection"
 						title="切换删除方向"
 					>
 						⇄
 					</button>
 				</div>
-			</div>
 
-			<!-- 删除参数 -->
-			<div class="form-row flex items-end gap-md">
-				<div class="form-group flex-1 flex flex-col gap-xs">
-					<label
-						for="start-pos"
-						class="form-label text-sm font-medium text-text-primary"
-					>
-						{{ fromLeft ? "开始位置:" : "从右数位置:" }}
-					</label>
+				<!-- 删除参数 -->
+				<div class="form-group flex-1 flex flex-col gap-1">
 					<input
 						id="start-pos"
 						v-model.number="startPos"
 						type="number"
-						class="form-input px-md py-sm border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
 						min="1"
 						max="50"
 						step="1"
+						:placeholder="fromLeft ? '开始位置' : '从右数位置'"
 					/>
-					<span class="form-hint text-xs text-text-tertiary">
-						{{ fromLeft ? "第几个字符开始删除" : "从右数第几个位置" }}
-					</span>
 				</div>
 
-				<div class="form-group flex-1 flex flex-col gap-xs">
-					<label
-						for="delete-count"
-						class="form-label text-sm font-medium text-text-primary"
-						>删除字符数:</label
-					>
+				<div class="form-group flex-1 flex flex-col gap-1">
 					<input
 						id="delete-count"
 						v-model.number="count"
 						type="number"
-						class="form-input px-md py-sm border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
 						min="1"
 						max="20"
 						step="1"
+						placeholder="删除字符数"
 					/>
-					<span class="form-hint text-xs text-text-tertiary"
-						>要删除的字符数量</span
-					>
 				</div>
 			</div>
 
-			<!-- 保存预设 -->
-			<div class="form-row flex items-end gap-md mt-md">
-				<div class="form-group flex-1 flex flex-col gap-xs">
-					<label class="form-label text-sm font-medium text-text-primary"
-						>预设管理:</label
+			<!-- 预设管理 -->
+			<div class="flex flex-col gap-1 md:w-1/3">
+				<div class="flex gap-1">
+					<input
+						v-model="presetName"
+						type="text"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+						placeholder="预设名称"
+						autocomplete="off"
+						style="width: 80px"
+					/>
+					<select
+						v-if="renameStore.presets.filter((p) => p.type === 'delete').length > 0"
+						class="form-input px-2 py-2 border border-border-primary rounded-md text-sm bg-white"
+						@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 					>
-					<div class="flex gap-xs">
-						<input
-							v-model="presetName"
-							type="text"
-							class="form-input px-md py-sm border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-							placeholder="输入预设名称"
-							autocomplete="off"
-							style="width: 120px"
-						/>
-						<select
-							v-if="
-								renameStore.presets.filter((p) => p.type === 'delete').length >
-								0
-							"
-							class="form-input px-md py-sm border border-border-primary rounded-md text-sm bg-white"
-							@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
+						<option value="">选择</option>
+						<option
+							v-for="preset in renameStore.presets.filter((p) => p.type === 'delete')"
+							:key="preset.id"
+							:value="preset.id"
 						>
-							<option value="">选择预设</option>
-							<option
-								v-for="preset in renameStore.presets.filter(
-									(p) => p.type === 'delete'
-								)"
-								:key="preset.id"
-								:value="preset.id"
-							>
-								{{ preset.name }}
-							</option>
-						</select>
-						<button
-							class="btn btn-sm px-md py-xs text-sm bg-primary text-white rounded-md hover:bg-primary/80"
-							@click="savePreset"
-							:disabled="!presetName.trim()"
-						>
-							保存
-						</button>
-					</div>
-				</div>
-			</div>
-
-			<div class="form-actions-row flex items-center justify-between gap-md">
-				<button class="btn btn-sm px-md py-xs text-sm" @click="resetParams">
-					🔄 重置
-				</button>
-
-				<div class="form-tips">
-					<span class="tip-text text-xs text-text-tertiary">
-						💡
-						{{
-							fromLeft ? "从左侧计算位置" : "从右侧计算位置"
-						}}，只处理文件名部分
-					</span>
+							{{ preset.name }}
+						</option>
+					</select>
+					<button
+						class="btn btn-sm px-3 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80"
+						@click="savePreset"
+						:disabled="!presetName.trim()"
+					>
+						保存
+					</button>
+					<button
+						class="btn btn-sm px-3 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
+						@click="resetParams"
+					>
+						🔄 重置
+					</button>
 				</div>
 			</div>
 		</div>
+
+		<!-- 操作按钮行 -->
+		<!-- 重置按钮已移至预设管理区域 -->
 	</div>
 </template>

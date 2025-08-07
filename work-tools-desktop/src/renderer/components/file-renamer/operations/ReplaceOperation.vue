@@ -74,28 +74,26 @@ function savePreset() {
 </script>
 
 <template>
-	<div class="flex flex-col gap-4">
-		<div class="flex flex-col gap-3">
-			<div class="flex items-end gap-3">
-				<div class="flex-1 flex flex-col gap-1">
-					<label
-						for="from-str"
-						class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>查找字符串:</label
-					>
+	<div class="replace-operation flex flex-col gap-2">
+		<!-- 主要操作行 -->
+		<div class="flex flex-col md:flex-row md:items-end gap-2">
+			<!-- 主要功能输入区域 -->
+			<div class="flex-1 flex flex-col md:flex-row md:items-end gap-2">
+				<div class="form-group flex-1 flex flex-col gap-1">
 					<input
 						id="from-str"
 						v-model="fromStr"
 						type="text"
-						class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm transition-colors duration-150 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] dark:focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] placeholder:text-gray-400 dark:placeholder:text-gray-500"
-						placeholder="要替换的字符串"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+						placeholder="查找字符串"
 						autocomplete="off"
 					/>
 				</div>
 
-				<div class="flex items-center pb-2">
+				<!-- 交换按钮 -->
+				<div class="form-actions flex items-center">
 					<button
-						class="w-9 h-9 flex items-center justify-center text-lg font-bold disabled:opacity-50"
+						class="btn btn-sm btn-icon flex items-center justify-center text-lg font-bold px-2 py-1.5 disabled:opacity-50"
 						@click="swapParams"
 						title="交换查找和替换内容"
 						:disabled="!fromStr && !toStr"
@@ -104,91 +102,62 @@ function savePreset() {
 					</button>
 				</div>
 
-				<div class="flex-1 flex flex-col gap-1">
-					<label
-						for="to-str"
-						class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>替换为:</label
-					>
+				<div class="form-group flex-1 flex flex-col gap-1">
 					<input
 						id="to-str"
 						v-model="toStr"
 						type="text"
-						class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm transition-colors duration-150 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] dark:focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] placeholder:text-gray-400 dark:placeholder:text-gray-500"
-						placeholder="新的字符串（留空表示删除）"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+						placeholder="替换为"
 						autocomplete="off"
 					/>
 				</div>
 			</div>
 
-			<div class="flex items-center justify-between gap-3">
-				<button
-					class="text-sm py-1 px-2 disabled:opacity-50"
-					@click="clearParams"
-					:disabled="!fromStr && !toStr"
-				>
-					🗑️ 清空
-				</button>
-
-				<div>
-					<span class="text-xs text-gray-400 dark:text-gray-500">
-						💡 支持精确匹配，区分大小写
-					</span>
-				</div>
-			</div>
-
-			<!-- 保存预设 -->
-			<div class="flex items-end gap-3 mt-3">
-				<div class="flex-1 flex flex-col gap-1">
-					<label class="text-sm font-medium text-gray-800 dark:text-gray-200"
-						>预设管理:</label
+			<!-- 预设管理 -->
+			<div class="flex flex-col gap-1 md:w-1/3">
+				<div class="flex gap-1">
+					<input
+						v-model="presetName"
+						type="text"
+						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
+						placeholder="预设名称"
+						autocomplete="off"
+						style="width: 80px"
+					/>
+					<select
+						v-if="renameStore.presets.filter((p) => p.type === 'replace').length > 0"
+						class="form-input px-2 py-2 border border-border-primary rounded-md text-sm bg-white"
+						@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 					>
-					<div class="flex gap-2">
-						<input
-							v-model="presetName"
-							type="text"
-							class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm transition-colors duration-150 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] dark:focus:shadow-[0_0_0_2px_rgba(0,122,255,0.1)] placeholder:text-gray-400 dark:placeholder:text-gray-500"
-							placeholder="输入预设名称"
-							autocomplete="off"
-							style="width: 120px"
-						/>
-						<select
-							v-if="
-								renameStore.presets.filter((p) => p.type === 'replace').length >
-								0
-							"
-							class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white"
-							@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
+						<option value="">选择</option>
+						<option
+							v-for="preset in renameStore.presets.filter((p) => p.type === 'replace')"
+							:key="preset.id"
+							:value="preset.id"
 						>
-							<option value="">选择预设</option>
-							<option
-								v-for="preset in renameStore.presets.filter(
-									(p) => p.type === 'replace'
-								)"
-								:key="preset.id"
-								:value="preset.id"
-							>
-								{{ preset.name }}
-							</option>
-						</select>
-						<button
-							class="text-sm py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
-							@click="savePreset"
-							:disabled="!fromStr || !presetName.trim()"
-						>
-							保存
-						</button>
-					</div>
+							{{ preset.name }}
+						</option>
+					</select>
+					<button
+						class="btn btn-sm px-3 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80 disabled:opacity-50"
+						@click="savePreset"
+						:disabled="!fromStr || !presetName.trim()"
+					>
+						保存
+					</button>
+					<button
+						class="btn btn-sm px-3 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
+						@click="clearParams"
+						:disabled="!fromStr && !toStr"
+					>
+						🗑️ 清空
+					</button>
 				</div>
 			</div>
 		</div>
 
-		<!-- 参数验证提示 -->
-		<div
-			v-if="fromStr && !renameStore.hasValidParams"
-			class="py-2 px-3 bg-orange-100 dark:bg-orange-900 bg-opacity-10 text-orange-500 border border-orange-200 dark:border-orange-800 border-opacity-20 rounded-md text-sm"
-		>
-			⚠️ 请输入要查找的字符串
-		</div>
+		<!-- 操作按钮行 -->
+		<!-- 清空按钮已移至预设管理区域 -->
 	</div>
 </template>

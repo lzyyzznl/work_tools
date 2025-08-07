@@ -80,30 +80,68 @@ export const useSettingsStore = defineStore("settings", () => {
 
 	// 导出设置
 	function exportSettings(): string {
-		return JSON.stringify(settings.value, null, 2);
+		try {
+			const settingsData = JSON.stringify(settings.value, null, 2);
+			// 这里我们将使用在界面层调用处记录日志，因为无法直接访问useErrorHandler
+			return settingsData;
+		} catch (error) {
+			console.error("导出设置失败:", error);
+			throw error;
+		}
 	}
 
 	// 导入设置
-	function importSettings(settingsJson: string): boolean {
+	function importSettings(settingsJson: string): { success: boolean; stats?: any; error?: any } {
 		try {
-			const importedSettings = JSON.parse(settingsJson);
-
+			const importedSettings = JSON.parse(settingsJson);			
 			// 验证导入的设置格式
 			if (typeof importedSettings !== "object" || importedSettings === null) {
 				throw new Error("无效的设置格式");
 			}
 
+			// 保存导入前的设置快照
+			const oldSettings = JSON.stringify(settings.value);
+			
+			// 统计变更信息
+			const stats = {
+				oldShortcutsCount: Object.keys(settings.value.shortcuts).length,
+				newShortcutsCount: 0,
+				addedShortcuts: [],
+				modifiedShortcuts: [],
+				removedShortcuts: []
+			};
+
+			const newShortcuts = importedSettings.shortcuts || {};
+			const newKeys = Object.keys(newShortcuts);
+			const oldKeys = Object.keys(settings.value.shortcuts);
+
+			// 生成变更统计
+			stats.newShortcutsCount = newKeys.length;
+			stats.addedShortcuts = newKeys.filter(k => !oldKeys.includes(k));
+			stats.removedShortcuts = oldKeys.filter(k => !newKeys.includes(k));
+			stats.modifiedShortcuts = newKeys.filter(k => 
+				oldKeys.includes(k) && newShortcuts[k] !== settings.value.shortcuts[k]
+			);
+
 			// 只处理 shortcuts 字段，确保兼容性
 			settings.value = {
-				shortcuts: importedSettings.shortcuts || defaultSettings.shortcuts,
+				shortcuts: newShortcuts,
 			};
 
 			saveSettings();
 
-			return true;
+			return { 
+				success: true, 
+				stats: {
+					...stats,
+					totalChanged: stats.addedShortcuts.length + 
+									stats.modifiedShortcuts.length + 
+									stats.removedShortcuts.length
+				}
+			};
 		} catch (error) {
 			console.error("导入设置失败:", error);
-			return false;
+			return { success: false, error };
 		}
 	}
 

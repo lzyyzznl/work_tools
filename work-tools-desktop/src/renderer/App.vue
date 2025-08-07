@@ -1,73 +1,110 @@
 <template>
 	<div
-		class="app h-screen grid grid-rows-[auto_1fr_auto] bg-gray-100 relative"
+		class="app h-screen flex flex-col bg-gray-50 relative overflow-hidden"
 		@dragenter="handleGlobalDragEnter"
 		@dragover.prevent
 		@dragleave="handleGlobalDragLeave"
 		@drop="handleGlobalDrop"
 	>
-		<!-- 导航标签 -->
-		<div class="nav-tabs flex bg-white border-b border-gray-200">
-			<button
-				@click="switchTab('renamer')"
-				class="tab-button flex-1 px-6 py-4 text-center font-medium transition-colors relative after:content-empty after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2px after:bg-transparent after:transition-bg-color after:duration-200 hover:after:bg-blue-500/30"
-				:class="
-					activeTab === 'renamer'
-						? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600 after:bg-blue-600'
-						: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-				"
-			>
-				<div class="flex items-center justify-center gap-2">
-					<span>✏️</span>
-					<span>文件重命名器</span>
-					<kbd class="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded"
-						>Ctrl+1</kbd
+		<!-- 导航标签 - 压缩高度 -->
+		<div
+			class="nav-tabs bg-white border-b border-gray-200 shadow-sm flex-shrink-0"
+		>
+			<div class="max-w-full mx-auto">
+				<div class="flex">
+					<button
+						@click="switchTab('renamer')"
+						class="tab-button flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-center font-medium transition-all duration-200 relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+						:class="
+							activeTab === 'renamer'
+								? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600'
+								: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+						"
 					>
-				</div>
-			</button>
+						<div class="flex items-center justify-center gap-1.5 min-w-0">
+							<span class="text-sm flex-shrink-0">✏️</span>
+							<span class="text-xs sm:text-sm font-medium truncate"
+								>文件重命名器</span
+							>
+							<kbd
+								class="hidden lg:inline-flex ml-1.5 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded border border-gray-300"
+							>
+								Ctrl+1
+							</kbd>
+						</div>
+					</button>
 
-			<button
-				@click="switchTab('matcher')"
-				class="tab-button flex-1 px-6 py-4 text-center font-medium transition-colors relative after:content-empty after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2px after:bg-transparent after:transition-bg-color after:duration-200 hover:after:bg-blue-500/30"
-				:class="
-					activeTab === 'matcher'
-						? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600 after:bg-blue-600'
-						: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-				"
-			>
-				<div class="flex items-center justify-center gap-2">
-					<span>🎯</span>
-					<span>文件匹配器</span>
-					<kbd class="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded"
-						>Ctrl+2</kbd
+					<button
+						@click="switchTab('matcher')"
+						class="tab-button flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-center font-medium transition-all duration-200 relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+						:class="
+							activeTab === 'matcher'
+								? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600'
+								: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+						"
 					>
+						<div class="flex items-center justify-center gap-1.5 min-w-0">
+							<span class="text-sm flex-shrink-0">🎯</span>
+							<span class="text-xs sm:text-sm font-medium truncate"
+								>文件匹配器</span
+							>
+							<kbd
+								class="hidden lg:inline-flex ml-1.5 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded border border-gray-300"
+							>
+								Ctrl+2
+							</kbd>
+						</div>
+					</button>
+
+					<button
+						@click="switchTab('log')"
+						class="tab-button flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-center font-medium transition-all duration-200 relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+						:class="
+							activeTab === 'log'
+								? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600'
+								: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+						"
+					>
+						<div class="flex items-center justify-center gap-1.5 min-w-0">
+							<span class="text-sm flex-shrink-0">📝</span>
+							<span class="text-xs sm:text-sm font-medium truncate"
+								>操作日志</span
+							>
+						</div>
+					</button>
 				</div>
-			</button>
+			</div>
 		</div>
 
-		<!-- 主要内容区域 -->
-		<div class="main-content overflow-hidden">
+		<!-- 主要内容区域 - 最大化空间 -->
+		<div class="main-content flex-1 min-h-0 overflow-hidden">
 			<FileMatcherTab v-if="activeTab === 'matcher'" />
 			<FileRenamerTab v-if="activeTab === 'renamer'" />
-		</div>
-		
-		<!-- 操作日志面板 -->
-		<div class="log-panel-container border-t border-gray-200">
-			<LogPanel />
+			<LogPanel v-if="activeTab === 'log'" />
 		</div>
 
-	
 		<!-- 全局拖拽覆盖层 -->
 		<div
 			v-if="isDragOver"
-			class="fixed inset-0 z-50 bg-blue-500 bg-opacity-20 flex items-center justify-center pointer-events-none"
+			class="fixed inset-0 z-50 bg-blue-500/20 backdrop-blur-sm flex items-center justify-center pointer-events-none p-4"
 		>
-			<div class="bg-white rounded-lg shadow-xl p-8 text-center">
-				<div class="text-6xl mb-4">📁</div>
-				<div class="text-xl font-semibold text-gray-900 mb-2">
+			<div
+				class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 text-center max-w-sm w-full border border-blue-200"
+			>
+				<div class="text-4xl sm:text-6xl mb-4 animate-bounce">📁</div>
+				<div class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
 					释放文件到此处
 				</div>
 				<div class="text-sm text-gray-600">支持拖拽文件或文件夹</div>
+				<div class="mt-4 flex justify-center space-x-2">
+					<div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+					<div
+						class="w-2 h-2 bg-blue-400 rounded-full animate-pulse animate-delay-200"
+					></div>
+					<div
+						class="w-2 h-2 bg-blue-400 rounded-full animate-pulse animate-delay-400"
+					></div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -90,7 +127,7 @@ const { handleError, handleSuccess } = useErrorHandler();
 const { registerShortcut, commonShortcuts } = useKeyboardShortcuts();
 const { handleDrop } = useFileSystem();
 
-const activeTab = ref<"matcher" | "renamer">("renamer");
+const activeTab = ref<"matcher" | "renamer" | "log">("renamer");
 const isDragOver = ref(false);
 
 // 注册全局快捷键
@@ -137,14 +174,18 @@ async function initializeApp() {
 	}
 }
 
-function switchTab(tab: "matcher" | "renamer") {
+function switchTab(tab: "matcher" | "renamer" | "log") {
 	activeTab.value = tab;
 }
 
 // 全局拖拽处理
 function handleGlobalDragEnter(e: DragEvent) {
 	e.preventDefault();
-	isDragOver.value = true;
+	
+	// 只有拖拽的是文件才显示拖拽提示
+	if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+		isDragOver.value = true;
+	}
 }
 
 function handleGlobalDragLeave(e: DragEvent) {

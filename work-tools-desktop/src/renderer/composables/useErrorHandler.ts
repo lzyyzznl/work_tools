@@ -166,6 +166,32 @@ export function useErrorHandler() {
 		// 同时显示信息通知
 		handleInfo(message, type);
 	}
+	
+	// 增强的操作日志记录函数，支持更详细的日志信息
+	function handleDetailedOperation(type: string, message: string, options?: {
+		details?: any;
+		fileList?: string[];
+		stats?: { total?: number; success?: number; failed?: number };
+		level?: "info" | "success" | "warning" | "error";
+		renameDetails?: Array<{ oldName: string; newName: string }>;
+	}) {
+		// 记录操作日志
+		store.addOperationLog({
+			type,
+			message,
+			level: options?.level || "info",
+			details: options?.details,
+			fileList: options?.fileList,
+			stats: options?.stats,
+		});
+		
+		// 同时显示信息通知
+		if (options?.level === "error") {
+			handleError(new Error(message), type);
+		} else {
+			handleInfo(message, type);
+		}
+	}
 
 	return {
 		// 保持原有的响应式属性，但指向 store 中的数据
@@ -184,6 +210,7 @@ export function useErrorHandler() {
 		handleInfo,
 		handleOperation,
 		logOperation,
+		handleDetailedOperation,
 		
 		// 保持向后兼容性的方法
 		addOperationLog,

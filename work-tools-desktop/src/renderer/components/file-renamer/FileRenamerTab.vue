@@ -45,10 +45,8 @@ async function handleSelectFiles() {
 		if (files.length > 0) {
 			fileStore.addFiles(files);
 			// 提供详细的文件列表信息
-			const fileNames = files.map(file => file.name);
-			const fileListMessage = fileNames.length > 5 
-				? `成功添加 ${files.length} 个文件，前5个文件: ${fileNames.slice(0, 5).join(', ')}...` 
-				: `成功添加 ${files.length} 个文件: ${fileNames.join(', ')}`;
+			const fileNames = files.map((file) => file.name);
+			const fileListMessage = `成功添加 ${files.length} 个文件`;
 			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 			if (renameStore.isAutoPreview) {
 				generatePreview();
@@ -65,10 +63,8 @@ async function handleSelectDirectory() {
 		if (files.length > 0) {
 			fileStore.addFiles(files);
 			// 提供详细的文件列表信息
-			const fileNames = files.map(file => file.name);
-			const fileListMessage = fileNames.length > 5 
-				? `成功添加 ${files.length} 个文件，前5个文件: ${fileNames.slice(0, 5).join(', ')}...` 
-				: `成功添加 ${files.length} 个文件: ${fileNames.join(', ')}`;
+			const fileNames = files.map((file) => file.name);
+			const fileListMessage = `成功添加 ${files.length} 个文件`;
 			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 			if (renameStore.isAutoPreview) {
 				generatePreview();
@@ -98,10 +94,8 @@ async function handleDropFiles(e: DragEvent) {
 		if (files.length > 0) {
 			fileStore.addFiles(files);
 			// 提供详细的文件列表信息
-			const fileNames = files.map(file => file.name);
-			const fileListMessage = fileNames.length > 5 
-				? `成功添加 ${files.length} 个文件，前5个文件: ${fileNames.slice(0, 5).join(', ')}...` 
-				: `成功添加 ${files.length} 个文件: ${fileNames.join(', ')}`;
+			const fileNames = files.map((file) => file.name);
+			const fileListMessage = `成功添加 ${files.length} 个文件`;
 			handleOperation("文件操作", fileListMessage, undefined, fileNames);
 			if (renameStore.isAutoPreview) {
 				generatePreview();
@@ -119,6 +113,21 @@ function clearFiles() {
 	handleOperation("文件操作", "已清空文件列表");
 }
 
+// 批量移除选中文件
+function handleRemoveSelectedFiles() {
+	const selectedFiles = fileTableRef.value?.getSelectedFiles() || [];
+	if (selectedFiles.length === 0) return;
+
+	// 确认对话框防止误操作
+	if (confirm(`确定要移除选中的 ${selectedFiles.length} 个文件吗？`)) {
+		const fileIds = selectedFiles.map((file) => file.id);
+		fileStore.removeFiles(fileIds);
+		// 清除表格中的选中状态
+		fileTableRef.value?.unselectAll();
+		handleOperation("文件操作", `已移除 ${selectedFiles.length} 个文件`);
+	}
+}
+
 async function handleExecuteRename() {
 	isExecuting.value = true;
 	executionMessage.value = "正在执行重命名...";
@@ -127,10 +136,20 @@ async function handleExecuteRename() {
 		const result = await executeRename();
 		if (result.success) {
 			// 提供详细的成功信息
-			handleOperation("重命名操作", "重命名操作完成！", undefined, undefined, {
-				success: result.success,
-				errors: result.errors
-			});
+			const message = `重命名操作完成！成功: ${
+				result.stats?.success || 0
+			}, 失败: ${result.stats?.failed || 0}`;
+			handleOperation(
+				"重命名操作",
+				message,
+				{ renameDetails: result.renameDetails },
+				undefined,
+				{
+					total: result.stats?.total,
+					success: result.stats?.success,
+					failed: result.stats?.failed,
+				}
+			);
 			executionMessage.value = "";
 		} else {
 			handleError(result.errors.join(", "), "重命名失败");
@@ -148,7 +167,9 @@ async function handleUndoRename() {
 	try {
 		const result = await undoLastOperation();
 		if (result.success) {
-			handleOperation("撤回操作", "撤回操作完成！");
+			handleOperation("撤回操作", "撤回操作完成！", {
+				undoDetails: result.undoDetails,
+			});
 		} else {
 			handleError(result.errors.join(", "), "撤回失败");
 		}
@@ -175,6 +196,23 @@ function handleExport() {
 	if (fileTableRef.value) {
 		fileTableRef.value.exportExcel();
 	}
+}
+
+// 监听导出事件
+function onExport(event: {
+	success: boolean;
+	message: string;
+	fileCount?: number;
+	filePath?: string;
+	fileNames?: string[];
+	error?: any;
+}) {
+	handleOperation("导出操作", event.message, {
+		fileCount: event.fileCount,
+		filePath: event.filePath,
+		fileNames: event.fileNames,
+		error: event.error,
+	});
 }
 
 onMounted(() => {
@@ -261,161 +299,214 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="file-renamer-tab flex flex-col h-full">
-		<!-- 工具栏 -->
+	<div class="file-renamer-tab flex flex-col h-full bg-gray-50">
+		<!-- 工具栏 - 压缩高度 -->
 		<div
-			class="toolbar flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0"
+			class="toolbar bg-white border-b border-gray-200 shadow-sm flex-shrink-0"
 		>
-			<div class="toolbar-left flex items-center gap-3">
-				<button
-					@click="handleSelectFiles"
-					class="px-4 py-2 rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-700"
-				>
-					📁 选择文件
-				</button>
-				<button
-					@click="handleSelectDirectory"
-					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-				>
-					📂 选择文件夹
-				</button>
-				<button
-					@click="clearFiles"
-					:disabled="!fileStore.hasFiles"
-					class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					🗑️ 清空
-				</button>
-				<button
-					:disabled="!fileStore.hasFiles"
-					@click="handleExport"
-					title="导出当前文件列表"
-					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					<span>📤</span>
-					导出
-				</button>
-			</div>
-
-			<div class="toolbar-right flex items-center gap-3">
-				<button
-					@click="handlePreview"
-					:disabled="!fileStore.hasFiles || !renameStore.hasValidParams"
-					title="生成重命名预览 (Ctrl+P)"
-					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					👁️ 预览
-				</button>
-				<button
-					@click="handleExecuteRename"
-					:disabled="
-						!fileStore.hasFiles || !renameStore.hasValidParams || isExecuting
-					"
-					title="执行批量重命名 (Ctrl+Enter)"
-					class="px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700"
-				>
-					<span v-if="isExecuting">
-						⏳ 执行中...
-						<span
-							v-if="renameStore.executionProgress > 0"
-							class="ml-2 text-xs opacity-80"
+			<div class="max-w-full mx-auto px-3 py-2">
+				<div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+					<!-- 按钮组 -->
+					<div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+						<button
+							@click="handleSelectFiles"
+							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
 						>
-							({{ Math.round(renameStore.executionProgress) }}%)
-						</span>
-					</span>
-					<span v-else>✅ 执行重命名</span>
-				</button>
-				<button
-					@click="handleUndoRename"
-					:disabled="!renameStore.canUndo"
-					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					↩️ 撤回
-				</button>
-				<button
-					@click="openSettings"
-					title="设置 (Ctrl+,)"
-					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-				>
-					⚙️ 设置
-				</button>
-				<button
-					@click="openHelp"
-					title="帮助 (F1)"
-					class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-				>
-					❓ 帮助
-				</button>
+							<span class="text-sm">📁</span>
+							<span class="hidden sm:inline">选择文件</span>
+							<span class="sm:hidden">文件</span>
+						</button>
+
+						<button
+							@click="handleSelectDirectory"
+							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+						>
+							<span class="text-sm">📂</span>
+							<span class="hidden sm:inline">选择文件夹</span>
+							<span class="sm:hidden">文件夹</span>
+						</button>
+
+						<button
+							@click="clearFiles"
+							:disabled="!fileStore.hasFiles"
+							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600"
+						>
+							<span class="text-sm">🗑️</span>
+							<span class="hidden sm:inline">清空</span>
+						</button>
+
+						<button
+							v-if="fileStore.hasFiles && fileStore.fileStats.selected > 0"
+							@click="handleRemoveSelectedFiles"
+							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-orange-500 text-white hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+						>
+							<span class="text-sm">❌</span>
+							<span class="hidden sm:inline">移除选中</span>
+							<span class="sm:hidden">移除</span>
+							<span class="hidden sm:inline"
+								>({{ fileStore.fileStats.selected }})</span
+							>
+						</button>
+
+						<button
+							:disabled="!fileStore.hasFiles"
+							@click="handleExport"
+							title="导出当前文件列表"
+							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+						>
+							<span class="text-sm">📤</span>
+							<span class="hidden sm:inline">导出</span>
+						</button>
+						<button
+							@click="handlePreview"
+							:disabled="!fileStore.hasFiles || !renameStore.hasValidParams"
+							title="生成重命名预览 (Ctrl+P)"
+							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+						>
+							<span class="text-sm">👁️</span>
+							<span class="hidden sm:inline">预览</span>
+						</button>
+
+						<button
+							@click="handleExecuteRename"
+							:disabled="
+								!fileStore.hasFiles ||
+								!renameStore.hasValidParams ||
+								isExecuting
+							"
+							title="执行批量重命名 (Ctrl+Enter)"
+							class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:hover:bg-blue-600"
+						>
+							<span v-if="isExecuting" class="flex items-center gap-1.5">
+								<span class="text-sm">⏳</span>
+								<span class="hidden sm:inline">执行中...</span>
+								<span class="sm:hidden">执行中</span>
+								<span
+									v-if="renameStore.executionProgress > 0"
+									class="text-xs opacity-80 ml-1"
+								>
+									({{ Math.round(renameStore.executionProgress) }}%)
+								</span>
+							</span>
+							<span v-else class="flex items-center gap-1.5">
+								<span class="text-sm">✅</span>
+								<span class="hidden sm:inline">执行重命名</span>
+								<span class="sm:hidden">执行</span>
+							</span>
+						</button>
+
+						<div class="flex items-center gap-1.5">
+							<button
+								@click="handleUndoRename"
+								:disabled="!renameStore.canUndo"
+								class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+							>
+								<span class="text-sm">↩️</span>
+								<span class="sr-only">撤回</span>
+							</button>
+							<!-- TODO 后面再做
+							<button
+								@click="openSettings"
+								title="设置 (Ctrl+,)"
+								class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+							>
+								<span class="text-sm">⚙️</span>
+								<span class="sr-only">设置</span>
+							</button> -->
+
+							<button
+								@click="openHelp"
+								title="帮助 (F1)"
+								class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+							>
+								<span class="text-sm">❓</span>
+								<span class="sr-only">帮助</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- 执行状态消息 - 压缩高度 -->
+			<div
+				v-if="executionMessage"
+				class="execution-message px-3 py-2 text-center text-xs sm:text-sm font-medium flex-shrink-0 border-b"
+				:class="{
+					'bg-green-50 text-green-800 border-green-200':
+						executionMessage.includes('完成') ||
+						executionMessage.includes('成功'),
+					'bg-red-50 text-red-800 border-red-200':
+						executionMessage.includes('失败'),
+					'bg-blue-50 text-blue-800 border-blue-200':
+						!executionMessage.includes('完成') &&
+						!executionMessage.includes('成功') &&
+						!executionMessage.includes('失败'),
+				}"
+			>
+				<div class="max-w-4xl mx-auto">
+					{{ executionMessage }}
+				</div>
+			</div>
+
+			<!-- 重命名操作配置 - 压缩高度 -->
+			<div
+				class="rename-operation-container bg-white border-b border-gray-200 flex-shrink-0"
+			>
+				<div class="max-w-full mx-auto">
+					<RenameOperationTabs />
+				</div>
 			</div>
 		</div>
-
-		<!-- 执行状态消息 -->
-		<div
-			v-if="executionMessage"
-			class="execution-message p-3 text-center text-sm font-medium flex-shrink-0"
-			:class="{
-				'bg-green-100 text-green-800 border-b border-green-200':
-					executionMessage.includes('完成') ||
-					executionMessage.includes('成功'),
-				'bg-red-100 text-red-800 border-b border-red-200':
-					executionMessage.includes('失败'),
-				'bg-blue-100 text-blue-800 border-b border-blue-200':
-					!executionMessage.includes('完成') &&
-					!executionMessage.includes('成功') &&
-					!executionMessage.includes('失败'),
-			}"
-		>
-			{{ executionMessage }}
-		</div>
-
-		<!-- 重命名操作配置 -->
-		<div class="rename-operation-container flex-shrink-0">
-			<RenameOperationTabs />
-		</div>
-
-		<!-- 拖拽区域和文件表格容器 -->
-		<div class="flex-1 flex flex-col min-h-0">
-			<!-- 拖拽区域 -->
-			<div
-				class="drop-zone flex-1 flex flex-col relative overflow-hidden border-2 border-dashed border-gray-300 m-4 rounded-lg transition-colors"
-				:class="{ 'border-blue-500 bg-blue-50': isDragOver }"
-				@dragenter="handleDragEnter"
-				@dragover.prevent
-				@dragleave="handleDragLeave"
-				@drop="handleDropFiles"
-			>
-				<!-- 文件表格 -->
-				<div class="file-table-wrapper flex-1 min-h-0">
-					<FileTable
-						ref="fileTableRef"
-						:show-preview="true"
-						:show-selection="true"
-						:show-execution-result="true"
-						:file-store="fileStore"
-					/>
-				</div>
-
-				<!-- 拖拽提示 -->
+		<!-- 主内容区域 - 最大化表格空间 -->
+		<div class="flex-1 flex flex-col min-h-0 bg-gray-50 mb-4">
+			<div class="flex-1 p-2 sm:p-3">
 				<div
-					v-if="isDragOver"
-					class="absolute inset-0 flex items-center justify-center pointer-events-none"
+					class="drop-zone h-full flex flex-col relative overflow-hidden border-2 border-dashed rounded-xl transition-all duration-300 bg-white"
+					:class="{
+						'border-blue-400 bg-blue-50 shadow-lg': isDragOver,
+						'border-gray-300 hover:border-gray-400': !isDragOver,
+					}"
+					@dragenter="handleDragEnter"
+					@dragover.prevent
+					@dragleave="handleDragLeave"
+					@drop="handleDropFiles"
 				>
+					<!-- 文件表格 - 占据最大空间 -->
 					<div
-						class="text-2xl font-semibold text-blue-600 bg-white px-6 py-4 rounded-lg border-2 border-blue-500"
+						class="file-table-wrapper flex-1 min-h-0 rounded-xl overflow-hidden"
 					>
-						拖拽文件到此处
+						<FileTable
+							ref="fileTableRef"
+							:show-preview="true"
+							:show-selection="true"
+							:show-execution-result="true"
+							:file-store="fileStore"
+							@export="onExport"
+						/>
+					</div>
+
+					<!-- 拖拽提示 -->
+					<div
+						v-if="isDragOver"
+						class="absolute inset-0 flex items-center justify-center pointer-events-none bg-blue-50/90 backdrop-blur-sm"
+					>
+						<div class="text-center p-6">
+							<div class="text-3xl sm:text-5xl mb-3 animate-bounce">📁</div>
+							<div class="text-lg sm:text-xl font-semibold text-blue-600 mb-2">
+								拖拽文件到此处
+							</div>
+							<div class="text-xs sm:text-sm text-blue-500">
+								支持文件和文件夹
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- 设置模态框 -->
+		<!-- 模态框 -->
 		<SettingsModal v-model="showSettings" />
-
-		<!-- 帮助模态框 -->
 		<HelpModal v-model="showHelp" />
-
-		<!-- 导入预览模态框 -->
 		<ImportPreviewModal
 			v-model="showImportPreview"
 			:preview-data="importPreview"

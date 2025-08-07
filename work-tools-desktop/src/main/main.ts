@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, dialog } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, dialog, screen } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import * as fileSystem from "./fileSystem";
@@ -14,12 +14,24 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const createWindow = () => {
+	// 获取主屏幕的工作区域尺寸
+	const primaryDisplay = screen.getPrimaryDisplay();
+	const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+	
+	// 计算窗口尺寸为屏幕工作区域的80%
+	const windowWidth = Math.floor(screenWidth * 0.8);
+	const windowHeight = Math.floor(screenHeight * 0.8);
+	
+	// 设置最小窗口尺寸
+	const minWidth = 1000;
+	const minHeight = 800;
+
 	// Create the browser window.
 	const mainWindow = new BrowserWindow({
-		width: 1600,
-		height: 1200,
-		minWidth: 1600,
-		minHeight: 1200,
+		width: windowWidth,
+		height: windowHeight,
+		minWidth: minWidth,
+		minHeight: minHeight,
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 			contextIsolation: true,

@@ -138,45 +138,8 @@ const currentComponent = computed(() => {
 		</div>
 
 		<!-- 标签页内容 -->
-		<div class="tab-content bg-background-primary p-lg min-h-120px">
+		<div class="tab-content bg-background-primary p-lg min-h-40px">
 			<component :is="currentComponent" />
-		</div>
-
-		<!-- 预览控制 -->
-		<div
-			class="preview-controls flex items-center gap-md px-lg py-sm bg-background-secondary border-t border-border-secondary text-sm"
-		>
-			<label
-				class="checkbox-label flex items-center gap-xs cursor-pointer select-none"
-			>
-				<input
-					type="checkbox"
-					v-model="renameStore.isAutoPreview"
-					class="checkbox m-0 rounded border-border-primary text-primary focus:ring-primary"
-				/>
-				<span class="checkbox-text text-text-primary font-medium"
-					>自动预览</span
-				>
-			</label>
-
-			<button
-				v-if="!renameStore.isAutoPreview"
-				class="btn btn-sm btn-secondary px-md py-xs text-sm"
-				@click="generatePreview"
-				:disabled="!renameStore.hasValidParams"
-			>
-				🔄 手动预览
-			</button>
-
-			<div class="preview-info ml-auto">
-				<span
-					v-if="renameStore.previewUpdateTime"
-					class="preview-time text-text-tertiary text-xs"
-				>
-					上次预览:
-					{{ new Date(renameStore.previewUpdateTime).toLocaleTimeString() }}
-				</span>
-			</div>
 		</div>
 	</div>
 </template>

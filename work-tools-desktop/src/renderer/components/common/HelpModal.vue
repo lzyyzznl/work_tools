@@ -110,10 +110,10 @@ const helpSections = [
 					<div v-show="activeTab === 'overview'" class="tab-panel">
 						<div class="help-section">
 							<h3 class="m-0 mb-4 text-lg font-semibold text-gray-900">
-								欢迎使用文件重命名工具
+								欢迎使用文件工具箱
 							</h3>
 							<p class="m-0 mb-4 leading-6 text-gray-600">
-								这是一个强大的批量文件重命名工具，支持多种重命名模式和实时预览功能。
+								这是一个功能强大的文件处理工具箱，包含文件重命名器和文件匹配器两大核心功能模块，支持批量文件处理和灵活的规则配置。
 							</p>
 
 							<h4 class="m-6 m-t-0 mb-2 text-base font-semibold text-gray-900">
@@ -121,7 +121,10 @@ const helpSections = [
 							</h4>
 							<ul class="m-0 mb-4 pl-5 text-gray-600">
 								<li class="mb-1 leading-6">
-									🔄 字符串替换 - 查找并替换文件名中的指定文本
+									🔄 文件重命名器 - 支持多种重命名模式和实时预览功能
+								</li>
+								<li class="m-b-spacing-xs leading-6">
+									🎯 文件匹配器 - 基于自定义规则匹配文件并提取信息
 								</li>
 								<li class="m-b-spacing-xs leading-6">
 									➕ 添加前缀/后缀 - 在文件名前后添加文本
@@ -133,13 +136,19 @@ const helpSections = [
 									✂️ 删除字符 - 从文件名中删除指定位置的字符
 								</li>
 								<li class="m-b-spacing-xs leading-6">
-									👁️ 实时预览 - 修改参数时自动显示重命名效果
+									👁️ 实时预览 - 修改参数时自动显示处理效果
 								</li>
 								<li class="m-b-spacing-xs leading-6">
-									↩️ 撤回功能 - 支持撤回最近的重命名操作
+									↩️ 撤回功能 - 支持撤回最近的操作
 								</li>
 								<li class="m-b-spacing-xs leading-6">
 									⌨️ 快捷键支持 - 提供丰富的键盘快捷键
+								</li>
+								<li class="m-b-spacing-xs leading-6">
+									💾 预设管理 - 保存和复用常用配置
+								</li>
+								<li class="m-b-spacing-xs leading-6">
+									📤 导出功能 - 支持导出Excel格式文件
 								</li>
 							</ul>
 
@@ -147,13 +156,13 @@ const helpSections = [
 								使用流程
 							</h4>
 							<ol class="m-0 mb-4 pl-5 text-gray-600">
-								<li class="mb-1 leading-6">选择要重命名的文件或文件夹</li>
+								<li class="mb-1 leading-6">选择要处理的文件或文件夹</li>
 								<li class="m-b-spacing-xs leading-6">
-									选择重命名模式（替换、添加、序号、删除）
+									选择功能模块（文件重命名器或文件匹配器）
 								</li>
-								<li class="m-b-spacing-xs leading-6">配置重命名参数</li>
+								<li class="m-b-spacing-xs leading-6">配置处理参数或匹配规则</li>
 								<li class="m-b-spacing-xs leading-6">查看预览效果</li>
-								<li class="m-b-spacing-xs leading-6">执行重命名操作</li>
+								<li class="m-b-spacing-xs leading-6">执行操作</li>
 							</ol>
 						</div>
 					</div>
@@ -176,6 +185,14 @@ const helpSections = [
 								<p class="m-0 mb-4 leading-6 text-gray-600">
 									查找文件名中的指定字符串并替换为新的字符串。支持精确匹配，区分大小写。
 								</p>
+								<div class="mb-3">
+									<h5 class="font-semibold text-gray-800 mb-2">参数说明：</h5>
+									<ul class="pl-5 text-gray-600 text-sm">
+										<li class="mb-1">查找字符串：要被替换的文本内容</li>
+										<li class="mb-1">替换为：用来替换的新文本内容</li>
+										<li class="mb-1">交换按钮：快速交换查找和替换的内容</li>
+									</ul>
+								</div>
 								<div
 									class="mt-2 p-3 bg-gray-50 rounded-sm text-sm font-mono text-gray-600"
 								>
@@ -194,6 +211,14 @@ const helpSections = [
 								<p class="m-0 mb-4 leading-6 text-gray-600">
 									在文件名的开头或扩展名之前添加指定的文本内容。
 								</p>
+								<div class="mb-3">
+									<h5 class="font-semibold text-gray-800 mb-2">参数说明：</h5>
+									<ul class="pl-5 text-gray-600 text-sm">
+										<li class="mb-1">位置选择：选择添加前缀还是后缀</li>
+										<li class="mb-1">文本内容：要添加的文本内容</li>
+										<li class="mb-1">切换按钮：快速切换前缀/后缀模式</li>
+									</ul>
+								</div>
 								<div
 									class="mt-2 p-3 bg-gray-50 rounded-sm text-sm font-mono text-gray-600"
 								>
@@ -214,6 +239,17 @@ const helpSections = [
 								<p class="m-0 mb-4 leading-6 text-gray-600">
 									为文件添加自动递增的序号，支持自定义起始数字、位数、步长和分隔符。
 								</p>
+								<div class="mb-3">
+									<h5 class="font-semibold text-gray-800 mb-2">参数说明：</h5>
+									<ul class="pl-5 text-gray-600 text-sm">
+										<li class="mb-1">起始数字：序号开始的数字</li>
+										<li class="mb-1">位数：序号的数字位数，不足位数会用0补齐</li>
+										<li class="mb-1">步长：序号递增的步长值</li>
+										<li class="mb-1">分隔符：序号与文件名之间的分隔字符</li>
+										<li class="mb-1">位置选择：选择序号添加在文件名前还是后</li>
+										<li class="mb-1">切换按钮：快速切换前缀/后缀模式</li>
+									</ul>
+								</div>
 								<div
 									class="mt-2 p-3 bg-gray-50 rounded-sm text-sm font-mono text-gray-600"
 								>
@@ -233,12 +269,62 @@ const helpSections = [
 								<p class="m-0 mb-4 leading-6 text-gray-600">
 									从文件名中删除指定位置和数量的字符，支持从左侧或右侧删除。
 								</p>
+								<div class="mb-3">
+									<h5 class="font-semibold text-gray-800 mb-2">参数说明：</h5>
+									<ul class="pl-5 text-gray-600 text-sm">
+										<li class="mb-1">删除方向：选择从左侧还是右侧开始删除</li>
+										<li class="mb-1">起始位置：从第几个字符开始删除（从1开始计数）</li>
+										<li class="mb-1">删除字符数：要删除的字符数量</li>
+										<li class="mb-1">切换按钮：快速切换删除方向</li>
+									</ul>
+								</div>
 								<div
 									class="mt-2 p-3 bg-gray-50 rounded-sm text-sm font-mono text-gray-600"
 								>
 									<strong>示例：</strong>从左侧第1个位置删除4个字符<br />
 									<strong>原文件：</strong>"IMG_document.txt"<br />
 									<strong>结果：</strong>"document.txt"
+								</div>
+							</div>
+
+							<!-- 文件匹配器功能 -->
+							<div class="mb-8 p-4 border border-gray-200 rounded-md bg-white">
+								<h4
+									class="m-6 m-t-0 mb-2 text-base font-semibold text-gray-900"
+								>
+									🎯 文件匹配器
+								</h4>
+								<p class="m-0 mb-4 leading-6 text-gray-600">
+									基于自定义规则匹配文件并提取信息，支持正则表达式和多种匹配模式。
+								</p>
+								<div class="mb-3">
+									<h5 class="font-semibold text-gray-800 mb-2">核心功能：</h5>
+									<ul class="pl-5 text-gray-600 text-sm">
+										<li class="mb-1">规则管理：创建、编辑、删除匹配规则</li>
+										<li class="mb-1">列管理：配置匹配结果的显示列</li>
+										<li class="mb-1">自动匹配：添加文件时自动应用匹配规则</li>
+										<li class="mb-1">手动匹配：手动触发匹配操作</li>
+									</ul>
+								</div>
+							</div>
+
+							<!-- 预设管理功能 -->
+							<div class="mb-8 p-4 border border-gray-200 rounded-md bg-white">
+								<h4
+									class="m-6 m-t-0 mb-2 text-base font-semibold text-gray-900"
+								>
+									💾 预设管理
+								</h4>
+								<p class="m-0 mb-4 leading-6 text-gray-600">
+									保存和复用常用的配置参数，提高操作效率。
+								</p>
+								<div class="mb-3">
+									<h5 class="font-semibold text-gray-800 mb-2">使用方法：</h5>
+									<ul class="pl-5 text-gray-600 text-sm">
+										<li class="mb-1">保存预设：配置好参数后，输入预设名称并点击保存</li>
+										<li class="mb-1">应用预设：从下拉列表中选择已保存的预设</li>
+										<li class="mb-1">管理预设：在设置中可以查看和管理所有预设</li>
+									</ul>
 								</div>
 							</div>
 						</div>

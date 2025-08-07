@@ -6,7 +6,7 @@ import RuleManagerTable from "./RuleManagerTable.vue";
 import ColumnManager from "./ColumnManager.vue";
 
 const ruleStore = useRuleStore();
-const { handleError, handleSuccess } = useErrorHandler();
+const { handleError, handleSuccess, handleOperation } = useErrorHandler();
 const ruleTableRef = ref<InstanceType<typeof RuleManagerTable> | null>(null);
 
 // 本地状态
@@ -38,11 +38,26 @@ async function exportRules() {
 		if (ruleTableRef.value) {
 			await ruleTableRef.value.exportExcel();
 		}
+		// 日志将在 onRuleExport 中处理
 	} catch (error) {
 		handleError(error, "导出规则失败");
 	}
 }
 
+// 监听规则导出事件
+function onRuleExport(event: {
+	success: boolean;
+	message: string;
+	ruleCount?: number;
+	filePath?: string;
+	error?: any;
+}) {
+	handleOperation("规则导出", event.message, {
+		ruleCount: event.ruleCount,
+		filePath: event.filePath,
+		error: event.error,
+	});
+}
 
 async function importRules(event: Event) {
 	try {
@@ -140,7 +155,7 @@ onMounted(async () => {
 			<!-- 规则管理页面 -->
 			<div v-if="activeTab === 'rules'" class="rules-tab flex flex-col h-full">
 				<div class="rule-table-container flex-1 overflow-hidden">
-					<RuleManagerTable ref="ruleTableRef" />
+					<RuleManagerTable ref="ruleTableRef" @export="onRuleExport" />
 				</div>
 
 				<!-- 统计信息 -->
