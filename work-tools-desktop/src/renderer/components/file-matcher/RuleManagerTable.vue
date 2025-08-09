@@ -11,7 +11,7 @@ const { handleError, handleSuccess, handleOperation, handleDetailedOperation } =
 	useErrorHandler();
 
 // 添加 emit 声明
-const emit = defineEmits(['export']);
+const emit = defineEmits(["export"]);
 
 // 数据转换工具函数
 function normalizeBooleanValue(value: any): string {
@@ -304,7 +304,7 @@ async function handleEditClosed(params: any) {
 			await ruleStore.updateRule(row.id, { columnValues });
 		}
 		console.log("保存成功");
-		handleSuccess("规则更新成功");
+		handleSuccess("规则更新成功", "更新成功", false); // 显示通知
 	} catch (error) {
 		console.error("保存失败:", error);
 		handleError(error, "更新规则");
@@ -426,7 +426,7 @@ async function deleteRow(row: Rule) {
 				newRules: ruleStore.rules.map((r) => ({ id: r.id, code: r.code })),
 			});
 
-			handleSuccess("规则删除成功");
+			handleSuccess("规则删除成功", "删除成功", true); // 显示通知
 		} catch (error) {
 			handleError(error, "删除规则");
 		}
@@ -459,7 +459,11 @@ async function deleteSelectedRules() {
 				newRules: ruleStore.rules.map((r) => ({ id: r.id, code: r.code })),
 			});
 
-			handleSuccess(`成功删除 ${selectedRecords.length} 个规则`);
+			handleSuccess(
+				`成功删除 ${selectedRecords.length} 个规则`,
+				"删除成功",
+				true
+			); // 显示通知
 		} catch (error) {
 			handleError(error, "删除规则");
 		}
@@ -481,7 +485,7 @@ async function exportExcel() {
 			columns: number;
 			columnsGenerated: number;
 		}
-		
+
 		const startTime = Date.now();
 		const exportStats: ExportStats = {
 			rules: 0,
@@ -577,7 +581,7 @@ async function exportExcel() {
 					ruleCount: fullData.length,
 					filePath: result.filePath,
 				});
-				handleSuccess("规则导出成功");
+				handleSuccess("规则导出成功", "导出成功", true); // 显示通知
 			} else {
 				console.error("❌ Excel 导出失败:", writeResult);
 				handleDetailedOperation(
@@ -737,7 +741,11 @@ async function importExcel(event: Event) {
 				throw new Error("Excel 文件内容为空");
 			}
 			await parseExcelAndImport(arrayBuffer);
-			handleSuccess("规则导入成功！系统已自动忽略操作列、序号列等特殊列。");
+			handleSuccess(
+				"规则导入成功！系统已自动忽略操作列、序号列等特殊列。",
+				"导入成功",
+				true
+			); // 显示通知
 		} else {
 			throw new Error("不支持的文件格式，请选择 .xlsx 或 .xls 文件");
 		}
@@ -773,13 +781,13 @@ async function parseExcelAndImport(excelData: ArrayBuffer) {
 		skipped: number;
 		newColumns: number;
 	}
-	
+
 	const importStats: ImportStats = {
 		total: 0,
 		added: 0,
 		updated: 0,
 		skipped: 0,
-		newColumns: 0
+		newColumns: 0,
 	};
 	const startTime = Date.now();
 
@@ -893,7 +901,7 @@ async function parseExcelAndImport(excelData: ArrayBuffer) {
 			const ruleData: any = {
 				code: row[codeIndex] || "",
 				matchRules: row[matchRulesIndex]
-					? (row[matchRulesIndex] as string)
+					? String(row[matchRulesIndex])
 							.split(",")
 							.map((r) => r.trim())
 							.filter((r) => r)

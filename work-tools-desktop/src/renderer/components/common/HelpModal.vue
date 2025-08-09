@@ -243,7 +243,9 @@ const helpSections = [
 									<h5 class="font-semibold text-gray-800 mb-2">参数说明：</h5>
 									<ul class="pl-5 text-gray-600 text-sm">
 										<li class="mb-1">起始数字：序号开始的数字</li>
-										<li class="mb-1">位数：序号的数字位数，不足位数会用0补齐</li>
+										<li class="mb-1">
+											位数：序号的数字位数，不足位数会用0补齐
+										</li>
 										<li class="mb-1">步长：序号递增的步长值</li>
 										<li class="mb-1">分隔符：序号与文件名之间的分隔字符</li>
 										<li class="mb-1">位置选择：选择序号添加在文件名前还是后</li>
@@ -273,7 +275,9 @@ const helpSections = [
 									<h5 class="font-semibold text-gray-800 mb-2">参数说明：</h5>
 									<ul class="pl-5 text-gray-600 text-sm">
 										<li class="mb-1">删除方向：选择从左侧还是右侧开始删除</li>
-										<li class="mb-1">起始位置：从第几个字符开始删除（从1开始计数）</li>
+										<li class="mb-1">
+											起始位置：从第几个字符开始删除（从1开始计数）
+										</li>
 										<li class="mb-1">删除字符数：要删除的字符数量</li>
 										<li class="mb-1">切换按钮：快速切换删除方向</li>
 									</ul>
@@ -321,9 +325,13 @@ const helpSections = [
 								<div class="mb-3">
 									<h5 class="font-semibold text-gray-800 mb-2">使用方法：</h5>
 									<ul class="pl-5 text-gray-600 text-sm">
-										<li class="mb-1">保存预设：配置好参数后，输入预设名称并点击保存</li>
+										<li class="mb-1">
+											保存预设：配置好参数后，输入记忆操作名称并点击保存
+										</li>
 										<li class="mb-1">应用预设：从下拉列表中选择已保存的预设</li>
-										<li class="mb-1">管理预设：在设置中可以查看和管理所有预设</li>
+										<li class="mb-1">
+											管理预设：在设置中可以查看和管理所有预设
+										</li>
 									</ul>
 								</div>
 							</div>

@@ -9,7 +9,7 @@ import RuleManager from "./RuleManager.vue";
 
 // 为keep-alive添加组件名称
 defineOptions({
-	name: "FileMatcherTab"
+	name: "FileMatcherTab",
 });
 const fileStore = useFileMatcherStore();
 const ruleStore = useRuleStore();
@@ -73,7 +73,12 @@ async function handleSelectFiles() {
 			);
 			const fileNames = addedFiles.map((file) => file.name);
 			const fileListMessage = `成功添加 ${fileIds.length} 个文件`;
-			handleOperation("文件操作", fileListMessage, undefined, fileNames);
+			handleOperation(
+				"单个添加文件然后匹配操作",
+				fileListMessage,
+				undefined,
+				fileNames
+			);
 		}
 	} catch (error) {
 		handleError(error, "选择文件失败");
@@ -90,7 +95,12 @@ async function handleSelectDirectory() {
 			);
 			const fileNames = addedFiles.map((file) => file.name);
 			const fileListMessage = `成功添加 ${fileIds.length} 个文件`;
-			handleOperation("文件操作", fileListMessage, undefined, fileNames);
+			handleOperation(
+				"批量添加文件然后匹配操作",
+				fileListMessage,
+				undefined,
+				fileNames
+			);
 		}
 	} catch (error) {
 		handleError(error, "选择目录失败");
@@ -127,7 +137,7 @@ async function handleDropFiles(e: DragEvent) {
 
 function clearFiles() {
 	fileStore.clearFiles();
-	handleOperation("文件操作", "已清空文件列表");
+	handleOperation("批量清空所有文件", "已清空文件列表");
 }
 
 // 批量移除选中文件
@@ -173,7 +183,7 @@ async function autoMatch() {
 
 		if (newFiles.length > 0) {
 			handleOperation(
-				"匹配操作",
+				"批量添加文件然后匹配操作",
 				`自动匹配完成，共匹配 ${matchedCount} 个文件`
 			);
 		}

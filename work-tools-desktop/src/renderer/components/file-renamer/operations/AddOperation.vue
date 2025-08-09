@@ -42,7 +42,7 @@ function togglePosition() {
 	isPrefix.value = !isPrefix.value;
 }
 
-// 预设名称输入
+// 记忆操作名称输入
 const presetName = ref("");
 
 function savePreset() {
@@ -52,7 +52,7 @@ function savePreset() {
 	}
 
 	if (!presetName.value.trim()) {
-		alert("请输入预设名称");
+		alert("请输入记忆操作名称");
 		return;
 	}
 
@@ -79,7 +79,9 @@ function savePreset() {
 				<!-- 位置选择 -->
 				<div class="form-group flex flex-col gap-1">
 					<div class="radio-group flex gap-2">
-						<label class="radio-label flex items-center gap-1 cursor-pointer select-none">
+						<label
+							class="radio-label flex items-center gap-1 cursor-pointer select-none"
+						>
 							<input
 								type="radio"
 								:checked="isPrefix"
@@ -88,7 +90,9 @@ function savePreset() {
 							/>
 							<span class="radio-text text-sm text-text-primary">前缀</span>
 						</label>
-						<label class="radio-label flex items-center gap-1 cursor-pointer select-none">
+						<label
+							class="radio-label flex items-center gap-1 cursor-pointer select-none"
+						>
 							<input
 								type="radio"
 								:checked="!isPrefix"
@@ -113,14 +117,20 @@ function savePreset() {
 
 				<!-- 文本输入 -->
 				<div class="form-group flex-1 flex flex-col gap-1">
-					<input
-						id="add-text"
-						v-model="text"
-						type="text"
-						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						:placeholder="`输入${isPrefix ? '前缀' : '后缀'}文本`"
-						autocomplete="off"
-					/>
+					<div class="flex items-center gap-2">
+						<span
+							class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+							>添加内容：</span
+						>
+						<input
+							id="add-text"
+							v-model="text"
+							type="text"
+							class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1) flex-1"
+							:placeholder="`输入${isPrefix ? '前缀' : '后缀'}文本`"
+							autocomplete="off"
+						/>
+					</div>
 				</div>
 			</div>
 
@@ -131,18 +141,22 @@ function savePreset() {
 						v-model="presetName"
 						type="text"
 						class="flex-1 form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						placeholder="预设名称"
+						placeholder="操作名称"
 						autocomplete="off"
 						style="width: 80px"
 					/>
 					<select
-						v-if="renameStore.presets.filter((p) => p.type === 'add').length > 0"
+						v-if="
+							renameStore.presets.filter((p) => p.type === 'add').length > 0
+						"
 						class="form-select px-2 py-2 border border-border-primary rounded-md text-sm bg-white"
 						@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 					>
-						<option value="">选择</option>
+						<option value="">选择操作</option>
 						<option
-							v-for="preset in renameStore.presets.filter((p) => p.type === 'add')"
+							v-for="preset in renameStore.presets.filter(
+								(p) => p.type === 'add'
+							)"
 							:key="preset.id"
 							:value="preset.id"
 						>
@@ -152,22 +166,19 @@ function savePreset() {
 					<button
 						class="btn btn-sm px-3 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80"
 						@click="savePreset"
-						:disabled="!text || !presetName.trim()"
+						:disabled="!renameStore.hasValidParams || !presetName.trim()"
 					>
-						保存
+						记忆操作
 					</button>
 					<button
 						class="btn btn-sm px-3 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
 						@click="clearParams"
 						:disabled="!text"
 					>
-						🗑️ 清空
+						🗑️ 重置
 					</button>
 				</div>
 			</div>
 		</div>
-
-		<!-- 操作按钮行 -->
-		<!-- 清空按钮已移至预设管理区域 -->
 	</div>
 </template>

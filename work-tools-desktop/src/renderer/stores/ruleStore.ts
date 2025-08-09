@@ -17,7 +17,7 @@ export const useRuleStore = defineStore("rule", () => {
 	} {
 		const errors: string[] = [];
 
-		if (!rule.code || !rule.code.trim()) {
+		if (!rule.code || !String(rule.code).trim()) {
 			errors.push("代码不能为空");
 		}
 
@@ -187,7 +187,7 @@ export const useRuleStore = defineStore("rule", () => {
 		const newRule: Rule = {
 			id: `user-${Date.now()}-${Math.random()}`,
 			...ruleData,
-			code: ruleData.code.trim(),
+			code: String(ruleData.code).trim(),
 			matchRules: ruleData.matchRules
 				.filter((r) => r.trim())
 				.map((r) => r.trim()),
@@ -235,7 +235,7 @@ export const useRuleStore = defineStore("rule", () => {
 
 		// 清理数据
 		if (ruleData.code) {
-			finalRuleData.code = ruleData.code.trim();
+			finalRuleData.code = String(ruleData.code).trim();
 		}
 		if (ruleData.matchRules) {
 			finalRuleData.matchRules = ruleData.matchRules

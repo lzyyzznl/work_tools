@@ -86,7 +86,7 @@ function addColumn() {
 			options: "",
 		};
 
-		handleSuccess("列添加成功");
+		handleSuccess("列添加成功", "添加成功", true); // 显示通知
 	} catch (error) {
 		handleError(error, "添加列");
 	}
@@ -164,7 +164,7 @@ function saveEditColumn() {
 		});
 
 		cancelEditColumn();
-		handleSuccess("列更新成功");
+		handleSuccess("列更新成功", "更新成功", true); // 显示通知
 	} catch (error) {
 		handleError(error, "更新列");
 	}
@@ -212,7 +212,7 @@ function deleteColumn(id: string) {
 				})),
 			});
 
-			handleSuccess("列删除成功");
+			handleSuccess("列删除成功", "删除成功", true); // 显示通知
 		} catch (error) {
 			handleError(error, "删除列");
 		}
@@ -244,7 +244,7 @@ function resetColumnsToDefault() {
 	if (confirm("确定要重置列配置为默认状态吗？这将删除所有用户自定义列。")) {
 		try {
 			ruleStore.resetColumnsToDefault();
-			handleSuccess("已重置列配置为默认状态");
+			handleSuccess("已重置列配置为默认状态", "重置成功", true); // 显示通知
 		} catch (error) {
 			handleError(error, "重置列配置失败");
 		}

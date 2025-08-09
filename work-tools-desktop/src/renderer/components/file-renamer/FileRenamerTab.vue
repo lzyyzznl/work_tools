@@ -48,7 +48,7 @@ async function handleSelectFiles() {
 			// 提供详细的文件列表信息
 			const fileNames = files.map((file) => file.name);
 			const fileListMessage = `成功添加 ${files.length} 个文件`;
-			handleOperation("文件操作", fileListMessage, undefined, fileNames);
+			handleOperation("单个添加文件", fileListMessage, undefined, fileNames);
 			if (renameStore.isAutoPreview) {
 				generatePreview();
 			}
@@ -66,7 +66,7 @@ async function handleSelectDirectory() {
 			// 提供详细的文件列表信息
 			const fileNames = files.map((file) => file.name);
 			const fileListMessage = `成功添加 ${files.length} 个文件`;
-			handleOperation("文件操作", fileListMessage, undefined, fileNames);
+			handleOperation("批量添加文件", fileListMessage, undefined, fileNames);
 			if (renameStore.isAutoPreview) {
 				generatePreview();
 			}
@@ -111,7 +111,7 @@ function clearFiles() {
 	// 清理所有文件的历史记录
 	renameStore.clearHistory();
 	fileStore.clearFiles();
-	handleOperation("文件操作", "已清空文件列表");
+	handleOperation("清空文件", "已清空文件列表");
 }
 
 // 批量移除选中文件
@@ -125,7 +125,7 @@ function handleRemoveSelectedFiles() {
 		fileStore.removeFiles(fileIds);
 		// 清除表格中的选中状态
 		fileTableRef.value?.unselectAll();
-		handleOperation("文件操作", `已移除 ${selectedFiles.length} 个文件`);
+		handleOperation("批量移除文件", `已移除 ${selectedFiles.length} 个文件`);
 	}
 }
 
@@ -171,6 +171,10 @@ async function handleUndoRename() {
 			handleOperation("撤回操作", "撤回操作完成！", {
 				undoDetails: result.undoDetails,
 			});
+			// 撤销操作后刷新预览
+			if (renameStore.isAutoPreview) {
+				generatePreview();
+			}
 		} else {
 			handleError(result.errors.join(", "), "撤回失败");
 		}
@@ -344,7 +348,7 @@ onMounted(() => {
 							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600"
 						>
 							<span class="text-sm">🗑️</span>
-							<span class="hidden sm:inline">清空</span>
+							<span class="hidden sm:inline">清空文件列表</span>
 						</button>
 
 						<button
@@ -367,7 +371,7 @@ onMounted(() => {
 							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
 						>
 							<span class="text-sm">📤</span>
-							<span class="hidden sm:inline">导出</span>
+							<span class="hidden sm:inline">导出Excel</span>
 						</button>
 						<button
 							@click="handlePreview"
@@ -376,7 +380,7 @@ onMounted(() => {
 							class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
 						>
 							<span class="text-sm">👁️</span>
-							<span class="hidden sm:inline">预览</span>
+							<span class="hidden sm:inline">预览效果</span>
 						</button>
 
 						<button
@@ -413,26 +417,15 @@ onMounted(() => {
 								:disabled="!renameStore.canUndo"
 								class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
 							>
-								<span class="text-sm">↩️</span>
-								<span class="sr-only">撤回</span>
+								<span class="text-sm">↩️ 回退重命名</span>
 							</button>
-							<!-- TODO 后面再做
-							<button
-								@click="openSettings"
-								title="设置 (Ctrl+,)"
-								class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-							>
-								<span class="text-sm">⚙️</span>
-								<span class="sr-only">设置</span>
-							</button> -->
 
 							<button
 								@click="openHelp"
-								title="帮助 (F1)"
+								title="帮助文档"
 								class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
 							>
-								<span class="text-sm">❓</span>
-								<span class="sr-only">帮助</span>
+								<span class="text-sm">帮助文档❓</span>
 							</button>
 						</div>
 					</div>

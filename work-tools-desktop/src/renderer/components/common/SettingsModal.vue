@@ -50,7 +50,7 @@ async function handleResetCategory(category: string) {
 	isResetting.value = true;
 	try {
 		resetCategory(category as any);
-		handleSuccess(`${getGroupTitle(category)}已重置为默认值`, "重置成功");
+		handleSuccess(`${getGroupTitle(category)}已重置为默认值`, "重置成功"); // 显示通知
 	} catch (error) {
 		handleError(error, "重置设置");
 	} finally {
@@ -68,7 +68,7 @@ async function handleResetAll() {
 	isResetting.value = true;
 	try {
 		resetAllSettings();
-		handleSuccess("所有设置已重置为默认值", "重置成功");
+		handleSuccess("所有设置已重置为默认值", "重置成功"); // 显示通知
 	} catch (error) {
 		handleError(error, "重置所有设置");
 	} finally {
@@ -79,7 +79,7 @@ async function handleResetAll() {
 async function handleExport() {
 	try {
 		exportSettingsToFile();
-		handleSuccess("设置已导出到文件", "导出成功");
+		handleSuccess("设置已导出到文件", "导出成功", true); // 显示通知
 	} catch (error) {
 		handleError(error, "导出设置");
 	}
@@ -92,7 +92,7 @@ async function handleImport() {
 	try {
 		const success = await importSettingsFromFile();
 		if (success) {
-			handleSuccess("设置已成功导入", "导入成功");
+			handleSuccess("设置已成功导入", "导入成功", true); // 显示通知
 		} else {
 			handleWarning("导入失败，请检查文件格式", "导入失败");
 		}

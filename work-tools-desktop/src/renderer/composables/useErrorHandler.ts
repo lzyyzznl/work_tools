@@ -8,6 +8,7 @@ export interface ErrorInfo {
 	message: string;
 	timestamp: number;
 	duration?: number;
+	showNotification?: boolean; // 控制是否显示原生通知
 }
 
 export function useErrorHandler() {
@@ -57,8 +58,10 @@ export function useErrorHandler() {
 
 		store.addError(errorInfo);
 
-		// 显示原生通知
-		showNativeNotification(error.type, error.title, error.message);
+		// 根据 showNotification 控制是否显示原生通知，默认不显示
+		if (errorInfo.showNotification !== false) {
+			showNativeNotification(error.type, error.title, error.message);
+		}
 
 		// 自动移除
 		if (errorInfo.duration && errorInfo.duration > 0) {
@@ -112,36 +115,40 @@ export function useErrorHandler() {
 			type: "error",
 			title,
 			message: context ? `${context}: ${message}` : message,
+			showNotification: true, // 错误始终显示通知
 		});
 	}
 
 	// 信息提示函数，只处理信息提示
-	function handleSuccess(message: string, title = "成功") {
+	function handleSuccess(message: string, title = "成功", showNotification = false) {
 		return addError({
 			type: "info",
 			title,
 			message,
 			duration: 3000,
+			showNotification, // 默认不显示通知
 		});
 	}
 
 	// 信息提示函数，只处理信息提示
-	function handleWarning(message: string, title = "警告") {
+	function handleWarning(message: string, title = "警告", showNotification = false) {
 		return addError({
 			type: "info",
 			title,
 			message,
 			duration: 3000,
+			showNotification, // 默认不显示通知
 		});
 	}
 
 	// 信息提示函数，只处理信息提示
-	function handleInfo(message: string, title = "信息") {
+	function handleInfo(message: string, title = "信息", showNotification = false) {
 		return addError({
 			type: "info",
 			title,
 			message,
 			duration: 3000,
+			showNotification, // 默认不显示通知
 		});
 	}
 
@@ -163,8 +170,10 @@ export function useErrorHandler() {
 		// 记录操作日志
 		logOperation(type, message, details, fileList, stats);
 		
-		// 同时显示信息通知
-		handleInfo(message, type);
+		// 根据操作类型决定是否显示通知
+		const coreOperations = ["重命名操作", "导入操作", "导出操作", "匹配操作", "文件操作"];
+		const showNotification = coreOperations.includes(type);
+		handleInfo(message, type, showNotification);
 	}
 	
 	// 增强的操作日志记录函数，支持更详细的日志信息
@@ -185,11 +194,16 @@ export function useErrorHandler() {
 			stats: options?.stats,
 		});
 		
-		// 同时显示信息通知
+		// 根据操作类型和级别决定是否显示通知
+		const coreOperations = ["重命名操作", "导入操作", "导出操作", "匹配操作", "文件操作", "规则管理", "列管理"];
+		const isCoreOperation = coreOperations.includes(type);
+		const isError = options?.level === "error";
+		const showNotification = isCoreOperation || isError;
+		
 		if (options?.level === "error") {
 			handleError(new Error(message), type);
 		} else {
-			handleInfo(message, type);
+			handleInfo(message, type, showNotification);
 		}
 	}
 

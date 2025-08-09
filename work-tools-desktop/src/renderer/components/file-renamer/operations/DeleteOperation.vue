@@ -113,7 +113,9 @@ function generateExample(originalName: string): string {
 				<!-- 删除方向 -->
 				<div class="form-group flex flex-col gap-1">
 					<div class="radio-group flex gap-2">
-						<label class="radio-label flex items-center gap-1 cursor-pointer select-none">
+						<label
+							class="radio-label flex items-center gap-1 cursor-pointer select-none"
+						>
 							<input
 								type="radio"
 								:checked="fromLeft"
@@ -122,7 +124,9 @@ function generateExample(originalName: string): string {
 							/>
 							<span class="radio-text text-sm text-text-primary">左侧</span>
 						</label>
-						<label class="radio-label flex items-center gap-1 cursor-pointer select-none">
+						<label
+							class="radio-label flex items-center gap-1 cursor-pointer select-none"
+						>
 							<input
 								type="radio"
 								:checked="!fromLeft"
@@ -147,29 +151,41 @@ function generateExample(originalName: string): string {
 
 				<!-- 删除参数 -->
 				<div class="form-group flex-1 flex flex-col gap-1">
-					<input
-						id="start-pos"
-						v-model.number="startPos"
-						type="number"
-						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						min="1"
-						max="50"
-						step="1"
-						:placeholder="fromLeft ? '开始位置' : '从右数位置'"
-					/>
+					<div class="flex items-center gap-2">
+						<span
+							class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+							>起始位置：</span
+						>
+						<input
+							id="start-pos"
+							v-model.number="startPos"
+							type="number"
+							class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1) flex-1"
+							min="1"
+							max="50"
+							step="1"
+							:placeholder="fromLeft ? '开始位置' : '从右数位置'"
+						/>
+					</div>
 				</div>
 
 				<div class="form-group flex-1 flex flex-col gap-1">
-					<input
-						id="delete-count"
-						v-model.number="count"
-						type="number"
-						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						min="1"
-						max="20"
-						step="1"
-						placeholder="删除字符数"
-					/>
+					<div class="flex items-center gap-2">
+						<span
+							class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+							>删除字符数：</span
+						>
+						<input
+							id="delete-count"
+							v-model.number="count"
+							type="number"
+							class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1) flex-1"
+							min="1"
+							max="20"
+							step="1"
+							placeholder="删除字符数"
+						/>
+					</div>
 				</div>
 			</div>
 
@@ -185,13 +201,17 @@ function generateExample(originalName: string): string {
 						style="width: 80px"
 					/>
 					<select
-						v-if="renameStore.presets.filter((p) => p.type === 'delete').length > 0"
+						v-if="
+							renameStore.presets.filter((p) => p.type === 'delete').length > 0
+						"
 						class="form-input px-2 py-2 border border-border-primary rounded-md text-sm bg-white"
 						@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 					>
 						<option value="">选择</option>
 						<option
-							v-for="preset in renameStore.presets.filter((p) => p.type === 'delete')"
+							v-for="preset in renameStore.presets.filter(
+								(p) => p.type === 'delete'
+							)"
 							:key="preset.id"
 							:value="preset.id"
 						>
@@ -201,9 +221,9 @@ function generateExample(originalName: string): string {
 					<button
 						class="btn btn-sm px-3 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80"
 						@click="savePreset"
-						:disabled="!presetName.trim()"
+						:disabled="!renameStore.hasValidParams || !presetName.trim()"
 					>
-						保存
+						记忆操作
 					</button>
 					<button
 						class="btn btn-sm px-3 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"

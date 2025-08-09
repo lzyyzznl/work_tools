@@ -35,7 +35,8 @@ export function useDataManager() {
       
       handleSuccess(
         `数据已成功导出为 ${options.format.toUpperCase()} 格式`,
-        '导出完成'
+        '导出完成',
+        true // 显示通知
       )
     } catch (error) {
       handleError(error, '导出数据')
@@ -149,7 +150,8 @@ export function useDataManager() {
 
       handleSuccess(
         `成功导入 ${data.files.length} 个文件和 ${data.renameHistory.length} 条历史记录`,
-        '导入完成'
+        '导入完成',
+        true // 显示通知
       )
 
       // 关闭预览
@@ -206,7 +208,7 @@ export function useDataManager() {
     if (confirm('确定要清空所有数据吗？此操作不可撤销。')) {
       fileStore.clearFiles()
       renameStore.clearHistory()
-      handleSuccess('所有数据已清空', '清空完成')
+      handleSuccess('所有数据已清空', '清空完成', true) // 显示通知
     }
   }
 

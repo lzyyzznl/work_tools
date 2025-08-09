@@ -45,7 +45,7 @@ function swapParams() {
 	toStr.value = temp;
 }
 
-// 预设名称输入
+// 记忆操作名称输入
 const presetName = ref("");
 
 function savePreset() {
@@ -55,7 +55,7 @@ function savePreset() {
 	}
 
 	if (!presetName.value.trim()) {
-		alert("请输入预设名称");
+		alert("请输入记忆操作名称");
 		return;
 	}
 
@@ -121,18 +121,22 @@ function savePreset() {
 						v-model="presetName"
 						type="text"
 						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						placeholder="预设名称"
+						placeholder="操作名称"
 						autocomplete="off"
 						style="width: 80px"
 					/>
 					<select
-						v-if="renameStore.presets.filter((p) => p.type === 'replace').length > 0"
+						v-if="
+							renameStore.presets.filter((p) => p.type === 'replace').length > 0
+						"
 						class="form-input px-2 py-2 border border-border-primary rounded-md text-sm bg-white"
 						@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 					>
-						<option value="">选择</option>
+						<option value="">选择操作</option>
 						<option
-							v-for="preset in renameStore.presets.filter((p) => p.type === 'replace')"
+							v-for="preset in renameStore.presets.filter(
+								(p) => p.type === 'replace'
+							)"
 							:key="preset.id"
 							:value="preset.id"
 						>
@@ -144,14 +148,14 @@ function savePreset() {
 						@click="savePreset"
 						:disabled="!fromStr || !presetName.trim()"
 					>
-						保存
+						记忆操作
 					</button>
 					<button
 						class="btn btn-sm px-3 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
 						@click="clearParams"
 						:disabled="!fromStr && !toStr"
 					>
-						🗑️ 清空
+						🗑️ 重置
 					</button>
 				</div>
 			</div>

@@ -148,53 +148,77 @@ const previewNumbers = computed(() => {
 
 				<!-- 数字参数 -->
 				<div class="form-group flex-1 flex flex-col gap-1">
-					<input
-						id="start-number"
-						v-model.number="start"
-						type="number"
-						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						min="0"
-						max="9999"
-						step="1"
-						placeholder="起始"
-					/>
+					<div class="flex items-center gap-2">
+						<span
+							class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+							>起始数字：</span
+						>
+						<input
+							id="start-number"
+							v-model.number="start"
+							type="number"
+							class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1) flex-1"
+							min="0"
+							max="9999"
+							step="1"
+							placeholder="起始"
+						/>
+					</div>
 				</div>
 
 				<div class="form-group flex-1 flex flex-col gap-1">
-					<input
-						id="digits"
-						v-model.number="digits"
-						type="number"
-						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						min="1"
-						max="10"
-						step="1"
-						placeholder="位数"
-					/>
+					<div class="flex items-center gap-2">
+						<span
+							class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+							>位数：</span
+						>
+						<input
+							id="digits"
+							v-model.number="digits"
+							type="number"
+							class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1) flex-1"
+							min="1"
+							max="10"
+							step="1"
+							placeholder="位数"
+						/>
+					</div>
 				</div>
 
 				<div class="form-group flex-1 flex flex-col gap-1">
-					<input
-						id="step"
-						v-model.number="step"
-						type="number"
-						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						min="1"
-						max="100"
-						step="1"
-						placeholder="步长"
-					/>
+					<div class="flex items-center gap-2">
+						<span
+							class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+							>步长：</span
+						>
+						<input
+							id="step"
+							v-model.number="step"
+							type="number"
+							class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1) flex-1"
+							min="1"
+							max="100"
+							step="1"
+							placeholder="步长"
+						/>
+					</div>
 				</div>
 
 				<div class="form-group flex-1 flex flex-col gap-1">
-					<input
-						id="separator"
-						v-model="separator"
-						type="text"
-						class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1)"
-						placeholder="分隔符"
-						maxlength="3"
-					/>
+					<div class="flex items-center gap-2">
+						<span
+							class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+							>分隔符：</span
+						>
+						<input
+							id="separator"
+							v-model="separator"
+							type="text"
+							class="form-input px-3 py-2 border border-border-primary rounded-md text-sm transition-border-color duration-150 focus:outline-none focus:border-primary focus:shadow-0_0_0_2px_rgba(0,122,255,0.1) flex-1"
+							placeholder="分隔符"
+							maxlength="3"
+						/>
+					</div>
 				</div>
 			</div>
 
@@ -210,13 +234,17 @@ const previewNumbers = computed(() => {
 						style="width: 80px"
 					/>
 					<select
-						v-if="renameStore.presets.filter((p) => p.type === 'number').length > 0"
+						v-if="
+							renameStore.presets.filter((p) => p.type === 'number').length > 0
+						"
 						class="form-input px-2 py-2 border border-border-primary rounded-md text-sm bg-white"
 						@change="e => renameStore.applyPreset((e.target as HTMLSelectElement).value)"
 					>
 						<option value="">选择</option>
 						<option
-							v-for="preset in renameStore.presets.filter((p) => p.type === 'number')"
+							v-for="preset in renameStore.presets.filter(
+								(p) => p.type === 'number'
+							)"
 							:key="preset.id"
 							:value="preset.id"
 						>
@@ -226,9 +254,9 @@ const previewNumbers = computed(() => {
 					<button
 						class="btn btn-sm px-3 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80"
 						@click="savePreset"
-						:disabled="!presetName.trim()"
+						:disabled="!renameStore.hasValidParams || !presetName.trim()"
 					>
-						保存
+						记忆操作
 					</button>
 					<button
 						class="btn btn-sm px-3 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
